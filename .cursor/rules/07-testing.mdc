@@ -1,0 +1,90 @@
+---
+description: Testing rules for VERVEAI (Next.js/TypeScript + Flutter/Dart + Python) — BA v1.4
+globs: ["**/*.{dart,py,ts,tsx}"]
+alwaysApply: true
+---
+
+# Testing Rules (VERVEAI — BA v1.4)
+
+## Ưu tiên phát triển
+
+| Ưu tiên | Module | Test Coverage |
+|----------|--------|--------------|
+| **CAO NHẤT** | `web-portal/` | **80%** |
+| Sau | `backend/` | **80%** |
+| Sau | `app/` + `research/` | **80%** |
+
+## 📊 Coverage Requirements
+
+### web-portal/ (Next.js/TypeScript)
+| Layer | Min Coverage |
+|-------|--------------|
+| `web-portal/src/app/` | **80%** |
+| Components | **70%** |
+
+### backend/ (Node.js/TypeScript)
+| Layer | Min Coverage |
+|-------|--------------|
+| Services | **80%** |
+| Controllers | **70%** |
+| Middleware | **90%** |
+| Repositories | **75%** |
+
+### app/ (Flutter/Dart)
+| Layer | Min Coverage |
+|-------|--------------|
+| `app/lib/engine/mastery/bkt.dart` | **90%** |
+| `app/lib/engine/` (Lớp 2) | **80%** |
+| `app/lib/hub/` + `app/lib/sync/` | **85%** |
+| `app/lib/storage/` | **80%** |
+| `app/lib/inference/` [A] | **60%** |
+
+### research/ (Python)
+| Layer | Min Coverage |
+|-------|--------------|
+| Python scripts | **80%** |
+
+## 🧪 Test Types
+
+### web-portal/ Tests
+```bash
+cd web-portal
+npm test                    # Vitest / Jest
+npm run lint              # ESLint
+npm run type-check        # TypeScript check
+```
+
+### backend/ Tests
+```bash
+cd backend
+npm test:unit             # Unit tests (Jest)
+npm test:integration      # Integration tests
+npm test:e2e              # E2E tests (Supertest)
+npm run test:cov          # Coverage report
+```
+
+### app/ Tests (Flutter)
+```bash
+cd app
+flutter test               # unit + acceptance
+flutter test integration_test  # e2e thiết bị thật
+```
+
+### research/ Tests (Python)
+```bash
+cd research
+pytest                     # all tests
+pytest --cov             # with coverage
+```
+
+## ✅ MUST
+- Mỗi PR phải có test — coverage không giảm
+- Test behavior, not implementation
+- web-portal/: Vitest/Jest + React Testing Library
+- backend/: Jest + Supertest + integration tests
+- app/: Flutter test + integration_test
+- research/: pytest + pytest-cov
+
+## ❌ NEVER
+- Skip test không có lý do rõ ràng
+- Fake coverage — chỉ test happy path

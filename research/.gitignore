@@ -1,0 +1,27 @@
+# Dữ liệu Bài kiểm A & B — KHÔNG commit (DR-08).
+model-eval/data/attempts.csv
+model-eval/data/measurements.csv
+model-eval/data/llm_predictions.csv
+model-eval/data/gold/
+
+# Báo cáo pilot — tạo local, không commit.
+reports/
+*.report.json
+test_a_*.json
+test_b_*.json
+
+# Python build/cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Virtualenv
+.venv/
+venv/
+.env

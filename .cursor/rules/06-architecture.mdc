@@ -1,0 +1,129 @@
+---
+description: VERVEAI Architecture Rules — Next.js + Flutter/Dart, BA v1.4.5 (Phụ lục F & G)
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Architecture Rules (VERVEAI — BA v1.4)
+
+> Xem ADR-0001 (tech stack), ADR-0002 (sync), ADR-0003 (AI 3 lớp) để biết lý do và lựa chọn.
+
+## Ưu tiên phát triển
+
+| Ưu tiên | Module | Mô tả |
+|----------|--------|--------|
+| **CAO NHẤT** | `web-portal/` | Next.js/TypeScript — web portal cho giáo viên |
+| Sau | `backend/` | Node.js/Express — API server |
+| Sau | `app/` | Flutter/Dart — PWA offline 100% |
+
+## 🔑 Core Architecture
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    VERVEAI — 4 module độc lập                  │
+│                                                                │
+│   ┌────────────────────────────────────┐                      │
+│   │   web-portal/ (Next.js/TS)         │  ƯU TIÊN CAO NHẤT  │
+│   │   Dashboard GV, quản lý lớp        │                      │
+│   └────────────────────────────────────┘                      │
+│                                                                │
+│   ┌────────────────────────────────────┐                      │
+│   │   app/ (Flutter/Dart)              │  Ưu tiên sau         │
+│   │   ────────────────────────         │                      │
+│   │   Offline 100% cho HS              │                      │
+│   │   L0 — APK/EXE                    │                      │
+│   │   L2 — Engine tất định            │                      │
+│   │   L1 & L3 — [A] chờ Bài kiểm A&B │                      │
+│   └────────────────────────────────────┘                      │
+│                                                                │
+│   ┌────────────────────────────────────┐                      │
+│   │   content-pipeline/ (TypeScript)   │                      │
+│   │   research/ (Python)              │                      │
+│   └────────────────────────────────────┘                      │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## web-portal/ (Next.js/TypeScript)
+
+### Stack
+- Next.js ≥ 14 (App Router)
+- TypeScript ≥ 5.0, strict mode
+- Tailwind CSS v3
+- shadcn/ui components
+
+### Cấu trúc
+```
+web-portal/src/
+├── app/              # Next.js App Router
+├── components/       # React components
+├── lib/             # Utilities, API clients
+├── styles/          # Tailwind + CSS variables
+└── middleware.ts    # Auth/routing
+```
+
+---
+
+## backend/ (Node.js/Express)
+
+### Stack
+- Node.js ≥ 20, TypeScript ≥ 5.0
+- Express.js hoặc Fastify
+- Prisma ORM
+- Zod cho validation
+- Winston/Pino cho logging
+
+### Cấu trúc
+```
+backend/src/
+├── config/          # Environment config
+├── controllers/     # Request handlers
+├── services/        # Business logic
+├── repositories/    # Data access
+├── middleware/      # Auth, validation, error
+├── routes/         # API routes
+├── validators/      # Zod schemas
+├── utils/          # Logger, response helpers
+└── types/          # TypeScript types
+```
+
+### Pattern: Controller → Service → Repository
+- **Controller**: Handle HTTP request/response, validation
+- **Service**: Business logic, không biết HTTP
+- **Repository**: Data access, không biết business logic
+
+---
+
+## app/ Architecture (Flutter) — Ưu tiên sau
+
+### AI 3 lớp (ADR-0003)
+
+| Lớp | Module | Đặc điểm |
+|-----|--------|----------|
+| Lớp 1 — Trích xuất | `inference/extraction/` | GBNF ép nhãn đóng; [A] |
+| Lớp 2 — Tổng hợp & Quyết định | `engine/` | Tất định; chạy độc lập với LLM |
+| Lớp 3 — Diễn đạt | `inference/expression/` | Luôn qua `fact_check_guard`; [A] |
+
+### Sync Architecture (ADR-0002)
+
+| Component | Mô tả |
+|-----------|--------|
+| SC-05 — Hub cục bộ | HTTP nội bộ, mDNS discovery |
+| SC-06 — USB Exchange | BẮT BUỘC, không phải tùy chọn |
+
+### Storage (TS-05)
+- SQLite append-only, 1 file/cơ sở
+- `sqflite` (mobile) + `sqflite_common_ffi` (desktop)
+
+---
+
+## 🚫 CẤM
+
+- ❌ Phụ thuộc cloud cho `app/` — phải chạy 100% offline
+- ❌ Coi SC-06 là tùy chọn — USB file exchange là bắt buộc
+- ❌ Đưa `app/lib/inference/` ra khỏi **[A]** trước khi Bài kiểm A & B đạt ngưỡng
+- ❌ Code `app/lib/ui/student/` trước khi OS-03 chốt
+- ❌ Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
+- ❌ File `.dart` trong `web-portal/`
+- ❌ File `.ts`/`.tsx` trong `app/lib/`

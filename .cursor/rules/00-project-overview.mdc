@@ -1,0 +1,68 @@
+---
+description: VERVEAI Project Overview — Mandatory context for AI assistants (Next.js/TypeScript + Flutter/Dart, BA v1.4)
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# VERVEAI — Intelligent Offline-First Diagnostic Assessment Engine
+
+## Project Overview
+- **Name:** VERVEAI
+- **Type:** Next.js web portal (ưu tiên CAO NHẤT) + Flutter/Dart app (ưu tiên sau)
+- **Phiên bản BA:** v1.4.5 (Phụ lục F & G).
+- **Architecture:** web-portal/ + app/ + content-pipeline/ (online) + research/ (Python).
+- **Stack:** Next.js/TypeScript/Tailwind CSS (web-portal), Flutter/Dart (app)
+
+## Ưu tiên phát triển
+
+| Ưu tiên | Module | Mô tả |
+|----------|--------|--------|
+| **CAO NHẤT** | `web-portal/` | Next.js/TypeScript — web portal cho giáo viên |
+| Sau | `backend/` | Node.js/Express — API server |
+| Sau | `app/` | Flutter/Dart — PWA offline |
+
+### web-portal/ (Next.js)
+- **Mục đích:** Web portal cho giáo viên (dashboard, quản lý lớp, theo dõi tiến độ)
+- **Stack:** Next.js ≥ 14, TypeScript, Tailwind CSS v3, React 18
+- **Triển khai:** Vercel / static hosting
+- **Cấu trúc:** Next.js App Router (`src/app/`)
+
+### backend/ (Node.js) — Phase 2
+- **Mục đích:** API server kết nối web-portal với database
+- **Stack:** Node.js ≥ 20, Express/Fastify, TypeScript, Prisma ORM
+- **Kết nối:** REST API → Prisma → PostgreSQL/SQLite
+- **Auth:** JWT + refresh token
+
+### app/ (Flutter) — ưu tiên sau
+- **Mục đích:** App học sinh + giáo viên offline 100%
+- **Stack:** Flutter ≥ 3.22, Dart ≥ 3.4, SQLite, llama.cpp via FFI
+- **Nền tảng:** Android (APK) + Windows (EXE)
+
+## MANDATORY References
+- `@/docs/VerveAI_BA_Document_v1.4.md` — BA v1.4.5
+- `@/docs/01-business/PROJECT_STRUCTURE.md` — Cấu trúc dự án
+- `@/docs/02-architecture/adr/0001-tech-stack-selection.md` — Tech stack
+- `@/docs/02-architecture/adr/0002-sync-strategy.md` — SC-05 hub, SC-06 USB
+- `@/docs/02-architecture/adr/0003-local-ai-architecture.md` — Kiến trúc AI 3 lớp
+
+## Key Features
+| Đặc tính | Module | Trạng thái |
+|---|---|---|
+| Web portal (dashboard GV) | `web-portal/` | **Đang phát triển** |
+| Quản lý lớp | `web-portal/` | **Đang phát triển** |
+| Adaptive item selection | `app/` (Lớp 2) | Sau |
+| BKT mastery (tất định) | `app/` (Lớp 2) | Sau |
+| Offline 100% | `app/` | Sau |
+| Hub cục bộ (SC-05) | `app/` | Sau |
+| File exchange USB (SC-06) | `app/` | Sau |
+| Privacy | `app/` | Sau |
+| LLM cục bộ (Lớp 1 & 3) | `app/` | **[A]** chờ Bài kiểm A & B |
+
+## 🚨 GOLDEN RULES
+1. **ƯU TIÊN `web-portal/`** — Mọi công việc liên quan web portal làm trước
+2. **KHÔNG ĐƯỢC LÀM LAN MAN** — Mọi thứ phải theo BA v1.4.5
+3. **LUÔN CÓ TEST** — Coverage tối thiểu 80%
+4. **ĐẶT FILE ĐÚNG VỊ TRÍ** — Theo cấu trúc dự án
+5. **OFFLINE-FIRST** — `app/` phải hoạt động không cần internet
+6. **`inference/` Ở [A]** — Không chốt cỡ model trước khi Bài kiểm A & B có kết quả
+7. **CHỮ KÝ NỘI DUNG** — App từ chối gói nội dung không có chữ ký Ed25519 hợp lệ

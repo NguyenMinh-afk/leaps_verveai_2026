@@ -1,0 +1,25 @@
+{
+  "name": "@nekopath/workspace",
+  "version": "1.4.0",
+  "private": true,
+  "description": "NEKOPATH — Diagnostic Assessment Engine (Flutter/Dart). App Flutter chạy 100% offline; content-pipeline và review-console là phần online chạy trước triển khai.",
+  "scripts": {
+    "app:test": "cd app && flutter test",
+    "app:e2e": "cd app && flutter test integration_test",
+    "app:build:android": "cd app && flutter build apk --release",
+    "app:build:windows": "cd app && flutter build windows --release",
+    "pipeline:build:bundle": "pnpm --filter @nekopath/content-pipeline build:bundle",
+    "pipeline:sign:bundle": "pnpm --filter @nekopath/content-pipeline sign:bundle",
+    "review:dev": "pnpm --filter @nekopath/review-console dev",
+    "research:test": "cd research && pytest",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

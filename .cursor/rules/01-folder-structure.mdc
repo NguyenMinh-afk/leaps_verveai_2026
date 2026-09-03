@@ -1,0 +1,234 @@
+---
+description: Folder structure rules for VERVEAI (Next.js + Flutter/Dart — BA v1.4)
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Folder Structure (VERVEAI)
+
+## Ưu tiên phát triển
+
+| Ưu tiên | Module | Ghi chú |
+|----------|--------|---------|
+| **CAO NHẤT** | `web-portal/` | Next.js/TypeScript — Phase 1: Frontend với mock data |
+| Sau | `backend/` | Node.js/Express — Phase 2: API server |
+| Sau | `app/` | Flutter/Dart |
+
+## Quy tắc chung
+- Mọi đường dẫn tương đối với thư mục gốc dự án `leaps_verveai_2026/`.
+- **KHÔNG** tạo thư mục ngoài cấu trúc dưới đây — nếu cần, mở ADR mới.
+- File đặt đúng vị trí quy định; **KHÔNG** tạo bản sao ở nơi khác.
+
+---
+
+## Root Structure
+```
+leaps_verveai_2026/
+├── web-portal/                  # 🌐 Next.js — ƯU TIÊN CAO NHẤT
+│   ├── package.json
+│   ├── next.config.js
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   ├── tsconfig.json
+│   └── src/
+│       ├── app/                 # Next.js App Router
+│       ├── components/          # React components
+│       ├── lib/                 # Utilities, API clients
+│       ├── styles/
+│       └── middleware.ts
+│
+├── backend/                     # 🟢 Node.js — ƯU TIÊN SAU (Phase 2)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── prisma/
+│   │   └── schema.prisma        # Database schema
+│   └── src/
+│       ├── config/              # Environment config
+│       ├── controllers/         # Request handlers
+│       ├── services/            # Business logic
+│       ├── repositories/        # Data access
+│       ├── middleware/          # Auth, validation, error handling
+│       ├── routes/              # API routes
+│       ├── validators/          # Zod schemas
+│       ├── utils/               # Logger, response helpers
+│       └── types/               # TypeScript types
+│
+├── app/                         # 📱 Flutter — ƯU TIÊN SAU
+│   ├── pubspec.yaml
+│   ├── lib/                    # Mã nguồn Dart
+│   ├── android/                # Sinh ra bởi `flutter create`
+│   ├── windows/                # Sinh ra bởi `flutter create`
+│   └── test/                  # unit/, acceptance/, e2e/
+│
+├── content-pipeline/            # 🌐 TypeScript — chạy online, trước triển khai
+│   ├── package.json
+│   └── src/
+│
+├── review-console/              # 🌐 React/TS — rà soát (AC-R, FR-20, SN-SC-03)
+│   ├── package.json
+│   └── src/
+│
+├── research/                   # 🐍 Python — phân tích & bài kiểm quyết định
+│   ├── pyproject.toml
+│   └── {expert_agreement, simulation, model-eval, reproducibility}/
+│
+├── infra/                      # docker-compose — chỉ cho backend/content-pipeline
+│
+├── docs/                       # 📚 Tài liệu (xem docs/README.md)
+│
+├── scripts/                    # Build/dev helpers
+│
+├── pnpm-workspace.yaml         # KHÔNG bao gồm app/ và research/
+├── package.json
+├── .gitignore
+├── .env.example
+└── README.md
+```
+
+---
+
+## web-portal Structure (`web-portal/src/`)
+```
+web-portal/src/
+├── app/                       # Next.js App Router
+│   ├── layout.tsx             # Root layout
+│   ├── page.tsx              # Dashboard chính
+│   ├── error.tsx             # Error boundary
+│   ├── loading.tsx           # Loading skeleton
+│   ├── not-found.tsx         # 404 page
+│   └── [routes]/            # Dynamic routes
+│
+├── components/               # React components
+│   ├── ui/                  # shadcn/ui components
+│   ├── dashboard/            # Dashboard components
+│   └── layout/              # Layout components
+│
+├── lib/                     # Utilities
+│   ├── api/                 # API client
+│   ├── utils/               # Utility functions
+│   └── hooks/               # Custom React hooks
+│
+├── styles/
+│   └── globals.css          # Tailwind + CSS variables
+│
+├── middleware.ts             # Auth/routing middleware
+└── css.d.ts                 # CSS module types
+```
+
+---
+
+## Backend Structure (`backend/src/`) — Node.js/TypeScript
+```
+backend/src/
+├── config/
+│   ├── index.ts           # Environment config
+│   └── database.ts       # Prisma client
+│
+├── controllers/           # Request handlers (REST)
+│
+├── services/             # Business logic
+│
+├── repositories/         # Data access layer
+│
+├── middleware/
+│   ├── auth.middleware.ts
+│   ├── role.middleware.ts
+│   ├── error.middleware.ts
+│   ├── validate.middleware.ts
+│   └── rateLimit.middleware.ts
+│
+├── routes/              # API route definitions
+│
+├── validators/          # Zod validation schemas
+│
+├── utils/
+│   ├── logger.ts        # Winston/Pino logger
+│   ├── response.ts      # Standard response helpers
+│   └── pagination.ts
+│
+├── types/               # TypeScript types/interfaces
+│
+└── app.ts              # Express app setup
+```
+
+---
+
+## App Structure (`app/lib/`) — Ưu tiên sau
+```
+app/lib/
+├── main.dart                          # Entry point
+│
+├── engine/                            # Lớp 2: Tổng hợp & Quyết định (tất định — TS-07)
+│   ├── evidence/                      # DR-11, BR-16
+│   ├── mastery/bkt.dart               # FR-06 → FR-11
+│   ├── diagnose/                      # BR-01, AIR-15, FR-07, FR-25
+│   ├── item_selection/                # FR-01 → FR-05, FR-24
+│   ├── remediation/                  # FR-14 → FR-17
+│   ├── grouping/cluster_by_root_cause.dart   # BR-07, BR-08
+│   ├── knowledge_graph/               # TS-06
+│   ├── versioning/                    # DR-07
+│   └── transfer/student_transfer.dart # FR-26
+│
+├── inference/                         # Lớp 1 & 3: Mô hình ngôn ngữ cục bộ — [A]
+│   ├── ffi/llama_bindings.dart
+│   ├── model_manager.dart
+│   ├── grammar/
+│   ├── extraction/extract_evidence.dart
+│   └── expression/
+│
+├── content/v1/
+│
+├── bootstrap/
+│
+├── storage/                           # TS-05 — SQLite append-only
+│
+├── hub/                               # SC-05
+│
+├── sync/                              # SC-06
+│
+├── privacy/
+│
+├── content_security/signature_verify.dart
+│
+├── auth/profile_gate.dart
+│
+└── ui/
+    ├── student/                       # ⛔ CHƯA CODE — chờ OS-03
+    ├── teacher/
+    └── admin/
+```
+
+---
+
+## Content Pipeline (`content-pipeline/src/`) — TypeScript
+```
+content-pipeline/src/
+├── authoring/
+├── auto-verify/
+├── age-appropriateness/
+├── review/
+└── export/
+```
+
+---
+
+## Research (`research/`) — Python
+```
+research/
+├── expert_agreement/
+│   └── kappa_analysis.py
+├── simulation/
+│   └── self_consistency_check.py
+├── model-eval/
+│   ├── test_a_extraction_quality.py
+│   └── test_b_device_performance.py
+└── reproducibility/
+```
+
+---
+
+## 🚫 CẤM
+- File `.ts`/`.tsx` trong `app/lib/` — chỉ `.dart`
+- File `.dart` trong `web-portal/` hoặc `content-pipeline/`
+- Code `app/lib/ui/student/` trước khi OS-03 chốt
+- Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519

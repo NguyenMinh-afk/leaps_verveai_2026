@@ -1,0 +1,91 @@
+# LEAPS (VerveAI) - Docker Compose
+# Chỉ dùng cho backend và content-pipeline (online components)
+# app/ (Flutter) là offline-first, KHÔNG chạy trong Docker
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: verveai-postgres
+    environment:
+      POSTGRES_DB: verveai
+      POSTGRES_USER: verveai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verveai_dev_pass}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U verveai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API server (Phase 2)
+  backend:
+    image: node:20-alpine
+    container_name: verveai-backend
+    working_dir: /app
+    command: >
+      sh -c "npm install && npm run dev"
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../backend:/app
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://verveai:${POSTGRES_PASSWORD:-verveai_dev_pass}@postgres:5432/verveai
+      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Content pipeline (TypeScript)
+  content-pipeline:
+    image: node:20-alpine
+    container_name: verveai-content-pipeline
+    working_dir: /app
+    command: >
+      sh -c "npm install && npm run dev"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../content-pipeline:/app
+      - content_bundles:/app/bundles
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://verveai:${POSTGRES_PASSWORD:-verveai_dev_pass}@postgres:5432/verveai
+      BUNDLE_OUTPUT_DIR: /app/bundles
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Review console (React/TypeScript)
+  review-console:
+    image: node:20-alpine
+    container_name: verveai-review-console
+    working_dir: /app
+    command: >
+      sh -c "npm install && npm run dev"
+    ports:
+      - "4001:4001"
+    volumes:
+      - ../review-console:/app
+    environment:
+      NODE_ENV: development
+      API_URL: http://backend:3001
+    depends_on:
+      - backend
+
+  # Hub cục bộ cho dev (SC-05 - Phase 2)
+  # Dev: Chạy trong app/, không phải container riêng
+  # production: tích hợp trong Flutter app
+
+volumes:
+  postgres_data:
+  content_bundles:
+
+# Lưu ý:
+# - app/ (Flutter) chạy offline trên thiết bị, không cần container
+# - research/ (Python) chạy local, không cần container
+# - web-portal/ (Next.js) deploy lên Vercel hoặc chạy local

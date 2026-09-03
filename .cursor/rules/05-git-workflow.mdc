@@ -1,0 +1,94 @@
+---
+description: Git workflow, commits, PRs for VERVEAI (Next.js + Flutter/Dart + Python + TypeScript) — BA v1.4
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Git Workflow Rules (VERVEAI — BA v1.4)
+
+## 🌿 Branch Naming
+```
+<type>/VP-<id>-<short-desc>
+
+feature/VP-123-add-dashboard
+fix/VP-456-fix-api-error
+hotfix/VP-789-critical-bug
+refactor/VP-234-improve-components
+docs/VP-345-update-adr
+test/VP-456-add-dashboard-tests
+chore/VP-567-update-deps
+```
+
+## 📝 Commit Format (Conventional Commits)
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+| Type | Mục đích |
+|------|---------|
+| `feat` | Tính năng mới |
+| `fix` | Bug fix |
+| `docs` | Tài liệu |
+| `style` | Format code (không đổi logic) |
+| `refactor` | Refactor (không đổi behavior) |
+| `perf` | Performance |
+| `test` | Thêm/sửa test |
+| `chore` | Build, deps, tooling |
+| `revert` | Revert commit trước |
+
+### Scopes
+| Scope | Vùng |
+|-------|------|
+| `(web-portal)` | Next.js/TypeScript web portal |
+| `(backend)` | Node.js/Express API server |
+| `(engine)` | Lớp 2 — BKT, diagnose, item_selection |
+| `(inference)` | Lớp 1 & 3 — extraction, expression |
+| `(storage)` | SQLite append-only |
+| `(hub)` | SC-05 — hub cục bộ |
+| `(sync)` | SC-06 — USB exchange |
+| `(ui)` | Flutter UI / React components |
+| `(privacy)` | Privacy rules |
+| `(content-pipeline)` | TypeScript authoring/verify/export |
+| `(research)` | Python analysis |
+| `(adr)` | ADR mới / cập nhật |
+| `(deps)` | package versions |
+
+### Rules
+- Subject ≤ 72 ký tự, **imperative mood**
+- Body ≤ 100 ký tự/dòng, giải thích **why**
+- Footer: `Refs:`, `Fixes:`, hoặc `BREAKING CHANGE:`
+
+## ✅ EXAMPLES
+```bash
+# web-portal dashboard
+git commit -m "feat(web-portal): add teacher dashboard
+
+Dashboard shows student progress and intervention groups.
+Optimized for tablet use in classroom.
+
+Refs: VP-123, CO-T-01"
+
+# Flutter engine
+git commit -m "feat(engine): add BKT mastery tracking
+
+Implement Bayesian Knowledge Tracing with fixed parameters.
+Deterministic — same input produces same output.
+
+Refs: VP-234, FR-06, FR-07, FR-11"
+```
+
+## ❌ NEVER
+- `git commit -m "update"` / `"fix bug"` / `"WIP"`
+- Commit trực tiếp vào `main`
+- Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
+- Squash nhiều concern vào 1 commit
+
+## 🔀 PR Rules
+- Title: Conventional Commits (`feat(web-portal): ...`)
+- Mô tả: What + Why + Test + Risk
+- Reviewer tối thiểu 1; merge chỉ khi CI xanh + review approve

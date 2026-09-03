@@ -1,0 +1,29 @@
+{
+  "name": "@nekopath/content-pipeline",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Online content authoring & verification pipeline. Chạy trư�c khi triển khai — KHÔNG vào app Flutter.",
+  "scripts": {
+    "build": "tsc",
+    "build:bundle": "tsx src/export/buildContentBundle.ts",
+    "sign:bundle": "tsx src/export/signBundle.ts",
+    "lint": "eslint src --ext ts --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "pako": "^2.1.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/archiver": "^6.0.3",
+    "@types/pako": "^2.0.3",
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,77 @@
+---
+description: Frontend rules for VERVEAI (Next.js/TypeScript — web-portal)
+globs: ["web-portal/**/*.{ts,tsx,js,jsx}"]
+alwaysApply: false
+---
+
+# Frontend Rules (VERVEAI — Next.js/TypeScript)
+
+> **Xem thêm:** [`02-backend.mdc`](./02-backend.mdc) cho backend Node.js/Express
+
+## Ưu tiên
+- **`web-portal/`** (Next.js/TypeScript) — ƯU TIÊN CAO NHẤT
+- **`backend/`** (Node.js) — Xem [02-backend.mdc](./02-backend.mdc)
+
+---
+
+# web-portal/ (Next.js/TypeScript)
+
+Phạm vi: mọi file `.ts`/`.tsx` trong `web-portal/`.
+
+## 📐 Naming (TypeScript)
+| Loại | Convention | Ví dụ |
+|------|-----------|-------|
+| Class / interface / type | PascalCase | `DashboardPage`, `TeacherProfile` |
+| File component | PascalCase | `DashboardPage.tsx`, `TeacherPanel.tsx` |
+| File utility | camelCase | `apiClient.ts`, `formatDate.ts` |
+| Variable / function | camelCase | `getDashboard`, `isLoading` |
+| Constant | UPPER_SNAKE_CASE | `API_BASE_URL` |
+| Boolean | prefix `is/has/should/can` | `isLoading`, `hasPermission` |
+
+## ✅ MUST
+- Next.js ≥ 14, TypeScript ≥ 5.0, `strict: true`
+- React 18, Tailwind CSS v3
+- shadcn/ui components + CSS variables
+- ESLint + Prettier (`.prettierrc`)
+- `zod` cho schema validation
+- API client với error handling
+
+## ❌ NEVER
+- `any` type — dùng `unknown` + type guards
+- `console.log` trong production
+- Hardcoded secrets — dùng env variables
+- `var` — dùng `const` / `let`
+
+## 📁 Structure
+```
+web-portal/src/
+├── app/              # App Router
+├── components/       # React components
+├── lib/             # Utilities
+├── styles/
+└── middleware.ts
+```
+
+---
+
+# app/ (Flutter/Dart)
+
+Phạm vi: mọi file `.dart` trong `app/lib/`.
+
+## 📐 Naming (Dart)
+- **Class / enum / extension**: PascalCase (`EvidenceEvent`, `ContextMode`)
+- **File**: snake_case (`record_attempt.dart`)
+- **Constant**: lowerCamelCase hoặc prefix `k` (`kMasteryThreshold`)
+- **Private**: prefix `_` (`_evidenceLog`)
+
+## ✅ MUST
+- Flutter ≥ 3.22, Dart ≥ 3.4, sound null safety
+- Material 3, theme sáng/tối
+- i18n với ARB files
+- `Semantics` widget cho accessibility
+
+## ❌ NEVER
+- `dynamic` — dùng `Object?` + type guards
+- `print` — dùng `debugPrint` hoặc `dart:developer log`
+- Magic numbers — định nghĩa `const`
+- File `.ts`/`.tsx` trong `app/`

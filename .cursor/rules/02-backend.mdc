@@ -1,0 +1,338 @@
+---
+description: Backend (Node.js/Express/Prisma) rules for VERVEAI API server
+globs: ["backend/**/*.{ts,js,json}", "web-portal/prisma/**/*"]
+alwaysApply: false
+---
+
+# Backend Rules (VERVEAI — Node.js/Express/Prisma)
+
+> **Phase 2 Development** — Backend kết nối với web-portal (Next.js)
+
+## Ưu tiên
+- **`web-portal/`** (Next.js) — Phase 1: Frontend với mock data
+- **`backend/`** (Node.js) — Phase 2: API server, Prisma ORM
+
+---
+
+## 📐 Naming (Node.js/TypeScript)
+
+| Loại | Convention | Ví dụ |
+|------|-----------|-------|
+| File | kebab-case | `auth-controller.ts`, `class-service.ts` |
+| Class | PascalCase | `AuthController`, `ClassService` |
+| Function/Variable | camelCase | `createUser`, `isValidEmail` |
+| Constant | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
+| Interface | PascalCase với prefix `I` | `IUser`, `IClassResponse` |
+| Enum | PascalCase | `UserRole`, `AuthProvider` |
+| Database table | snake_case (plural) | `users`, `student_classes` |
+
+## ✅ MUST
+
+### Core
+- Node.js ≥ 20, TypeScript ≥ 5.0, strict mode
+- Express.js hoặc Fastify cho HTTP server
+- Prisma ORM cho database
+- Zod cho request/response validation
+- Winston hoặc Pino cho logging
+
+### Architecture
+- **Controller → Service → Repository** pattern
+- Dependency injection (không hardcode dependencies)
+- Environment variables cho mọi config (`.env`)
+- Graceful shutdown handler
+
+### Security
+- Helmet.js cho HTTP headers
+- Rate limiting (express-rate-limit)
+- Input validation với Zod
+- SQL injection prevention qua Prisma parameterized queries
+- CORS policy restrict origins
+
+### API Design
+- RESTful endpoints (xem bảng dưới)
+- Consistent response format:
+  ```json
+  {
+    "success": true,
+    "data": { ... },
+    "error": null
+  }
+  ```
+- Standard HTTP status codes
+- Pagination cho list endpoints
+
+## ❌ NEVER
+
+- `any` type — dùng `unknown` + type guards
+- `console.log` trong production — dùng logger
+- Hardcoded secrets — dùng env variables
+- `var` — dùng `const` / `let`
+- Synchronous code trong request handlers
+- Query string concatenation cho SQL
+- Commit `.env`, `*.pem`, khoá riêng
+
+---
+
+## 📁 Structure
+
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── index.ts           # Environment config
+│   │   └── database.ts       # Prisma client
+│   │
+│   ├── controllers/
+│   │   ├── auth.controller.ts
+│   │   ├── class.controller.ts
+│   │   ├── student.controller.ts
+│   │   ├── intervention.controller.ts
+│   │   └── admin.controller.ts
+│   │
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   ├── class.service.ts
+│   │   ├── student.service.ts
+│   │   ├── intervention.service.ts
+│   │   └── report.service.ts
+│   │
+│   ├── repositories/
+│   │   ├── user.repository.ts
+│   │   ├── class.repository.ts
+│   │   ├── student.repository.ts
+│   │   └── evidence.repository.ts
+│   │
+│   ├── middleware/
+│   │   ├── auth.middleware.ts
+│   │   ├── role.middleware.ts
+│   │   ├── error.middleware.ts
+│   │   ├── validate.middleware.ts
+│   │   └── rateLimit.middleware.ts
+│   │
+│   ├── routes/
+│   │   ├── index.ts
+│   │   ├── auth.routes.ts
+│   │   ├── class.routes.ts
+│   │   ├── student.routes.ts
+│   │   ├── intervention.routes.ts
+│   │   └── admin.routes.ts
+│   │
+│   ├── validators/
+│   │   ├── auth.validator.ts
+│   │   ├── class.validator.ts
+│   │   └── student.validator.ts
+│   │
+│   ├── utils/
+│   │   ├── logger.ts
+│   │   ├── response.ts
+│   │   └── pagination.ts
+│   │
+│   ├── types/
+│   │   ├── index.ts
+│   │   ├── user.types.ts
+│   │   └── api.types.ts
+│   │
+│   └── app.ts                # Express app setup
+│
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── fixtures/
+│
+├── package.json
+├── tsconfig.json
+├── .env.example
+└── .env                      # gitignore
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Auth
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| POST | `/api/auth/login` | Đăng nhập |
+| POST | `/api/auth/logout` | Đăng xuất |
+| GET | `/api/auth/session` | Lấy session hiện tại |
+| POST | `/api/auth/refresh` | Refresh token |
+
+### Classes
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/classes` | Danh sách lớp của GV |
+| GET | `/api/classes/:id` | Chi tiết lớp |
+| POST | `/api/classes` | Tạo lớp mới |
+| PUT | `/api/classes/:id` | Cập nhật lớp |
+| DELETE | `/api/classes/:id` | Xóa lớp |
+
+### Students
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/students/:id` | Chi tiết HS |
+| GET | `/api/students/:id/evidence` | Bằng chứng của HS |
+| GET | `/api/students/:id/diagnosis` | Chẩn đoán của HS |
+| PUT | `/api/students/:id/override` | Override kết luận (FR-17) |
+
+### Interventions
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/interventions` | Danh sách nhóm can thiệp |
+| GET | `/api/interventions/:id` | Chi tiết nhóm |
+| POST | `/api/interventions/:id/note` | Thêm ghi chú GV |
+| PUT | `/api/interventions/:id/status` | Cập nhật trạng thái |
+
+### Evidence
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/evidence/:id` | Chi tiết bằng chứng |
+| POST | `/api/evidence/:id/note` | Thêm ghi chú GV |
+| GET | `/api/evidence/:id/chain` | Chuỗi suy luận |
+
+### Reports
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/reports/aggregate` | Báo cáo tổng hợp ẩn danh |
+| GET | `/api/reports/export/:type` | Export PDF/CSV |
+
+### Admin
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/admin/users` | Danh sách người dùng |
+| POST | `/api/admin/users` | Tạo người dùng |
+| PUT | `/api/admin/users/:id` | Cập nhật người dùng |
+| DELETE | `/api/admin/users/:id` | Xóa người dùng |
+| GET | `/api/admin/devices` | Danh sách thiết bị |
+| GET | `/api/admin/sync-log` | Nhật ký sync |
+
+### Student / Learning
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/learn/dashboard` | Dashboard học sinh |
+| GET | `/api/learn/session` | Phiên làm bài hiện tại |
+| POST | `/api/learn/session/start` | Bắt đầu phiên mới |
+| PUT | `/api/learn/session/:id/answer` | Gửi đáp án |
+| PUT | `/api/learn/session/:id/pause` | Tạm dừng phiên |
+| POST | `/api/learn/session/:id/complete` | Hoàn thành phiên |
+| GET | `/api/learn/session/:id/result` | Kết quả sau phiên |
+| GET | `/api/learn/progress` | Tiến độ pKnown tổng hợp |
+| GET | `/api/learn/progress/:skillId` | Tiến độ kỹ năng cụ thể |
+| GET | `/api/learn/pathway` | Lộ trình học tập |
+| GET | `/api/learn/skills` | Danh sách kỹ năng |
+| GET | `/api/learn/skills/:id` | Chi tiết kỹ năng |
+| GET | `/api/learn/lessons/:skillId` | Bài học cho kỹ năng |
+| GET | `/api/learn/badges` | Danh sách badge đạt được |
+| GET | `/api/learn/tasks` | Nhiệm vụ GV đã giao |
+| GET | `/api/learn/history` | Lịch sử hoạt động |
+
+### Parent
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/parent/children` | Danh sách con |
+| GET | `/api/parent/child/:id/progress` | Tiến độ của con |
+| GET | `/api/parent/child/:id/skills` | Kỹ năng cần củng cố |
+| POST | `/api/parent/link` | Tạo link kết nối với con |
+| GET | `/api/parent/link/:code` | Xác nhận link qua QR |
+
+### Supervisor
+| Method | Endpoint | Mô tả |
+|--------|----------|--------|
+| GET | `/api/supervisor/overview` | Tổng quan cụm/trường |
+| GET | `/api/supervisor/reports` | Báo cáo ẩn danh |
+| GET | `/api/supervisor/reports/:scope` | Báo cáo theo phạm vi |
+| GET | `/api/supervisor/alerts` | Danh sách cảnh báo |
+
+---
+
+## 🗄️ Prisma Schema Guidelines
+
+```prisma
+// Quy tắc:
+// - snake_case cho tên bảng và cột
+// - PascalCase cho model names
+// - UUID cho primary keys
+// - createdAt/updatedAt tự động
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      UserRole
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  classes   Class[]
+  notes     TeacherNote[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  TEACHER
+  STUDENT
+  ADMIN
+  PARENT
+  SUPERVISOR
+}
+```
+
+### Migration Rules
+- Mỗi migration phải có tên mô tả
+- Không sửa migration đã apply
+- Dùng `prisma migrate dev` trong development
+- Dùng `prisma migrate deploy` trong production
+
+---
+
+## 🔐 Security Requirements
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Auth | JWT với refresh token |
+| Password | bcrypt với cost factor ≥ 12 |
+| Rate Limit | 100 req/min cho auth, 1000 req/min cho API |
+| CORS | whitelist domains trong env |
+| HTTPS | enforce trong production |
+| SQL Injection | Prisma parameterized queries |
+| XSS | sanitize input, set CSP headers |
+| CSRF | SameSite cookies + CSRF tokens |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Unit tests
+npm run test:unit
+
+# Integration tests
+npm run test:integration
+
+# E2E tests
+npm run test:e2e
+
+# Coverage
+npm run test:cov
+```
+
+### Coverage Requirements
+| Layer | Min Coverage |
+|-------|--------------|
+| Services | **80%** |
+| Controllers | **70%** |
+| Middleware | **90%** |
+| Repositories | **75%** |
+
+---
+
+## 📚 TÀI LIỆU LIÊN QUAN
+
+- [web-portal-architecture.md](../../docs/02-architecture/web-portal-architecture.md)
+- [Privacy Architecture](../../docs/02-architecture/privacy-architecture.md)
+- [ADR-0002 Sync Strategy](../../docs/02-architecture/adr/0002-sync-strategy.md)

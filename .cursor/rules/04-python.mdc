@@ -1,0 +1,86 @@
+---
+description: Python rules for VERVEAI research (model-eval, expert agreement, simulation, reproducibility)
+globs: ["research/**/*.py"]
+alwaysApply: false
+---
+
+# Python Rules (VERVEAI Research)
+
+Phạm vi: chỉ các file `.py` trong `research/`.
+`content-pipeline/` và `review-console/` là TypeScript — không thuộc rule này.
+
+## 📐 Naming (PEP 8)
+- Module/file: snake_case (`kappa_analysis.py`).
+- Class: PascalCase (`KappaResult`).
+- Function/variable: snake_case (`compute_cohens_kappa`).
+- Constant: UPPER_SNAKE_CASE (`SYNTHETIC_SAMPLE_SIZE`).
+
+## ✅ MUST
+- Type hints **EVERYWHERE** — kể cả hàm private và biến nội bộ.
+- `pydantic` cho mọi data validation (input từ CSV/JSON, schema đầu ra).
+- `pytest` + `pytest-asyncio` cho test.
+- `pytest-cov` cho coverage (≥ 80% cho `research/`).
+- Virtual environment: `python -m venv .venv`; dependencies khai báo trong `research/pyproject.toml`.
+- Logging (`logging` module) thay cho `print`.
+- Tài liệu đầu vào/ra cho từng script ngay đầu file (docstring).
+
+## ❌ NEVER
+- `print()` trong production — dùng `logging`.
+- Missing type hints.
+- Mutable default arguments (`def f(x=[]): ...`).
+- Bare `except:` — luôn chỉ rõ loại exception.
+- Wildcard imports (`from module import *`).
+- Commit dữ liệu PII thô — phải ẩn danh trước (DR-08).
+
+## 🧪 Test
+- `pytest` + `pytest-asyncio` — chạy file trong `research/tests/`.
+- `pytest-cov` — coverage ≥ 80% cho `src/research/` (theo `pyproject.toml`).
+- Mỗi script production phải có test (file `tests/test_*.py`).
+- Dữ liệu giả dùng cho test phải deterministic — KHÔNG dùng `random.seed(None)`.
+
+## 🧠 Research Scripts — vai trò theo BA v1.4
+
+### `expert_agreement/kappa_analysis.py`
+- Input: CSV với nhiều cột chấm của các GV chấm độc lập.
+- Output: JSON với Cohen's / Fleiss' kappa.
+- Mục đích: đo độ tin cậy giữa chấm GV — đầu vào cho Bài kiểm A.
+
+### `simulation/self_consistency_check.py`
+- Validate tham số BKT (`P_L0`, `P_T`, `P_G`, `P_S0`) với dữ liệu tổng hợp.
+- **Quan trọng**: TS-07 — BKT là tất định, phải validate trước production.
+
+### `reproducibility/export_for_independent_review.py`
+- Ẩn danh dữ liệu (BR-06, DR-08) trước khi đóng gói cho bên thứ ba xác minh.
+
+### ⭐ `model-eval/test_a_extraction_quality.py` — **Bài kiểm A (Bảng F.5)**
+- **Bài kiểm quyết định** — quyết định có đưa `inference/` ra khỏi [A] hay không.
+- Input: 30 bài làm thật, 3 GV chấm độc lập (`data/gold/gold_tN.csv`).
+- Đo: Fleiss' kappa (3 GV), Cohen's kappa (LLM vs GV), Macro F1, exact-match ratio.
+- Ngưỡng: Fleiss ≥ 0.70; Cohen TB ≥ 0.60; Macro F1 ≥ 0.65; exact ≥ 0.50.
+- Module con:
+  - `csv_loader.py` — schema validation (fail-fast).
+  - `metrics.py` — Cohen, Fleiss, majority-vote, macro F1, confusion matrix.
+  - `verdict.py` — so với `TestAConfig` ngưỡng → PASS/FAIL.
+- Test ở `research/tests/test_test_a_extraction_quality.py` (deterministic với dữ liệu giả).
+- CLI: `python -m research.model_eval test_a ...` hoặc `verveai-test-a` (sau `pip install -e .`).
+
+### ⭐ `model-eval/test_b_device_performance.py` — **Bài kiểm B (Bảng F.5)**
+- **Bài kiểm quyết định** — quyết định cỡ model (4B → 2B → 1B theo AS-61) đạt budget.
+- Đo trên thiết bị thật: latency p95, RAM đỉnh, dung lượng model, pin tụt.
+- Ngưỡng: latency p95 ≤ 2000 ms; RAM ≤ 1500 MB; disk ≤ 2500 MB; pin ≤ 5 %/30 lượt.
+- Module con:
+  - `csv_loader_b.py` — schema validation cho measurements.
+  - `device_probe.py` — aggregate per-size + percentile (pure function).
+  - `verdict_b.py` — chọn cỡ nhỏ nhất đạt budget (1B > 2B > 4B).
+- Test ở `research/tests/test_test_b_device_performance.py`.
+- CLI: `python -m research.model_eval test_b ...` hoặc `verveai-test-b`.
+
+## 📦 Content Pipeline (TypeScript — KHÔNG thuộc rule này)
+- `content-pipeline/src/authoring/generate_variants.ts`
+- `content-pipeline/src/auto-verify/check_answer_correctness.ts`
+- `content-pipeline/src/age-appropriateness/age_appropriateness_check.ts`  ⭐ NFR-23
+- `content-pipeline/src/review/review_queue.ts`
+- `content-pipeline/src/export/buildContentBundle.ts`
+- `content-pipeline/src/export/signBundle.ts`  ⭐ Ed25519
+
+Các file TS này có rule riêng (xem `02-frontend.mdc` phần TypeScript hoặc rule tương ứng).

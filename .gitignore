@@ -1,0 +1,90 @@
+# === Flutter / Dart ===
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugin-builders/
+pubspec.lock
+*.iml
+.idea/
+.vscode/
+
+# Android
+app/android/.gradle/
+app/android/.idea/
+app/android/local.properties
+app/android/key.properties
+app/android/app/release/
+app/android/captures/
+app/android/.cxx/
+
+# iOS (không dùng nhưng sinh ra khi `flutter create`)
+app/ios/
+app/macos/
+app/linux/
+app/web/
+
+# Windows (chỉ giữ build output trong app/build/)
+app/build/
+app/windows/runner/CMakeUserPresets.json
+
+# Các file model/bundle lớn — không commit
+*.gguf
+*.nekopath-bundle.zip
+*.nekopath-content.zip
+*.nekopath-evidence.zip
+*.nekopath-evidence.json
+
+# === Dependencies chung ===
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+out/
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+flutter.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# USB/Offline bundles
+app/lib/content/v1/*.json
+
+# Docker
+infra/data/
+infra/logs/
+
+# Research outputs
+research/**/outputs/
+research/**/reports/

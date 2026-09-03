@@ -1,0 +1,7 @@
+packages:
+  - 'content-pipeline'
+  - 'review-console'
+  # `app/` là Flutter (pubspec.yaml), không phải pnpm package.
+  # `research/` là Python (pyproject.toml), không phải pnpm package.
+allowBuilds:
+  esbuild: true

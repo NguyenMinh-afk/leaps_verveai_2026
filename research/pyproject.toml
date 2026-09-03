@@ -1,0 +1,60 @@
+[project]
+name = "nekopath-research"
+version = "1.4.0"
+description = "NEKOPATH Research Scripts (BA v1.4)"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.2.0",
+    "pandas>=2.2.3",
+    "pydantic>=2.10.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.scripts]
+nekopath-test-a = "research.model_eval.test_a_extraction_quality:main"
+nekopath-test-b = "research.model_eval.test_b_device_performance:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"research" = ["**/*.md", "**/*.csv", "**/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["src", "tests"]
+pythonpath = ["src"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+]
+markers = [
+    "integration: chạy cần thiết bị thật / dữ liệu lớn",
+    "slow: chạy > 5s",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+fail_under = 80

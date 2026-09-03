@@ -1,0 +1,47 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    invalid_annotation_target: ignore
+  exclude:
+    - "**/*.gbnf"
+    - "**/*.grmr"
+    - build/**
+    - .dart_tool/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    # Phong cách Dart chuẩn
+    prefer_single_quotes: true
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_literals_to_create_immutables: true
+    require_trailing_commas: true
+    sort_child_properties_last: true
+
+    # An toàn null
+    avoid_returning_null_for_void: true
+    avoid_null_checks_in_equality_operators: true
+
+    # Không dùng `dynamic`
+    avoid_dynamic_calls: true
+
+    # Không print (rule 02-frontend.mdc)
+    avoid_print: true
+
+    # Async
+    avoid_void_async: true
+    unawaited_futures: true
+
+    # Quy ước dự án
+    public_member_api_docs: false

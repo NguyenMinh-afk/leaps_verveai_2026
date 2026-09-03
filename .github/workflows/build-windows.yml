@@ -1,0 +1,34 @@
+name: Build — Windows EXE
+
+on:
+  push:
+    branches: [develop]
+    paths: ['app/**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows EXE (Release)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: nekopath-windows-exe
+          path: app/build/windows/runner/Release/
+          retention-days: 7
