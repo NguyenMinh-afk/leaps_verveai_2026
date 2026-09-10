@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth"]
+}
+
+model user {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  role         user_role
+  name         String
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  sessions        session[]
+  teacher_classes teacher_class[]
+  notes           teacher_note[]
+
+  @@map("users")
+  @@schema("auth")
+}
+
+enum user_role {
+  TEACHER
+  ADMIN
+  SUPERVISOR
+  
+  @@map("user_role")
+  @@schema("auth")
+}
+
+model session {
+  id            String    @id @default(uuid())
+  user_id       String
+  token         String    @unique
+  refresh_token String?   @unique
+  expires_at    DateTime
+  created_at    DateTime  @default(now())
+  revoked_at    DateTime?
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+  @@schema("auth")
+}
+
+model refresh_token {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  user_id   String
+  expires_at DateTime
+  created_at DateTime @default(now())
+  revoked_at DateTime?
+
+  @@map("refresh_tokens")
+  @@schema("auth")
+}
+
+model teacher_class {
+  id         String   @id @default(uuid())
+  teacher_id String
+  class_id   String
+  created_at DateTime @default(now())
+
+  teacher user @relation(fields: [teacher_id], references: [id])
+
+  @@unique([teacher_id, class_id])
+  @@map("teacher_classes")
+  @@schema("auth")
+}
+
+model teacher_note {
+  id         String   @id @default(uuid())
+  teacher_id String
+  student_id String?
+  content    String
+  type       note_type
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  teacher user @relation(fields: [teacher_id], references: [id])
+
+  @@map("teacher_notes")
+  @@schema("auth")
+}
+
+enum note_type {
+  GENERAL
+  INTERVENTION
+  PROGRESS
+  WARNING
+  
+  @@map("note_type")
+  @@schema("auth")
+}
