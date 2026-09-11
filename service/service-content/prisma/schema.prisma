@@ -1,0 +1,106 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["content"]
+}
+
+model content_item {
+  id         String         @id @default(uuid())
+  type       content_type
+  title      String
+  body       String
+  difficulty Int           @default(1)
+  status     content_status @default(DRAFT)
+  author_id  String
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+  deleted_at DateTime?
+  reviews    review[]
+
+  @@schema("content")
+  @@map("content_items")
+}
+
+enum content_type {
+  ITEM_QUESTION
+  ITEM_EXPLANATION
+  ITEM_MEDIA
+
+  @@schema("content")
+  @@map("content_type")
+}
+
+enum content_status {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+
+  @@schema("content")
+  @@map("content_status")
+}
+
+model bundle {
+  id           String         @id @default(uuid())
+  name         String
+  version      String         @default("1.0.0")
+  status       bundle_status  @default(BUILDING)
+  content_ids  String[]       @default([])
+  created_at   DateTime      @default(now())
+  published_at DateTime?
+  signatures   bundle_signature[]
+
+  @@schema("content")
+  @@map("bundles")
+}
+
+enum bundle_status {
+  BUILDING
+  BUILT
+  SIGNED
+  PUBLISHED
+
+  @@schema("content")
+  @@map("bundle_status")
+}
+
+model bundle_signature {
+  id                     String   @id @default(uuid())
+  bundle_id             String
+  public_key_fingerprint String
+  signature             String
+  signed_at             DateTime @default(now())
+  bundle                bundle   @relation(fields: [bundle_id], references: [id])
+
+  @@schema("content")
+  @@map("bundle_signatures")
+}
+
+model review {
+  id          String       @id @default(uuid())
+  content_id  String
+  reviewer_id String
+  status      review_status @default(PENDING)
+  comment     String?
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  content     content_item @relation(fields: [content_id], references: [id])
+
+  @@schema("content")
+  @@map("reviews")
+}
+
+enum review_status {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@schema("content")
+  @@map("review_status")
+}

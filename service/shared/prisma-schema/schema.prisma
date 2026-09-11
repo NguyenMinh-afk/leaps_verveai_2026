@@ -1,0 +1,625 @@
+// =============================================================================
+// VERVEAI — Canonical Multi-Schema Prisma Definition
+// =============================================================================
+//
+// One PostgreSQL database, five logical schemas:
+//
+//   * auth     → owned by `service-auth`     (port 3001)
+//   * bkt      → owned by `service-bkt`      (port 3002)
+//   * class    → owned by `service-class`    (port 3003)
+//   * content  → owned by `service-content`  (port 3004)
+//   * sync     → owned by `service-sync`     (port 3005)
+//
+// Migrations are generated and applied from the centralized
+// `database/migrations/` directory. Each microservice exposes its own Prisma
+// client filtered to its schema via `prisma schema.prisma` (which copies in the
+// relevant subset of models from this canonical file).
+//
+// Conventions:
+//   * PascalCase model names, snake_case table names (via @@map)
+//   * UUID primary keys
+//   * created_at / updated_at on every model
+//   * All foreign keys use `onDelete: Restrict` unless cascade is correct for the
+//     domain (e.g. sessions → users cascade on user delete)
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth", "bkt", "class", "content", "sync"]
+}
+
+// =============================================================================
+// AUTH schema — service-auth (port 3001)
+// =============================================================================
+
+model user {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  role       user_role
+  name       String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  sessions        session[]
+  teacher_classes teacher_class[]
+  notes           teacher_note[]
+  refresh_tokens  refresh_token[]
+
+  @@index([role])
+  @@schema("auth")
+  @@map("users")
+}
+
+enum user_role {
+  TEACHER
+  ADMIN
+  SUPERVISOR
+
+  @@schema("auth")
+  @@map("user_role")
+}
+
+model session {
+  id            String    @id @default(uuid())
+  user_id       String
+  token         String    @unique
+  refresh_token String?   @unique
+  expires_at    DateTime
+  created_at    DateTime  @default(now())
+  revoked_at    DateTime?
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@schema("auth")
+  @@map("sessions")
+}
+
+model refresh_token {
+  id         String   @id @default(uuid())
+  user_id    String
+  token_hash String   @unique
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime @default(now())
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@schema("auth")
+  @@map("refresh_tokens")
+}
+
+model teacher_class {
+  teacher_id String
+  class_id   String
+  role       teacher_class_role @default(PRIMARY)
+  assigned_at DateTime @default(now())
+
+  teacher user @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+
+  @@id([teacher_id, class_id])
+  @@index([class_id])
+  @@schema("auth")
+  @@map("teacher_classes")
+}
+
+enum teacher_class_role {
+  PRIMARY
+  CO_TEACHER
+  ASSISTANT
+
+  @@schema("auth")
+  @@map("teacher_class_role")
+}
+
+model teacher_note {
+  id         String   @id @default(uuid())
+  teacher_id String
+  student_id String?
+  content    String
+  type       note_type
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  teacher user @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+
+  @@index([teacher_id])
+  @@index([student_id])
+  @@index([type])
+  @@schema("auth")
+  @@map("teacher_notes")
+}
+
+enum note_type {
+  GENERAL
+  INTERVENTION
+  PROGRESS
+  WARNING
+
+  @@schema("auth")
+  @@map("note_type")
+}
+
+// =============================================================================
+// BKT schema — service-bkt (port 3002)
+// =============================================================================
+
+model skill {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  name            String
+  difficulty      Int      @default(1)
+  description     String?
+  prereq_skills   Json     @default("[]")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  diagnoses       diagnosis[]
+  interventions   intervention[]
+  progress_records progress[]
+
+  @@index([code])
+  @@index([difficulty])
+  @@schema("bkt")
+  @@map("skills")
+}
+
+model diagnosis {
+  id          String   @id @default(uuid())
+  student_id  String
+  skill_id    String
+  p_known     Float
+  confidence  Float    @default(0.0)
+  status      diagnosis_status @default(IN_PROGRESS)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  skill    skill      @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+  evidence evidence[]
+
+  @@unique([student_id, skill_id])
+  @@index([student_id])
+  @@index([skill_id])
+  @@index([status])
+  @@schema("bkt")
+  @@map("diagnoses")
+}
+
+enum diagnosis_status {
+  IN_PROGRESS
+  CONFIRMED
+  NEEDS_REVIEW
+  RESOLVED
+
+  @@schema("bkt")
+  @@map("diagnosis_status")
+}
+
+model evidence {
+  id              String   @id @default(uuid())
+  diagnosis_id    String
+  item_id         String
+  extracted_answer String
+  correct         Boolean
+  confidence      Float    @default(0.0)
+  quality         evidence_quality @default(OK)
+  created_at      DateTime @default(now())
+
+  diagnosis diagnosis @relation(fields: [diagnosis_id], references: [id], onDelete: Cascade)
+
+  @@index([diagnosis_id])
+  @@index([item_id])
+  @@index([created_at])
+  @@schema("bkt")
+  @@map("evidence")
+}
+
+enum evidence_quality {
+  OK
+  AMBIGUOUS
+  LOW_CONFIDENCE
+  INVALID
+
+  @@schema("bkt")
+  @@map("evidence_quality")
+}
+
+model intervention {
+  id           String   @id @default(uuid())
+  student_id   String
+  skill_id     String
+  priority     intervention_priority @default(MEDIUM)
+  status       intervention_status   @default(OPEN)
+  teacher_id   String?
+  created_at   DateTime @default(now())
+  resolved_at  DateTime?
+  notes        String?
+
+  skill skill               @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+  notes_log intervention_note[]
+
+  @@index([student_id])
+  @@index([skill_id])
+  @@index([status])
+  @@index([priority])
+  @@index([teacher_id])
+  @@schema("bkt")
+  @@map("interventions")
+}
+
+enum intervention_priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@schema("bkt")
+  @@map("intervention_priority")
+}
+
+enum intervention_status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+
+  @@schema("bkt")
+  @@map("intervention_status")
+}
+
+model intervention_note {
+  id              String   @id @default(uuid())
+  intervention_id String
+  teacher_id      String
+  content         String
+  created_at      DateTime @default(now())
+
+  intervention intervention @relation(fields: [intervention_id], references: [id], onDelete: Cascade)
+
+  @@index([intervention_id])
+  @@index([teacher_id])
+  @@schema("bkt")
+  @@map("intervention_notes")
+}
+
+// =============================================================================
+// CLASS schema — service-class (port 3003)
+// =============================================================================
+
+model class {
+  id         String   @id @default(uuid())
+  name       String
+  teacher_id String
+  subject    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  enrollments enrollment[]
+
+  @@index([teacher_id])
+  @@schema("class")
+  @@map("classes")
+}
+
+model student {
+  id         String   @id @default(uuid())
+  name       String
+  email      String?  @unique
+  external_id String? @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  enrollments  enrollment[]
+  progress     progress[]
+
+  @@schema("class")
+  @@map("students")
+}
+
+model enrollment {
+  id          String    @id @default(uuid())
+  class_id    String
+  student_id  String
+  enrolled_at DateTime  @default(now())
+  dropped_at  DateTime?
+
+  class_  class_   @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  student student  @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([class_id, student_id])
+  @@index([class_id])
+  @@index([student_id])
+  @@schema("class")
+  @@map("enrollments")
+}
+
+model progress {
+  id             String   @id @default(uuid())
+  student_id     String
+  skill_id       String
+  p_known        Float    @default(0.0)
+  last_pknown    Float    @default(0.0)
+  attempt_count  Int      @default(0)
+  updated_at     DateTime @updatedAt
+
+  student student @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  skill   skill   @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+
+  @@unique([student_id, skill_id])
+  @@index([student_id])
+  @@index([skill_id])
+  @@schema("class")
+  @@map("progress")
+}
+
+// =============================================================================
+// CONTENT schema — service-content (port 3004)
+// =============================================================================
+
+model content_item {
+  id          String   @id @default(uuid())
+  type        content_type
+  title       String
+  body        String
+  difficulty  Int      @default(1)
+  status      content_status @default(DRAFT)
+  author_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  bundle_items  bundle_item[]
+  reviews       review[]
+
+  @@index([type])
+  @@index([status])
+  @@index([author_id])
+  @@schema("content")
+  @@map("content_items")
+}
+
+enum content_type {
+  QUESTION
+  EXPLANATION
+  EXAMPLE
+  EXERCISE
+
+  @@schema("content")
+  @@map("content_type")
+}
+
+enum content_status {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+
+  @@schema("content")
+  @@map("content_status")
+}
+
+model bundle {
+  id            String   @id @default(uuid())
+  name          String
+  version       String   @default("1.0.0")
+  status        bundle_status @default(DRAFT)
+  created_at    DateTime @default(now())
+  published_at  DateTime?
+
+  items       bundle_item[]
+  signatures  bundle_signature[]
+
+  @@index([status])
+  @@schema("content")
+  @@map("bundles")
+}
+
+enum bundle_status {
+  DRAFT
+  SIGNED
+  PUBLISHED
+  DEPRECATED
+
+  @@schema("content")
+  @@map("bundle_status")
+}
+
+model bundle_item {
+  bundle_id    String
+  content_id   String
+  position     Int
+  added_at     DateTime @default(now())
+
+  bundle  bundle       @relation(fields: [bundle_id], references: [id], onDelete: Cascade)
+  content content_item @relation(fields: [content_id], references: [id], onDelete: Restrict)
+
+  @@id([bundle_id, content_id])
+  @@index([content_id])
+  @@schema("content")
+  @@map("bundle_items")
+}
+
+model bundle_signature {
+  id                     String   @id @default(uuid())
+  bundle_id              String
+  public_key_fingerprint String
+  signature              String
+  signed_at              DateTime @default(now())
+
+  bundle bundle @relation(fields: [bundle_id], references: [id], onDelete: Cascade)
+
+  @@index([bundle_id])
+  @@schema("content")
+  @@map("bundle_signatures")
+}
+
+model review {
+  id          String   @id @default(uuid())
+  content_id  String
+  reviewer_id String
+  status      review_status @default(PENDING)
+  comment     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  content content_item @relation(fields: [content_id], references: [id], onDelete: Cascade)
+
+  @@index([content_id])
+  @@index([reviewer_id])
+  @@index([status])
+  @@schema("content")
+  @@map("reviews")
+}
+
+enum review_status {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_CHANGES
+
+  @@schema("content")
+  @@map("review_status")
+}
+
+// =============================================================================
+// SYNC schema — service-sync (port 3005)
+// =============================================================================
+
+model device {
+  id            String   @id @default(uuid())
+  type          device_type
+  name          String
+  platform      String?
+  last_seen_at  DateTime?
+  created_at    DateTime @default(now())
+
+  outgoing_logs       sync_log[]         @relation("DeviceOutgoing")
+  incoming_logs       sync_log[]         @relation("DeviceIncoming")
+  conflicts           sync_conflict[]
+  transfers_from      student_transfer[] @relation("TransferFrom")
+  transfers_to        student_transfer[] @relation("TransferTo")
+
+  @@index([type])
+  @@schema("sync")
+  @@map("devices")
+}
+
+enum device_type {
+  HUB
+  STUDENT_TABLET
+  TEACHER_TABLET
+  ADMIN_CONSOLE
+
+  @@schema("sync")
+  @@map("device_type")
+}
+
+model sync_log {
+  id            String   @id @default(uuid())
+  device_id     String
+  direction     sync_direction
+  status        sync_status
+  record_count  Int      @default(0)
+  started_at    DateTime @default(now())
+  finished_at   DateTime?
+  error_message String?
+
+  device device @relation("DeviceOutgoing", fields: [device_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id])
+  @@index([started_at])
+  @@index([status])
+  @@schema("sync")
+  @@map("sync_logs")
+}
+
+enum sync_direction {
+  PUSH
+  PULL
+
+  @@schema("sync")
+  @@map("sync_direction")
+}
+
+enum sync_status {
+  STARTED
+  SUCCESS
+  PARTIAL
+  FAILED
+
+  @@schema("sync")
+  @@map("sync_status")
+}
+
+model sync_conflict {
+  id              String   @id @default(uuid())
+  device_id       String
+  entity_type     String
+  entity_id       String
+  server_version  Json
+  client_version  Json
+  resolution      conflict_resolution @default(PENDING)
+  resolved_at     DateTime?
+  created_at      DateTime @default(now())
+
+  device device @relation(fields: [device_id], references: [id], onDelete: Cascade)
+
+  @@index([device_id])
+  @@index([entity_type, entity_id])
+  @@index([resolution])
+  @@schema("sync")
+  @@map("sync_conflicts")
+}
+
+enum conflict_resolution {
+  PENDING
+  SERVER_WON
+  CLIENT_WON
+  MERGED
+  MANUAL
+
+  @@schema("sync")
+  @@map("conflict_resolution")
+}
+
+model student_transfer {
+  id                String   @id @default(uuid())
+  student_id        String
+  from_device_id    String
+  to_device_id      String
+  status            transfer_status @default(PENDING)
+  transferred_at    DateTime?
+  created_at        DateTime @default(now())
+
+  from_device device @relation("TransferFrom", fields: [from_device_id], references: [id], onDelete: Cascade)
+  to_device   device @relation("TransferTo",   fields: [to_device_id],   references: [id], onDelete: Cascade)
+
+  @@index([student_id])
+  @@index([from_device_id])
+  @@index([to_device_id])
+  @@index([status])
+  @@schema("sync")
+  @@map("student_transfers")
+}
+
+enum transfer_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+
+  @@schema("sync")
+  @@map("transfer_status")
+}

@@ -1,0 +1,45 @@
+http:
+  port: 8080
+
+apiEndpoints:
+  auth:
+    paths:
+      - /api/auth/*
+  bkt:
+    paths:
+      - /api/bkt/*
+  class:
+    paths:
+      - /api/class/*
+  content:
+    paths:
+      - /api/content/*
+  sync:
+    paths:
+      - /api/sync/*
+
+serviceEndpoints:
+  svcAuth:
+    url: http://svc-auth:3001
+  svcBkt:
+    url: http://svc-bkt:3002
+  svcClass:
+    url: http://svc-class:3003
+  svcContent:
+    url: http://svc-content:3004
+  svcSync:
+    url: http://svc-sync:3005
+
+pipelines:
+  default:
+    apiEndpoints:
+      - auth
+      - bkt
+      - class
+      - content
+      - sync
+    policies:
+      - cors
+      - rate-limit
+      - jwt
+      - proxy

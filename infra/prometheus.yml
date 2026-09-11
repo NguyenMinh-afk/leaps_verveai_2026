@@ -1,0 +1,51 @@
+# Prometheus Configuration for LEAPS Microservices
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Gateway metrics
+  - job_name: 'gateway'
+    static_configs:
+      - targets: ['gateway:8080']
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway'
+
+  # Service metrics
+  - job_name: 'svc-auth'
+    static_configs:
+      - targets: ['svc-auth:3001']
+    metrics_path: '/metrics'
+
+  - job_name: 'svc-bkt'
+    static_configs:
+      - targets: ['svc-bkt:3002']
+    metrics_path: '/metrics'
+
+  - job_name: 'svc-class'
+    static_configs:
+      - targets: ['svc-class:3003']
+    metrics_path: '/metrics'
+
+  - job_name: 'svc-content'
+    static_configs:
+      - targets: ['svc-content:3004']
+    metrics_path: '/metrics'
+
+  - job_name: 'svc-sync'
+    static_configs:
+      - targets: ['svc-sync:3005']
+    metrics_path: '/metrics'
+
+  # Infrastructure
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']

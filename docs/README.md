@@ -4,7 +4,7 @@ Tài liệu dự án **LEAPS** — *Local Educational Adaptive Personalization S
 
 > **Tên mã nguồn:** VerveAI · **App:** Verve
 > **Phiên bản BA:** v1.4.5
-> **Ngày cập nhật:** 05/09/2026
+> **Ngày cập nhật:** 10/09/2026
 
 ---
 
@@ -12,8 +12,9 @@ Tài liệu dự án **LEAPS** — *Local Educational Adaptive Personalization S
 
 | Ưu tiên | Module | Mô tả |
 |---------|--------|-------|
-| **CAO NHẤT** | `web-portal/` | Next.js web portal cho giáo viên (dashboard, quản lý lớp) |
-| Pilot | `app/` | Flutter app — phát triển sau khi web-portal hoàn thành |
+| **CAO NHẤT** | `web-portal/` | Next.js web portal cho giáo viên (dashboard, quản lý lớp) — FE dev khác phụ trách |
+| **CAO** | `service/` ⭐ | Node.js Microservices — 5 service + Gateway + Consul |
+| Pilot | `app/` | Flutter app — Flutter dev khác phụ trách |
 
 ---
 
@@ -21,24 +22,37 @@ Tài liệu dự án **LEAPS** — *Local Educational Adaptive Personalization S
 
 | Thư mục | Nội dung |
 |---------|----------|
-| [01-business](./01-business/) | BA Document, Project Structure, Project Management Plan, Stakeholders |
-| [02-architecture](./02-architecture/) | ADRs, system overview, sync strategy, AI 3 lớp |
-| [03-development](./03-development/) | Coding standards (Dart/TS/Python), Git workflow, testing, troubleshooting |
+| [01-business](./01-business/) | BA Document, Project Structure, Project Management Plan, Stakeholders, **PROJECT_RULES** |
+| [02-architecture](./02-architecture/) | ADRs (0001-0006), system overview, sync strategy, AI 3 lớp, **microservice**, **service-discovery**, **api-gateway**, web-portal architecture |
+| [03-development](./03-development/) | Coding standards (Dart/TS/Python), Git workflow, testing, troubleshooting, **KẾ HOẠCH SỬA Backend** ⭐ |
 | [04-operations](./04-operations/) | Build & deploy qua USB, integrity check, post-mortems, runbook |
 | [05-research](./05-research/) | Bài kiểm A & B (Bảng F.5), kappa analysis, BKT validation |
 | [06-user](./06-user/) | Hướng dẫn giáo viên, học sinh, admin; FAQ |
 
 ---
 
-## Bắt đầu từ đâu?
+## 🚀 Bắt đầu từ đâu?
 
 | Vai trò | Đọc theo thứ tự |
 |---------|-----------------|
-| **Developer mới** | [01-business/PROJECT_STRUCTURE.md](./01-business/PROJECT_STRUCTURE.md) → [02-architecture/](./02-architecture/) → [03-development/](./03-development/) |
+| **Developer mới** | [01-business/PROJECT_STRUCTURE.md](./01-business/PROJECT_STRUCTURE.md) → [03-development/BACKEND_IMPLEMENTATION_ROADMAP.md](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md) ⭐ (nếu BE) → [02-architecture/](./02-architecture/) → [03-development/](./03-development/) |
 | **Architect / Tech Lead** | [VerveAI_BA_Document_v1.4.md](../VerveAI_BA_Document_v1.4.md) → [02-architecture/adr/](./02-architecture/adr/) |
-| **DevOps / Triển khai** | [04-operations/](./04-operations/) |
+| **Microservice Dev (Dev 1/2/3)** | [service/WORK_SPLIT.md](../service/WORK_SPLIT.md) → [03-development/BACKEND_IMPLEMENTATION_ROADMAP.md](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md) ⭐ → [02-architecture/adr/0004-microservices-architecture.md](./02-architecture/adr/0004-microservices-architecture.md) |
+| **Web Dev** | [02-architecture/web-portal-architecture.md](./02-architecture/web-portal-architecture.md) — **FE có kế hoạch riêng do FE dev phụ trách** |
+| **Flutter Dev** | [02-architecture/adr/0003-local-ai-architecture.md](./02-architecture/adr/0003-local-ai-architecture.md) — **Flutter có kế hoạch riêng do Flutter dev phụ trách** |
+| **DevOps / Triển khai** | [04-operations/](./04-operations/) + [infra/](../infra/) |
 | **Researcher / GV chấm pilot** | [05-research/](./05-research/) |
-| **PM / PO** | [01-business/PROJECT_MANAGEMENT_PLAN.md](./01-business/PROJECT_MANAGEMENT_PLAN.md) |
+| **PM / PO** | [01-business/PROJECT_MANAGEMENT_PLAN.md](./01-business/PROJECT_MANAGEMENT_PLAN.md) → [03-development/BACKEND_IMPLEMENTATION_ROADMAP.md](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md) ⭐ (cho BE) |
+
+---
+
+## ⭐ Tài liệu quan trọng nhất (TOP 5)
+
+1. **[`03-development/BACKEND_IMPLEMENTATION_ROADMAP.md`](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md)** ⭐ **KẾ HOẠCH SỬA (Backend + Hạ tầng)** — Roadmap chi tiết từng sprint, từng task, owner rõ ràng (CHỈ cho BE)
+2. [`service/WORK_SPLIT.md`](../service/WORK_SPLIT.md) ⭐ Phân chia 5 microservice (canonical)
+3. [`VerveAI_BA_Document_v1.4.md`](../VerveAI_BA_Document_v1.4.md) — BA v1.4.5
+4. [`.cursor/rules/00-project-overview.mdc`](../.cursor/rules/00-project-overview.mdc) — Project overview + 11 Golden Rules
+5. [`01-business/PROJECT_STRUCTURE.md`](./01-business/PROJECT_STRUCTURE.md) — Cấu trúc thư mục
 
 ---
 
@@ -49,7 +63,24 @@ Mọi contributor **PHẢI** đọc trước khi code:
 1. [`VerveAI_BA_Document_v1.4.md`](../VerveAI_BA_Document_v1.4.md) — BA v1.4.5.
 2. [`.cursor/rules/00-project-overview.mdc`](../.cursor/rules/00-project-overview.mdc) — Project overview + Golden Rules.
 3. [`01-business/PROJECT_STRUCTURE.md`](./01-business/PROJECT_STRUCTURE.md) — Cấu trúc thư mục.
-4. [`02-architecture/adr/0001-tech-stack-selection.md`](./02-architecture/adr/0001-tech-stack-selection.md) — Tech stack.
+4. [`01-business/PROJECT_RULES.md`](./01-business/PROJECT_RULES.md) — Quy tắc bắt buộc.
+5. **`[`03-development/BACKEND_IMPLEMENTATION_ROADMAP.md`](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md)`** ⭐ — Kế hoạch sửa (BE + Hạ tầng + Research). **CHỈ dành cho Backend dev**.
+6. [`02-architecture/adr/0001-tech-stack-selection.md`](./02-architecture/adr/0001-tech-stack-selection.md) — Tech stack.
+
+---
+
+## Tài liệu Microservice ⭐ MỚI
+
+| Mã | Tài liệu |
+|----|---------|
+| **Kế hoạch sửa BE** | [`03-development/BACKEND_IMPLEMENTATION_ROADMAP.md`](./03-development/BACKEND_IMPLEMENTATION_ROADMAP.md) ⭐ |
+| **Microservice backend** | [`service/WORK_SPLIT.md`](../service/WORK_SPLIT.md) ⭐ Canonical |
+| **Microservice overview** | [`service/README.md`](../service/README.md) |
+| **Architecture decision** | [`02-architecture/adr/0004-microservices-architecture.md`](./02-architecture/adr/0004-microservices-architecture.md) |
+| **Service Discovery (Consul)** | [`02-architecture/adr/0005-service-discovery.md`](./02-architecture/adr/0005-service-discovery.md) |
+| **API Gateway** | [`02-architecture/adr/0006-api-gateway.md`](./02-architecture/adr/0006-api-gateway.md) |
+| **Docker compose** | [`infra/docker-compose.yml`](../infra/docker-compose.yml) |
+| **Prometheus config** | [`infra/prometheus.yml`](../infra/prometheus.yml) |
 
 ---
 

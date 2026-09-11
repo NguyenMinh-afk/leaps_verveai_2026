@@ -1,16 +1,17 @@
 ---
-description: Frontend rules for VERVEAI (Next.js/TypeScript — web-portal)
+description: Frontend rules for VERVEAI (Next.js/TypeScript — web-portal) — BA v1.4.5
 globs: ["web-portal/**/*.{ts,tsx,js,jsx}"]
 alwaysApply: false
 ---
 
 # Frontend Rules (VERVEAI — Next.js/TypeScript)
 
-> **Xem thêm:** [`02-backend.mdc`](./02-backend.mdc) cho backend Node.js/Express
+> **Xem thêm:** [`02-backend.mdc`](./02-backend.mdc) cho backend microservice (Node.js/Express/Consul)
+> **Xem thêm:** [WEB-PORTAL Architecture](../../docs/02-architecture/web-portal-architecture.md)
 
 ## Ưu tiên
 - **`web-portal/`** (Next.js/TypeScript) — ƯU TIÊN CAO NHẤT
-- **`backend/`** (Node.js) — Xem [02-backend.mdc](./02-backend.mdc)
+- **`service/`** (Node.js Microservices) — Xem [02-backend.mdc](./02-backend.mdc) + [WORK_SPLIT](../../service/WORK_SPLIT.md)
 
 ---
 
@@ -25,7 +26,7 @@ Phạm vi: mọi file `.ts`/`.tsx` trong `web-portal/`.
 | File component | PascalCase | `DashboardPage.tsx`, `TeacherPanel.tsx` |
 | File utility | camelCase | `apiClient.ts`, `formatDate.ts` |
 | Variable / function | camelCase | `getDashboard`, `isLoading` |
-| Constant | UPPER_SNAKE_CASE | `API_BASE_URL` |
+| Constant | UPPER_SNAKE_CASE | `API_BASE_URL`, `GATEWAY_URL` |
 | Boolean | prefix `is/has/should/can` | `isLoading`, `hasPermission` |
 
 ## ✅ MUST
@@ -35,21 +36,47 @@ Phạm vi: mọi file `.ts`/`.tsx` trong `web-portal/`.
 - ESLint + Prettier (`.prettierrc`)
 - `zod` cho schema validation
 - API client với error handling
+- **API calls chỉ qua Gateway** (`http://gateway:8080/api/...`) — KHÔNG gọi trực tiếp service
 
 ## ❌ NEVER
 - `any` type — dùng `unknown` + type guards
 - `console.log` trong production
 - Hardcoded secrets — dùng env variables
 - `var` — dùng `const` / `let`
+- Hardcode URL service trong API client — chỉ dùng Gateway URL
 
 ## 📁 Structure
 ```
 web-portal/src/
 ├── app/              # App Router
 ├── components/       # React components
-├── lib/             # Utilities
+├── lib/
+│   ├── api/          # ⭐ API client → Gateway (port 8080)
+│   ├── utils/
+│   └── hooks/
 ├── styles/
 └── middleware.ts
+```
+
+### API Client Example ⭐
+
+```typescript
+// web-portal/src/lib/api/apiClient.ts
+
+// ✅ ĐÚNG: Chỉ dùng Gateway URL
+const GATEWAY_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:8080';
+
+export async function fetchInterventions(token: string) {
+  const response = await fetch(`${GATEWAY_URL}/api/bkt/interventions`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.json();
+}
+
+// ❌ SAI: Không gọi trực tiếp service
+const response = await fetch('http://localhost:3002/api/bkt/interventions');
 ```
 
 ---

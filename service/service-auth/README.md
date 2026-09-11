@@ -1,207 +1,232 @@
-# service-auth
+# Service Auth - Authentication & User Management
 
-Authentication Service cho VERVEAI — quản lý Login, JWT, và Users.
+> **Owner:** Dev 1  
+> **Port:** 3001  
+> **Status:** 🟡 In Development (Coverage: 26% - needs improvement)
 
-## 🎯 Mục đích
+## 📋 Overview
 
-Service này chịu trách nhiệm:
-- ✅ **VP-221**: Login + JWT issue
-- ✅ **VP-222**: Logout + token invalidation
-- ✅ **VP-223**: Session check
-- ✅ **VP-224**: Get current user (từ Gateway headers)
-- ✅ **VP-225**: User CRUD (GET/POST/PUT/DELETE `/api/users/*`)
-- ✅ **VP-226**: Password hash với bcrypt (cost factor ≥ 12)
-- ✅ **VP-227**: Refresh token rotation
-- ✅ **VP-228**: Seed admin/teacher/student users
+Service authentication cung cấp JWT-based authentication và user management cho hệ thống VERVEAI.
+
+**Endpoints:**
+- `POST /api/auth/login` - VP-221
+- `POST /api/auth/logout` - VP-222
+- `GET /api/auth/session` - VP-223
+- `GET /api/auth/me` - VP-224
+- `POST /api/auth/register` - VP-226
+- `POST /api/auth/refresh` - VP-227
+- `GET /api/users` - VP-225 (Admin)
+- `POST /api/users` - VP-225 (Admin)
+- `GET /api/users/:id` - VP-225
+- `PUT /api/users/:id` - VP-225
+- `DELETE /api/users/:id` - VP-225 (Admin)
 
 ## 🚀 Quick Start
 
+### Option 1: Automatic Setup (Recommended)
+
 ```bash
-# Install dependencies (từ root workspace)
-pnpm install
+# Run setup script - tự động setup tất cả
+./setup.sh
+```
+
+Script sẽ:
+- ✅ Check prerequisites (Node.js, PostgreSQL)
+- ✅ Create .env file
+- ✅ Install dependencies
+- ✅ Setup database & schema
+- ✅ Run migrations
+- ✅ Start service
+
+### Option 2: Manual Setup
+
+Xem chi tiết tại [QUICKSTART.md](./QUICKSTART.md)
+
+**Prerequisites:**
+- Node.js ≥ 20
+- PostgreSQL ≥ 15
+- Consul (optional for local dev)
+
+```bash
+# Install dependencies
+npm install
+
+# Setup environment
+cp .env.example .env
+# Edit .env với database credentials
+
+# Run migrations
+npx prisma migrate dev
 
 # Generate Prisma client
-npm run db:generate
+npx prisma generate
 
-# Run migrations (nếu cần)
-npm run db:migrate
-
-# Seed data (admin + teacher + student)
-npm run db:seed
-
-# Development
+# Start dev server
 npm run dev
-
-# Production
-npm run build
-npm start
 ```
 
-## 📋 Routes
+### ⚠️ QUAN TRỌNG: Gateway Requirement
 
-### Auth Routes (`/api/auth`)
-
-| Endpoint | Method | Mô tả | Auth |
-|----------|--------|-------|------|
-| `/api/auth/login` | POST | Login → trả JWT + refreshToken | ❌ |
-| `/api/auth/logout` | POST | Logout + invalidate token | ✅ |
-| `/api/auth/session` | GET | Check session | ✅ |
-| `/api/auth/me` | GET | Get current user | ✅ |
-| `/api/auth/refresh` | POST | Refresh token rotation | ❌ |
-
-### User Routes (`/api/users`)
-
-| Endpoint | Method | Mô tả | Auth |
-|----------|--------|-------|------|
-| `/api/users` | GET | List users (pagination) | ✅ |
-| `/api/users/:id` | GET | Get user by ID | ✅ |
-| `/api/users/:id` | PUT | Update user | ✅ |
-| `/api/users/:id` | DELETE | Delete user | ✅ |
-
-## 🔐 Security
-
-- **Bcrypt**: cost factor = 12
-- **JWT**: exp = 24h, refresh = 7d
-- **Headers từ Gateway**:
-  - `X-User-Id`: User ID (Gateway đã verify JWT)
-  - `X-User-Role`: User role
-  - Service tin tưởng headers từ Gateway (KHÔNG re-verify JWT)
-
-## 🗄️ Database Schema
-
-```prisma
-model user {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  password     String    // bcrypt hashed
-  role         user_role
-  name         String
-  is_active    Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-
-  sessions        session[]
-  teacher_classes teacher_class[]
-  notes           teacher_note[]
-
-  @@map("users")
-  @@schema("auth")
-}
-
-enum user_role {
-  TEACHER
-  ADMIN
-  SUPERVISOR
-  
-  @@schema("auth")
-}
-
-model session {
-  id            String    @id @default(uuid())
-  user_id       String
-  token         String    @unique
-  refresh_token String?   @unique
-  expires_at    DateTime
-  created_at    DateTime  @default(now())
-  revoked_at    DateTime?
-
-  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-  @@schema("auth")
-}
-```
-
-## 🧪 Testing
+**Tất cả API calls PHẢI qua Gateway (port 8080):**
 
 ```bash
-# Unit tests
-npm run test:unit
-
-# Coverage (≥ 80% required)
-npm run test:cov
-
-# Integration tests (với Consul + Postgres containers)
-npm run test:integration
+❌ WRONG: http://localhost:3001/api/auth/login
+✅ RIGHT: http://localhost:8080/api/auth/login
 ```
 
-### Coverage Current Status
-
-| Layer | Coverage | Target |
-|-------|----------|--------|
-| Services | **97%** ✅ | 80% |
-| Routes | 0% | 70% |
-| Middleware | 0% | 90% |
-
-## 🛠️ Development
+Xem [ADR-0006](../../docs/02-architecture/adr/0006-api-gateway.md) để biết thêm chi tiết.
 
 ### Environment Variables
 
 ```env
-NODE_ENV=development
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/verveai?schema=auth"
+
+# JWT
+JWT_SECRET="your-secret-key-here-change-in-production"
+JWT_EXPIRES_IN="24h"
+JWT_ISSUER="verveai-auth"
+
+# Service
 PORT=3001
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/verveai?schema=auth
-JWT_SECRET=your-secret-key-at-least-32-characters-long
-JWT_ISSUER=verveai
-JWT_EXPIRES_IN=24h
-CONSUL_HOST=localhost
+NODE_ENV="development"
+
+# Consul (optional)
+CONSUL_HOST="localhost"
 CONSUL_PORT=8500
 ```
 
-### Seed Data (VP-228)
+## 🧪 Testing
+
+### Run Tests
 
 ```bash
-npm run db:seed
+# Unit tests only
+npm run test:unit
+
+# Integration tests (requires test DB)
+npm run test:integration
+
+# All tests with coverage
+npm run test:cov
+
+# Watch mode
+npm run test:watch
 ```
 
-Tạo 3 users:
-1. **Admin**: `admin@verveai.vn` / `Admin@123` (role: ADMIN)
-2. **Teacher**: `teacher@school.vn` / `Teacher@123` (role: TEACHER)
-3. **Supervisor**: `supervisor@school.vn` / `Supervisor@123` (role: SUPERVISOR)
+### Current Coverage Status
+
+❌ **Coverage: 26.03%** (Target: 80%)
+
+**Needs:**
+- Route tests (0% → 70%)
+- Middleware tests (0% → 90%)
+- Integration tests with real DB
+- E2E tests via Gateway
+
+## 📮 Postman Testing
+
+Import `postman_collection.json` vào Postman để test.
+
+**Collection variables:**
+- `base_url`: http://localhost:3001
+- `gateway_url`: http://localhost:8080
+- `access_token`: Auto-saved sau login
+- `refresh_token`: Auto-saved sau login
+- `user_id`: Auto-saved sau register/login
+
+**Test flow:**
+1. **Register** → tạo user mới (VP-226)
+2. **Login** → lấy tokens (VP-221)
+3. **Session** → check session còn valid (VP-223)
+4. **Me** → get user info (VP-224)
+5. **Refresh** → refresh access token (VP-227)
+6. **Logout** → revoke session (VP-222)
+
+## 🏗️ Architecture
+
+```
+Request
+  ↓
+Route (auth.routes.ts, user.routes.ts)
+  ↓ validate (Zod)
+Service (auth.service.ts, user.service.ts)
+  ↓
+Prisma Client
+  ↓
+PostgreSQL (schema: auth)
+```
+
+**Key components:**
+- `routes/` - Express route handlers
+- `services/` - Business logic
+- `middleware/` - Validation, error handling, metrics
+- `validators/` - Zod schemas
+- `prisma/` - Database client
+- `config/` - Environment, Consul registration
+
+## 🔐 Security
+
+- ✅ bcrypt (cost factor: 12) cho password hashing
+- ✅ JWT với expiry (24h access, 7d refresh)
+- ✅ Session revocation qua database
+- ✅ Input validation với Zod
+- ✅ SQL injection protection (Prisma ORM)
+- ⚠️ Rate limiting (implemented in Gateway)
+- ⚠️ CORS (implemented in Gateway)
 
 ## 📊 Metrics
 
-Service expose `/metrics` cho Prometheus:
+Exposed at `/metrics` (Prometheus format):
 - `http_request_duration_seconds`
 - `http_requests_total`
-- `circuit_breaker_state` (cho inter-service calls)
+- `db_query_duration_seconds`
 
-## 🔗 Dependencies
+## 🏥 Health Check
 
-- `express`: HTTP server
-- `bcrypt`: Password hashing (cost factor 12)
-- `jsonwebtoken`: JWT sign/verify
-- `@prisma/client`: PostgreSQL ORM
-- `@verveai/common-node`: Common utilities
-- `@verveai/error-types`: Domain errors
-- `@verveai/consul-client`: Service Discovery
-- `@verveai/circuit-breaker`: Circuit breaker (opossum)
-- `@verveai/tracing`: OpenTelemetry tracing
+```bash
+curl http://localhost:3001/health
+```
 
-## 📝 Notes
+Response:
+```json
+{
+  "status": "ok",
+  "service": "svc-auth",
+  "version": "1.0.0"
+}
+```
 
-- Service đăng ký với Consul khi khởi động (port 3001)
-- Graceful shutdown: SIGTERM → deregister Consul → close Prisma
-- JWT verify TẠI GATEWAY, service chỉ nhận headers `X-User-Id`, `X-User-Role`
-- Password phải ≥ 8 ký tự
-- Email phải unique
+## 🔗 Integration with Other Services
 
-## 🚨 Sprint 2.2 Completed ✅
+**Gateway → Auth:**
+- Gateway calls `/api/auth/login` để verify credentials
+- Gateway caches JWT verification
 
-- [x] **VP-220**: Prisma schema cho auth
-- [x] **VP-221**: Login + JWT issue
-- [x] **VP-222**: Logout
-- [x] **VP-223**: Session check
-- [x] **VP-224**: Get current user
-- [x] **VP-225**: User CRUD
-- [x] **VP-226**: Password hash bcrypt cost 12
-- [x] **VP-227**: Refresh token rotation
-- [x] **VP-228**: Seed admin/teacher/supervisor users
+**Other services → Auth:**
+- Không gọi trực tiếp
+- Trust `X-User-Id`, `X-User-Role` headers từ Gateway (đã verify)
 
-**Coverage:** Services 97% (target: 80%) ✅
+## 📝 TODO (VP-225)
 
-## 📚 Next Steps
+- [ ] Viết route tests (target: 70%)
+- [ ] Viết middleware tests (target: 90%)
+- [ ] Viết integration tests với Postgres + Consul containers
+- [ ] Clean up duplicate files (`authService.ts`, empty routes)
+- [ ] Add E2E tests qua Gateway
+- [ ] Implement password reset flow
+- [ ] Add email verification
 
-- Sprint 2.3: BKT Service (VP-230 đến VP-240)
-- Add integration tests cho routes
-- Add e2e tests qua Gateway
+## 🐛 Known Issues
+
+1. Coverage quá thấp (26%) - cần viết thêm tests
+2. Duplicate files: `authService.ts` vs `auth.service.ts`
+3. Empty route files: `auth.ts`, `users.ts`
+4. Chưa có integration tests với Consul
+
+## 📚 References
+
+- [WORK_SPLIT.md](../WORK_SPLIT.md) - Service division
+- [ADR-0004](../../docs/02-architecture/adr/0004-microservices-architecture.md) - Microservices
+- [ADR-0005](../../docs/02-architecture/adr/0005-service-discovery.md) - Consul
+- [Backend Rules](../../.cursor/rules/02-backend.mdc) - Coding standards

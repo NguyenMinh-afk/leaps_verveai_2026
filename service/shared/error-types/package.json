@@ -1,0 +1,31 @@
+{
+  "name": "@verveai/error-types",
+  "version": "0.1.0",
+  "description": "Domain error hierarchy for VERVEAI microservices",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
+  },
+  "keywords": [
+    "verveai",
+    "error-types",
+    "microservice",
+    "domain-errors"
+  ],
+  "author": "VERVEAI Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

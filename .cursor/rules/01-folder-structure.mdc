@@ -1,27 +1,31 @@
 ---
-description: Folder structure rules for VERVEAI (Next.js + Flutter/Dart — BA v1.4)
+description: Folder structure rules for VERVEAI — Microservice backend + Next.js + Flutter/Dart, BA v1.4.5
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Folder Structure (VERVEAI)
+# Folder Structure (VERVEAI — BA v1.4.5)
+
+> **Tham chiếu:** [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 microservice.
 
 ## Ưu tiên phát triển
 
 | Ưu tiên | Module | Ghi chú |
 |----------|--------|---------|
 | **CAO NHẤT** | `web-portal/` | Next.js/TypeScript — Phase 1: Frontend với mock data |
-| Sau | `backend/` | Node.js/Express — Phase 2: API server |
+| **CAO** | `service/` | Node.js/TypeScript Microservices — Phase 2: 5 service + Gateway |
 | Sau | `app/` | Flutter/Dart |
 
 ## Quy tắc chung
 - Mọi đường dẫn tương đối với thư mục gốc dự án `leaps_verveai_2026/`.
 - **KHÔNG** tạo thư mục ngoài cấu trúc dưới đây — nếu cần, mở ADR mới.
 - File đặt đúng vị trí quy định; **KHÔNG** tạo bản sao ở nơi khác.
+- **KHÔNG dùng `backend/`** — đã lỗi thời, thay bằng `service/service-*` (xem WORK_SPLIT.md).
 
 ---
 
 ## Root Structure
+
 ```
 leaps_verveai_2026/
 ├── web-portal/                  # 🌐 Next.js — ƯU TIÊN CAO NHẤT
@@ -37,21 +41,23 @@ leaps_verveai_2026/
 │       ├── styles/
 │       └── middleware.ts
 │
-├── backend/                     # 🟢 Node.js — ƯU TIÊN SAU (Phase 2)
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── prisma/
-│   │   └── schema.prisma        # Database schema
-│   └── src/
-│       ├── config/              # Environment config
-│       ├── controllers/         # Request handlers
-│       ├── services/            # Business logic
-│       ├── repositories/        # Data access
-│       ├── middleware/          # Auth, validation, error handling
-│       ├── routes/              # API routes
-│       ├── validators/          # Zod schemas
-│       ├── utils/               # Logger, response helpers
-│       └── types/               # TypeScript types
+├── service/                     # 🟢 Node.js Microservices — Phase 2 ⭐
+│   ├── README.md                # ⭐ MỚI — Tổng quan 5 service
+│   ├── WORK_SPLIT.md            # ⭐ Phân chia 5 microservice (canonical)
+│   ├── shared/                  # ⭐ MỚI — Code dùng chung giữa các service
+│   │   ├── common-node/          # ⭐ Umbrella: logger, response, error, validation, middleware, notification, crypto, pagination, http, constants, config, utils
+│   │   ├── consul-client/       # Service discovery wrapper
+│   │   ├── jwt-utils/           # JWT verify (gateway-side)
+│   │   ├── circuit-breaker/     # opossum config chuẩn
+│   │   ├── prisma-schema/       # Schema gốc (5 schema)
+│   │   ├── tracing/             # OpenTelemetry init
+│   │   └── error-types/         # Domain errors chuẩn
+│   ├── service-auth/            # Dev 1 — port 3001
+│   ├── service-bkt/             # Dev 2 — port 3002
+│   ├── service-class/           # Dev 3 — port 3003
+│   ├── service-content/         # Dev 1 — port 3004
+│   ├── service-sync/            # Dev 3 — port 3005
+│   └── gateway/                 # ⭐ MỚI — Express Gateway — port 8080
 │
 ├── app/                         # 📱 Flutter — ƯU TIÊN SAU
 │   ├── pubspec.yaml
@@ -72,7 +78,15 @@ leaps_verveai_2026/
 │   ├── pyproject.toml
 │   └── {expert_agreement, simulation, model-eval, reproducibility}/
 │
-├── infra/                      # docker-compose — chỉ cho backend/content-pipeline
+├── infra/                      # ⭐ MỞ RỘNG — docker-compose cho 5 service + Consul + Jaeger
+│   ├── docker-compose.yml
+│   ├── prometheus.yml           # ⭐ MỚI
+│   └── consul/                  # ⭐ MỚI — Consul config
+│
+├── database/                    # ⭐ MỚI — Schema SQL gốc, ERD, migrations
+│   ├── migrations/             # ⭐ MỚI — Prisma migrations gốc
+│   ├── diagrams/               # ⭐ MỚI — ERD
+│   └── seeds/                  # ⭐ MỚI — Data mẫu cho dev
 │
 ├── docs/                       # 📚 Tài liệu (xem docs/README.md)
 │
@@ -91,116 +105,225 @@ leaps_verveai_2026/
 ```
 web-portal/src/
 ├── app/                       # Next.js App Router
-│   ├── layout.tsx             # Root layout
-│   ├── page.tsx              # Dashboard chính
-│   ├── error.tsx             # Error boundary
-│   ├── loading.tsx           # Loading skeleton
-│   ├── not-found.tsx         # 404 page
-│   └── [routes]/            # Dynamic routes
+│   ├── layout.tsx
+│   ├── page.tsx
+│   ├── error.tsx
+│   ├── loading.tsx
+│   ├── not-found.tsx
+│   └── [routes]/
 │
-├── components/               # React components
-│   ├── ui/                  # shadcn/ui components
+├── components/
+│   ├── ui/                   # shadcn/ui components
 │   ├── dashboard/            # Dashboard components
 │   └── layout/              # Layout components
 │
-├── lib/                     # Utilities
-│   ├── api/                 # API client
-│   ├── utils/               # Utility functions
-│   └── hooks/               # Custom React hooks
+├── lib/
+│   ├── api/                  # ⭐ API client — chỉ gọi Gateway
+│   ├── utils/
+│   └── hooks/
 │
 ├── styles/
-│   └── globals.css          # Tailwind + CSS variables
+│   └── globals.css
 │
 ├── middleware.ts             # Auth/routing middleware
-└── css.d.ts                 # CSS module types
+└── css.d.ts
+```
+
+> ⚠️ **Web portal KHÔNG gọi trực tiếp đến service.** Tất cả qua Gateway (`http://gateway:8080/api/...`).
+
+---
+
+## service/ Structure — Microservice ⭐
+
+> Mỗi service theo cùng cấu trúc, dùng code chia sẻ từ `service/shared/`.
+
+```
+service/
+├── WORK_SPLIT.md             # ⭐ Canonical — Phân chia 5 microservice
+├── README.md                 # Tổng quan, cách chạy
+│
+├── shared/                   # Code dùng chung
+│   ├── common-node/            # @verveai/common-node — logger, response, error, validation, middleware, notification, crypto, pagination, http, constants, config, utils
+│   ├── consul-client/
+│   │   ├── src/index.ts      # register, deregister, discover
+│   │   └── package.json
+│   ├── jwt-utils/
+│   │   ├── src/verify.ts     # verify(token) → payload
+│   │   └── package.json
+│   ├── circuit-breaker/
+│   │   ├── src/index.ts      # createBreaker<T>(name, fn, options)
+│   │   └── package.json
+│   ├── prisma-schema/        # ⭐ 1 schema gốc, mỗi service import schema của mình
+│   │   ├── schema.prisma
+│   │   └── seed.ts
+│   ├── tracing/
+│   │   ├── src/init.ts       # OpenTelemetry init cho mỗi service
+│   │   └── package.json
+│   └── error-types/
+│       ├── src/index.ts      # DomainError, ValidationError, AuthError, ...
+│       └── package.json
+│
+├── service-auth/             # Dev 1 — port 3001
+│   ├── src/
+│   │   ├── routes/           # Express routes
+│   │   ├── services/         # Business logic (auth.service.ts, user.service.ts)
+│   │   ├── prisma/           # Prisma client riêng
+│   │   ├── config/
+│   │   │   ├── consul.ts     # Đăng ký với Consul
+│   │   │   └── env.ts
+│   │   ├── middleware/
+│   │   ├── validators/       # Zod schemas
+│   │   ├── tracing.ts        # OpenTelemetry init
+│   │   └── index.ts          # Express app + register với Consul
+│   ├── prisma/
+│   │   └── schema.prisma     # Import từ shared/prisma-schema (schema = auth)
+│   ├── tests/
+│   │   ├── unit/
+│   │   └── integration/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env.example
+│
+├── service-bkt/              # Dev 2 — port 3002  (cấu trúc giống service-auth)
+├── service-class/            # Dev 3 — port 3003  (cấu trúc giống service-auth)
+├── service-content/          # Dev 1 — port 3004  (cấu trúc giống service-auth)
+├── service-sync/             # Dev 3 — port 3005  (cấu trúc giống service-auth)
+│
+└── gateway/                  # ⭐ Express Gateway — port 8080
+    ├── src/
+    │   ├── config/
+    │   │   └── gateway.config.yml
+    │   ├── policies/         # Custom policies (jwt, rate-limit)
+    │   ├── pipelines/
+    │   └── index.ts
+    ├── tests/
+    ├── Dockerfile
+    ├── package.json
+    └── .env.example
+```
+
+> **Mỗi service CÓ Prisma schema riêng** nhưng dùng chung 1 PostgreSQL instance với 5 schema riêng biệt (`auth`, `bkt`, `class`, `content`, `sync`).
+
+### Pattern: Route → Service → Prisma Client
+
+> **Lưu ý:** Mỗi service KHÔNG dùng `controller/` và `repository/` (theo WORK_SPLIT). Dùng `routes/` và `services/` đơn giản hơn.
+
+```
+Request → Route handler (validate) → Service (logic) → Prisma Client → PostgreSQL
+                ↑
+                └── Circuit Breaker (opossum) cho inter-service call
 ```
 
 ---
 
-## Backend Structure (`backend/src/`) — Node.js/TypeScript
+## gateway/ Structure — Express Gateway ⭐
+
 ```
-backend/src/
+gateway/
 ├── config/
-│   ├── index.ts           # Environment config
-│   └── database.ts       # Prisma client
-│
-├── controllers/           # Request handlers (REST)
-│
-├── services/             # Business logic
-│
-├── repositories/         # Data access layer
-│
-├── middleware/
-│   ├── auth.middleware.ts
-│   ├── role.middleware.ts
-│   ├── error.middleware.ts
-│   ├── validate.middleware.ts
-│   └── rateLimit.middleware.ts
-│
-├── routes/              # API route definitions
-│
-├── validators/          # Zod validation schemas
-│
-├── utils/
-│   ├── logger.ts        # Winston/Pino logger
-│   ├── response.ts      # Standard response helpers
-│   └── pagination.ts
-│
-├── types/               # TypeScript types/interfaces
-│
-└── app.ts              # Express app setup
+│   ├── gateway.config.yml     # Routes, pipelines, policies
+│   └── policies/
+│       ├── jwt.js             # Verify JWT tại gateway
+│       └── rate-limit.js
+├── src/
+│   ├── index.ts               # Express app + register Consul
+│   └── tracing.ts             # OpenTelemetry
+├── tests/
+├── Dockerfile
+├── package.json
+└── .env.example
+```
+
+**Config chính (gateway.config.yml):**
+
+```yaml
+http:
+  port: 8080
+apiEndpoints:
+  auth:    { paths: '/api/auth/*' }
+  bkt:     { paths: '/api/bkt/*' }
+  class:   { paths: '/api/class/*' }
+  content: { paths: '/api/content/*' }
+  sync:    { paths: '/api/sync/*' }
+serviceEndpoints:
+  svc-auth:    { url: 'http://svc-auth:3001' }
+  svc-bkt:     { url: 'http://svc-bkt:3002' }
+  svc-class:   { url: 'http://svc-class:3003' }
+  svc-content: { url: 'http://svc-content:3004' }
+  svc-sync:    { url: 'http://svc-sync:3005' }
+pipelines:
+  default:
+    apiEndpoints: [auth, bkt, class, content, sync]
+    policies:
+      - cors
+      - rate-limit
+      - jwt        # ← Verify tại gateway, không cần re-verify ở service
+      - proxy
 ```
 
 ---
 
-## App Structure (`app/lib/`) — Ưu tiên sau
+## database/ Structure — Migration gốc ⭐ MỚI
+
+```
+database/
+├── migrations/                # ⭐ Prisma migrations gốc
+│   ├── 0001_init/
+│   ├── 0002_add_skills/
+│   └── ...
+├── diagrams/                  # ⭐ ERD
+│   ├── erd.svg
+│   └── auth.puml
+├── seeds/                     # ⭐ Data mẫu cho dev
+│   └── dev_seed.ts
+└── README.md
+```
+
+> Tại sao cần `database/` riêng?
+> - Vì 5 service dùng chung PostgreSQL — schema gốc cần 1 nơi duy nhất
+> - Mỗi service import schema của mình từ `service/shared/prisma-schema`
+> - Migration order được quản lý tập trung
+
+---
+
+## App Structure (`app/lib/`) — Flutter
 ```
 app/lib/
-├── main.dart                          # Entry point
-│
-├── engine/                            # Lớp 2: Tổng hợp & Quyết định (tất định — TS-07)
-│   ├── evidence/                      # DR-11, BR-16
-│   ├── mastery/bkt.dart               # FR-06 → FR-11
-│   ├── diagnose/                      # BR-01, AIR-15, FR-07, FR-25
-│   ├── item_selection/                # FR-01 → FR-05, FR-24
-│   ├── remediation/                  # FR-14 → FR-17
-│   ├── grouping/cluster_by_root_cause.dart   # BR-07, BR-08
-│   ├── knowledge_graph/               # TS-06
-│   ├── versioning/                    # DR-07
-│   └── transfer/student_transfer.dart # FR-26
-│
-├── inference/                         # Lớp 1 & 3: Mô hình ngôn ngữ cục bộ — [A]
+├── main.dart
+├── engine/                            # Lớp 2 — Tổng hợp & Quyết định (tất định — TS-07)
+│   ├── evidence/
+│   ├── mastery/bkt.dart
+│   ├── diagnose/
+│   ├── item_selection/
+│   ├── remediation/
+│   ├── grouping/cluster_by_root_cause.dart
+│   ├── knowledge_graph/
+│   ├── versioning/
+│   └── transfer/student_transfer.dart
+├── inference/                         # Lớp 1 & 3 — [A]
 │   ├── ffi/llama_bindings.dart
 │   ├── model_manager.dart
 │   ├── grammar/
 │   ├── extraction/extract_evidence.dart
 │   └── expression/
-│
 ├── content/v1/
-│
 ├── bootstrap/
-│
-├── storage/                           # TS-05 — SQLite append-only
-│
+├── storage/                           # TS-05
 ├── hub/                               # SC-05
-│
 ├── sync/                              # SC-06
-│
 ├── privacy/
-│
 ├── content_security/signature_verify.dart
-│
 ├── auth/profile_gate.dart
-│
 └── ui/
-    ├── student/                       # ⛔ CHƯA CODE — chờ OS-03
+    ├── student/                       # ⛔ CHƯA CODE
     ├── teacher/
     └── admin/
 ```
 
 ---
 
-## Content Pipeline (`content-pipeline/src/`) — TypeScript
+## Content Pipeline (`content-pipeline/src/`)
 ```
 content-pipeline/src/
 ├── authoring/
@@ -215,20 +338,22 @@ content-pipeline/src/
 ## Research (`research/`) — Python
 ```
 research/
-├── expert_agreement/
-│   └── kappa_analysis.py
-├── simulation/
-│   └── self_consistency_check.py
-├── model-eval/
-│   ├── test_a_extraction_quality.py
-│   └── test_b_device_performance.py
+├── expert_agreement/kappa_analysis.py
+├── simulation/self_consistency_check.py
+├── model-eval/test_a_extraction_quality.py
+├── model-eval/test_b_device_performance.py
 └── reproducibility/
 ```
 
 ---
 
 ## 🚫 CẤM
-- File `.ts`/`.tsx` trong `app/lib/` — chỉ `.dart`
-- File `.dart` trong `web-portal/` hoặc `content-pipeline/`
-- Code `app/lib/ui/student/` trước khi OS-03 chốt
-- Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
+- ❌ Tạo folder `backend/` — đã lỗi thời, dùng `service/`
+- ❌ File `.ts`/`.tsx` trong `app/lib/` — chỉ `.dart`
+- ❌ File `.dart` trong `web-portal/`, `content-pipeline/`, `service/`
+- ❌ Code `app/lib/ui/student/` trước khi OS-03 chốt
+- ❌ Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
+- ❌ Hardcode URL service trong code (vd: `http://svc-auth:3001`) — dùng Consul DNS
+- ❌ Gọi trực tiếp service từ web-portal (phải qua Gateway)
+- ❌ Inter-service call KHÔNG có circuit breaker
+- ❌ Schema Prisma nằm rải rác ở mỗi service — phải ở `service/shared/prisma-schema/`

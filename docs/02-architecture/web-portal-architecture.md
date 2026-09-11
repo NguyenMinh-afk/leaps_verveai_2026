@@ -34,9 +34,24 @@ Web-portal là giao diện chính cho **giáo viên**, **học sinh**, **quản 
 | Ngôn ngữ | TypeScript | Strict mode |
 | Styling | Tailwind CSS + shadcn/ui | Design system nhất quán |
 | State | Zustand / React Query | Quản lý state phía client |
-| API | REST (từ root `web-portal/`) | Kết nối backend Node.js |
+| API | REST → Gateway (port 8080) ⭐ | Kết nối microservice backend |
 | Auth | NextAuth.js | OAuth/GitHub provider (demo) |
 | Testing | Vitest + Playwright | Unit + E2E |
+
+### API Connection ⭐ MỚI
+
+> **Quan trọng:** web-portal chỉ gọi qua **Gateway** (`http://gateway:8080`), không gọi trực tiếp đến service.
+
+```
+Browser → web-portal → Gateway (8080) → Service tương ứng
+                    ↑
+                    └── JWT verify, Rate limit, CORS
+```
+
+Xem chi tiết:
+- [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 microservice
+- [`docs/02-architecture/adr/0004-microservices-architecture.md`](./adr/0004-microservices-architecture.md) — Kiến trúc microservice
+- [`docs/02-architecture/adr/0006-api-gateway.md`](./adr/0006-api-gateway.md) — API Gateway
 
 ---
 

@@ -1,7 +1,22 @@
 packages:
+  # Phase 2: Backend Microservices
+  - 'service/shared/common-node'
+  - 'service/shared/consul-client'
+  - 'service/shared/circuit-breaker'
+  - 'service/shared/jwt-utils'
+  - 'service/shared/tracing'
+  - 'service/shared/error-types'
+  - 'service/shared/prisma-schema'
+  - 'service/gateway'
+  - 'service/service-auth'
+  - 'service/service-bkt'
+  - 'service/service-class'
+  - 'service/service-content'
+  - 'service/service-sync'
+  # Phase 1: Content Pipeline
   - 'content-pipeline'
   - 'review-console'
-  # `app/` là Flutter (pubspec.yaml), không phải pnpm package.
-  # `research/` là Python (pyproject.toml), không phải pnpm package.
+# `app/` là Flutter (pubspec.yaml), không phải pnpm package.
+# `research/` là Python (pyproject.toml), không phải pnpm package.
 allowBuilds:
   esbuild: true

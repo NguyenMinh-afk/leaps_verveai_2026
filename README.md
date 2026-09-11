@@ -20,44 +20,162 @@ Bộ chẩn đoán kiến thức cho môi trường băng thông hẹp (trườn
 
 ## 1. Cách chạy services
 
+> **⚠️ QUAN TRỌNG:** Đọc [Quick Start Guide](./docs/03-development/QUICKSTART.md) để setup đầy đủ từ đầu.
+
 ### 1.1 Yêu cầu hệ thống
 
 | Tool | Phiên bản | Cài đặt |
 |---|---|---|
-| Flutter SDK | ≥ 3.22 | [flutter.dev](https://flutter.dev) |
+| **Node.js** | ≥ 20.x | [nodejs.org](https://nodejs.org) |
+| **PostgreSQL** | ≥ 15.x | [postgresql.org](https://www.postgresql.org/download/) |
+| **npm/pnpm** | ≥ 10.x / ≥ 9.x | `npm install -g pnpm` |
+| **Docker** | ≥ 24.x | [docker.com](https://www.docker.com/) (cho Consul, Jaeger, Prometheus) |
+| Flutter SDK | ≥ 3.22 | [flutter.dev](https://flutter.dev) (ưu tiên sau) |
 | Dart | ≥ 3.4 | (đi kèm Flutter) |
-| Node.js | ≥ 20.x | [nodejs.org](https://nodejs.org) |
-| pnpm | ≥ 9.x | `npm install -g pnpm` |
-| Python | 3.11.x | [pyenv](https://github.com/pyenv/pyenv) |
-| Android SDK | API 34 | (qua Android Studio) |
-| Visual Studio | 2022 | (để build Windows EXE) |
+| Python | 3.11.x | [pyenv](https://github.com/pyenv/pyenv) (ưu tiên sau) |
+| Android SDK | API 34 | (qua Android Studio) (ưu tiên sau) |
+| Visual Studio | 2022 | (để build Windows EXE) (ưu tiên sau) |
 
-### 1.2 Chạy lần đầu
+### 1.2 Chạy lần đầu - Backend Services (ƯU TIÊN)
+
+> **📖 Hướng dẫn chi tiết:** [docs/03-development/QUICKSTART.md](./docs/03-development/QUICKSTART.md)
 
 #### A. Clone/Download project
 
 ```bash
-# Nếu clone từ git
 git clone <repo-url> leaps_verveai_2026
 cd leaps_verveai_2026
-
-# Nếu download zip → giải nén vào thư mục leaps_verveai_2026
 ```
 
-#### B. Tạo Flutter app (nếu chưa có thư mục app/)
+#### B. Setup PostgreSQL Database
 
 ```bash
-# Tạo Flutter project với tên verveai_app
-flutter create --org com.ioes --project-name verveai_app app
+# Option 1: PostgreSQL local (port 5433 để tránh conflict)
+psql -U postgres -c "CREATE DATABASE verveai_db;"
+psql -U postgres -c "CREATE USER verveai_user WITH PASSWORD 'verveai_password_2026';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE verveai_db TO verveai_user;"
 
-# Sau đó cài dependencies
-cd app && flutter pub get && cd ..
+# Option 2: Docker
+docker run -d \
+  --name verveai-postgres \
+  -e POSTGRES_DB=verveai_db \
+  -e POSTGRES_USER=verveai_user \
+  -e POSTGRES_PASSWORD=verveai_password_2026 \
+  -p 5433:5432 \
+  postgres:15
 ```
 
-#### C. Tạo web-portal (Next.js, nếu chưa có)
+#### C. Install Dependencies cho Backend Services
 
 ```bash
-# Tạo Next.js app mới
+# Install dependencies cho 5 services + gateway
+cd service/service-auth && npm install && cd ../..
+cd service/service-bkt && npm install && cd ../..
+cd service/service-class && npm install && cd ../..
+cd service/service-content && npm install && cd ../..
+cd service/service-sync && npm install && cd ../..
+cd service/gateway && npm install && cd ../..
+```
+
+#### D. Configure Environment Variables
+
+```bash
+# Copy .env.example cho từng service
+cd service/service-auth && cp .env.example .env && cd ../..
+cd service/service-bkt && cp .env.example .env && cd ../..
+cd service/service-class && cp .env.example .env && cd ../..
+cd service/service-content && cp .env.example .env && cd ../..
+cd service/service-sync && cp .env.example .env && cd ../..
+cd service/gateway && cp .env.example .env && cd ../..
+
+# Update DATABASE_URL trong mỗi .env file
+# Thay đổi port từ 5432 → 5433 nếu dùng port custom
+```
+
+#### E. Run Database Migrations
+
+```bash
+# Migrate từng service
+cd service/service-auth && npx prisma migrate dev && npx prisma generate && cd ../..
+cd service/service-bkt && npx prisma migrate dev && npx prisma generate && cd ../..
+cd service/service-class && npx prisma migrate dev && npx prisma generate && cd ../..
+cd service/service-content && npx prisma migrate dev && npx prisma generate && cd ../..
+cd service/service-sync && npx prisma migrate dev && npx prisma generate && cd ../..
+```
+
+#### F. Seed Database (Optional)
+
+```bash
+cd service/service-auth
+npm run seed  # Tạo user test: test@example.com / password
+cd ../..
+```
+
+#### G. Start Docker Services (Consul, Jaeger, Prometheus - Optional)
+
+```bash
+# Start infrastructure services
+docker compose up -d
+
+# Verify
+docker ps
+# → consul, jaeger, prometheus đang chạy
+```
+
+#### H. Start All Backend Services
+
+```bash
+# Terminal 1: Gateway
+cd service/gateway && npm run dev
+
+# Terminal 2: Service-Auth
+cd service/service-auth && npm run dev
+
+# Terminal 3: Service-BKT
+cd service/service-bkt && npm run dev
+
+# Terminal 4: Service-Class
+cd service/service-class && npm run dev
+
+# Terminal 5: Service-Content
+cd service/service-content && npm run dev
+
+# Terminal 6: Service-Sync
+cd service/service-sync && npm run dev
+```
+
+#### I. Verify Backend Setup
+
+```bash
+# Check Gateway
+curl http://localhost:8080/health
+
+# Check Services via Gateway
+curl http://localhost:8080/api/auth/health
+curl http://localhost:8080/api/bkt/health
+curl http://localhost:8080/api/class/health
+curl http://localhost:8080/api/content/health
+curl http://localhost:8080/api/sync/health
+
+# All should return: {"status":"ok","service":"svc-xxx"}
+```
+
+#### J. Test API với Postman
+
+1. Import collection: `service/postman_collection.json`
+2. Đọc hướng dẫn: `service/POSTMAN_GUIDE.md`
+3. Test flow: Register → Login → Get User
+
+---
+
+### 1.2.1 Frontend & Flutter (Ưu tiên sau Backend)
+
+> **⚠️ Chỉ setup sau khi Backend đã chạy ổn định**
+
+#### Web-portal (Next.js)
+
+```bash
+# Tạo Next.js app (nếu chưa có)
 npx create-next-app@latest web-portal \
   --typescript \
   --tailwind \
@@ -68,92 +186,142 @@ npx create-next-app@latest web-portal \
   --no-git \
   --use-pnpm
 
-# Di chuyển vào workspace
-cd web-portal && cd ..
+cd web-portal
+pnpm install
+pnpm dev  # → http://localhost:3000
 ```
 
-#### D. Tạo review-console (React/Vite, nếu chưa có)
+#### Flutter App (Ưu tiên sau)
 
 ```bash
-# Tạo React + Vite app
-npm create vite@latest review-console -- --template react-ts
+# Tạo Flutter project (nếu chưa có)
+flutter create --org com.ioes --project-name verveai_app app
+cd app && flutter pub get && cd ..
 
-# Chuyển sang pnpm
-cd review-console
-pnpm install
-cd ..
+# Chạy Flutter app
+cd app && flutter run -d <device-id>
 ```
 
-#### E. Setup Python venv cho research (nếu chưa có)
+#### Python Research (Ưu tiên sau)
 
 ```bash
 # Tạo virtual environment
 python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# hoặc: .venv\Scripts\activate  # Windows
 
-# Kích hoạt:
-# - Windows PowerShell:
-. .venv\Scripts\activate
-# - Windows CMD:
-.venv\Scripts\activate.bat
-
-# Cài dependencies
 cd research
 pip install -e .
-cd ..
-```
-
-#### F. Bootstrap nội dung + model qua USB
-
-```bash
-# Xem app/lib/bootstrap/first_run_wizard.dart để hiểu luồng bootstrap
-# Copy model.gguf và content-bundle vào thư mục app/assets/
-```
-
-#### G. Cài tất cả dependencies cho monorepo
-
-```bash
-# Cài dependencies cho monorepo (content-pipeline + review-console + research deps)
-pnpm install
-
-# Cài dependencies cho Flutter app (đảm bảo đã có app/)
-cd app && flutter pub get && cd ..
-
-# Verify tất cả packages
-pnpm list --depth 0
-```
-
-#### H. Checklist verify setup thành công
-
-```bash
-# 1. Kiểm tra Flutter app tồn tại và chạy được
-cd app && flutter doctor
-# → "✓ Flutter is ready" và "✓ Android toolchain"
-
-# 2. Kiểm tra web-portal tồn tại
-ls web-portal/package.json
-# → file tồn tại
-
-# 3. Kiểm tra review-console tồn tại
-ls review-console/package.json
-# → file tồn tại
-
-# 4. Kiểm tra Python venv
-ls .venv/Scripts/python.exe  # Windows
-# → file tồn tại
-
-# 5. Kiểm tra pnpm workspaces
-cat pnpm-workspace.yaml
-# → chứa 'app/', 'web-portal/', 'review-console/', 'content-pipeline/'
-
-# 6. Build thử Flutter (không cần thiết bị)
-cd app && flutter build web --debug
-# → tạo build/web/index.html
-cd ..
+pytest  # Run tests
 ```
 
 ---
 
-### 1.3 Chạy app Flutter (offline dev)
+### 1.3 Chạy Backend Services (Production-ready)
+
+> **📖 Xem thêm:** [service/README.md](./service/README.md) và [service/POSTMAN_GUIDE.md](./service/POSTMAN_GUIDE.md)
+
+#### Start All Services
+
+```bash
+# Option 1: Manual start (6 terminals)
+# Terminal 1: Gateway
+cd service/gateway && npm run dev
+
+# Terminal 2: Service-Auth
+cd service/service-auth && npm run dev
+
+# Terminal 3: Service-BKT
+cd service/service-bkt && npm run dev
+
+# Terminal 4: Service-Class
+cd service/service-class && npm run dev
+
+# Terminal 5: Service-Content
+cd service/service-content && npm run dev
+
+# Terminal 6: Service-Sync
+cd service/service-sync && npm run dev
+
+# Option 2: Using scripts (recommended)
+./scripts/dev-start-all.sh
+```
+
+#### Verify Services
+
+```bash
+# Gateway
+curl http://localhost:8080/health
+
+# Services via Gateway
+curl http://localhost:8080/api/auth/health
+curl http://localhost:8080/api/bkt/health
+curl http://localhost:8080/api/class/health
+curl http://localhost:8080/api/content/health
+curl http://localhost:8080/api/sync/health
+```
+
+#### Test with Postman
+
+```bash
+# 1. Import collection
+# File: service/postman_collection.json
+
+# 2. Follow guide
+# Read: service/POSTMAN_GUIDE.md
+
+# 3. Test flow
+# Register → Login → Get User → Test APIs
+```
+
+#### Service Ports
+
+| Service | Port | Status |
+|---------|------|--------|
+| Gateway | 8080 | ✅ Running |
+| Service-Auth | 3001 | ✅ Running |
+| Service-BKT | 3002 | ✅ Running |
+| Service-Class | 3003 | ✅ Running |
+| Service-Content | 3004 | ✅ Running |
+| Service-Sync | 3005 | ✅ Running |
+| PostgreSQL | 5433 | ✅ Running |
+
+#### Infrastructure Services (Optional)
+
+```bash
+# Start with Docker Compose
+docker compose up -d
+
+# Services included:
+# - Consul (Service Discovery) → http://localhost:8500
+# - Jaeger (Tracing) → http://localhost:16686
+# - Prometheus (Metrics) → http://localhost:9090
+# - Grafana (Dashboard) → http://localhost:3000
+```
+
+---
+
+### 1.4 Chạy web-portal (Next.js - ưu tiên sau Backend)
+
+```bash
+cd web-portal
+
+# Development
+pnpm dev
+# → http://localhost:3000
+
+# Build production
+pnpm build
+pnpm start
+
+# Lint + typecheck
+pnpm lint
+pnpm typecheck
+```
+
+---
+
+### 1.5 Chạy app Flutter (ưu tiên sau Backend + web-portal)
 
 ```bash
 # Android thiết bị thật (TS-17)
@@ -165,7 +333,7 @@ cd app && flutter run -d windows
 # Hot reload: nhấn 'r' trong terminal
 ```
 
-### 1.4 Build app release
+### 1.6 Build app release (Flutter)
 
 ```bash
 # Android APK release (TS-17)
@@ -180,7 +348,7 @@ cd app && flutter build windows --release
 adb install app/build/app/outputs/flutter-apk/app-release.apk
 ```
 
-### 1.5 Chạy content pipeline (online — trước khi release)
+### 1.7 Chạy content pipeline (TypeScript - online, trước khi release)
 
 ```bash
 cd content-pipeline
@@ -196,7 +364,7 @@ pnpm sign:bundle       # src/export/signBundle.ts → ra .sig
 # Bundle sau khi ký → copy vào USB để bootstrap vào app
 ```
 
-### 1.6 Chạy research (Python)
+### 1.8 Chạy research (Python - ưu tiên sau)
 
 ```bash
 cd research
@@ -215,88 +383,94 @@ python -m research.expert_agreement.kappa_analysis
 pytest tests/ --tb=short
 ```
 
-### 1.7 Chạy web-portal (Next.js)
+---
+
+### 1.9 Common commands - Backend Services
 
 ```bash
-cd web-portal
+# Backend Services
+cd service/service-auth && npm run dev          # Start auth service
+cd service/service-bkt && npm run dev           # Start BKT service
+cd service/service-class && npm run dev         # Start class service
+cd service/service-content && npm run dev       # Start content service
+cd service/service-sync && npm run dev          # Start sync service
+cd service/gateway && npm run dev               # Start API gateway
 
-# Development
-pnpm dev
-# → http://localhost:3000
+# Tests
+cd service/service-auth && npm run test         # Unit tests
+cd service/service-auth && npm run test:integration  # Integration tests
+cd service/service-auth && npm run test:cov     # Coverage
 
-# Build production
-pnpm build
+# Database
+cd service/service-auth && npx prisma migrate dev    # Run migrations
+cd service/service-auth && npx prisma generate       # Generate client
+cd service/service-auth && npx prisma studio         # Open Prisma Studio
 
-# Preview production build
-pnpm start
+# Build
+cd service/service-auth && npm run build        # Build for production
+cd service/service-auth && npm run start        # Run production build
 
-# Lint + typecheck
-pnpm lint
-pnpm typecheck
-
-# Chạy tests
-pnpm test
+# Logs
+tail -f service/gateway/logs/gateway.log | jq .
+tail -f service/service-auth/logs/auth.log | jq .
 ```
 
-### 1.8 Chạy review-console (React/Vite)
+### 1.10 Common commands - Frontend & Flutter
 
 ```bash
-cd review-console
+# Web-portal (Next.js)
+cd web-portal && pnpm dev                      # Start dev server
+cd web-portal && pnpm build                    # Build production
+cd web-portal && pnpm lint                     # Lint
+cd web-portal && pnpm typecheck                # TypeScript check
+cd web-portal && pnpm test                     # Run tests
 
-# Development
-pnpm dev
-# → http://localhost:5173
-
-# Build production
-pnpm build
-
-# Preview production build
-pnpm preview
-
-# Lint
-pnpm lint
-
-# Chạy tests
-pnpm test
-```
-
-### 1.9 Common commands
-
-```bash
-# App Flutter
-cd app && flutter analyze                  # Lint + typecheck Dart
-cd app && flutter test                     # Unit tests (engine/, ...)
-cd app && flutter test integration_test/   # E2E trên thiết bị thật
+# Flutter App
+cd app && flutter analyze                      # Lint + typecheck Dart
+cd app && flutter test                         # Unit tests (engine/, ...)
+cd app && flutter test integration_test/       # E2E trên thiết bị thật
+cd app && flutter build apk --release          # Build Android APK
+cd app && flutter build windows --release      # Build Windows EXE
 
 # Content pipeline
-pnpm --filter @verveai/content-pipeline test
+cd content-pipeline && pnpm test               # Unit tests
+cd content-pipeline && pnpm lint               # Lint
+cd content-pipeline && pnpm typecheck          # TypeScript check
 
 # Research
-cd research && pytest
-
-# Web-portal (Next.js)
-cd web-portal && pnpm lint
-cd web-portal && pnpm typecheck
-
-# Review-console (React/Vite)
-cd review-console && pnpm lint
-
-# Tất cả (từ root)
-pnpm app:test          # cd app && flutter test
-pnpm app:e2e           # cd app && flutter test integration_test
-pnpm app:build:android # cd app && flutter build apk --release
-pnpm app:build:windows # cd app && flutter build windows --release
-pnpm web:test          # cd web-portal && pnpm test
-pnpm review:test       # cd review-console && pnpm test
-pnpm research:test     # cd research && pytest
-pnpm lint              # pnpm -r lint
-pnpm typecheck         # pnpm -r typecheck
+cd research && pytest                          # All tests
+cd research && pytest --cov                    # With coverage
 ```
 
-### 1.10 Verify mọi thứ OK
+### 1.11 Verify mọi thứ OK - Backend Focus
 
 ```bash
-# App analyze sạch
+# Backend services running
+curl http://localhost:8080/health              # Gateway
+curl http://localhost:8080/api/auth/health     # Service-Auth
+curl http://localhost:8080/api/bkt/health      # Service-BKT
+curl http://localhost:8080/api/class/health    # Service-Class
+curl http://localhost:8080/api/content/health  # Service-Content
+curl http://localhost:8080/api/sync/health     # Service-Sync
+
+# Database connection
+psql -h localhost -p 5433 -U verveai_user -d verveai_db -c "\dn"
+# → Should show: auth, bkt, class, content, sync schemas
+
+# Test API flow with Postman
+# Import: service/postman_collection.json
+# Follow: service/POSTMAN_GUIDE.md
+
+# Infrastructure (if using Docker)
+curl http://localhost:8500/v1/agent/services  # Consul
+curl http://localhost:16686                    # Jaeger UI
+curl http://localhost:9090                     # Prometheus UI
+```
+
+### 1.12 Verify mọi thứ OK - Full Stack (ưu tiên sau)
+
+```bash
+# Flutter App analyze sạch (ưu tiên sau)
 cd app && flutter analyze
 # → "No issues found!"
 
@@ -308,6 +482,9 @@ ls -la content-pipeline/dist/*.sig
 
 # Research chạy được
 cd research && pytest tests/ --collect-only
+
+# Web-portal running
+curl http://localhost:3000  # Next.js dev server
 ```
 
 ---
@@ -862,6 +1039,173 @@ adb push model.gguf /sdcard/verveai/
 ## 📄 License
 
 Proprietary © 2026 Team Verve Core. All rights reserved.
+
+---
+
+## 📚 Documentation Quick Links
+
+### Quick Start & Setup
+- **[Quick Start Guide](./docs/03-development/QUICKSTART.md)** — Setup từ đầu đến chạy
+- **[Backend README](./service/README.md)** — Microservices overview
+- **[Postman Testing Guide](./service/POSTMAN_GUIDE.md)** — Test API với Postman
+
+### Architecture
+- **[Microservices Architecture](./docs/02-architecture/adr/0004-microservices-architecture.md)** — 5 services + Gateway
+- **[Service Discovery (Consul)](./docs/02-architecture/adr/0005-service-discovery.md)** — Service registry
+- **[API Gateway](./docs/02-architecture/adr/0006-api-gateway.md)** — Express Gateway
+- **[System Overview](./docs/02-architecture/system-overview.md)** — Tổng quan hệ thống
+- **[Web Portal Architecture](./docs/02-architecture/web-portal-architecture.md)** — Next.js architecture
+
+### Development
+- **[API Documentation](./docs/03-development/API.md)** — All endpoints
+- **[Testing Strategy](./docs/03-development/testing-strategy.md)** — Unit, integration, E2E
+- **[Git Workflow](./docs/03-development/git-workflow.md)** — Branching, commits, PRs
+
+### Business & Planning
+- **[BA Document v1.4](./docs/01-business/BA_DOCUMENT_VERVEAI_v1_4.docx)** — Business requirements
+- **[Project Structure](./docs/01-business/PROJECT_STRUCTURE.md)** — Folder structure
+- **[Project Rules](./docs/01-business/PROJECT_RULES.md)** — Development rules
+
+---
+
+## 🔗 API Endpoints Overview
+
+> **⚠️ All API calls must go through Gateway:** `http://localhost:8080/api/*`
+
+### Authentication (Service-Auth - Port 3001)
+- `POST /api/auth/register` — Register new user
+- `POST /api/auth/login` — Login and get JWT token
+- `GET /api/auth/me` — Get current user
+- `GET /api/auth/session` — Check session validity
+- `POST /api/auth/refresh` — Refresh access token
+- `POST /api/auth/logout` — Logout
+- `GET /api/users` — List users (admin)
+- `GET /api/users/:id` — Get user by ID
+- `PUT /api/users/:id` — Update user
+- `DELETE /api/users/:id` — Delete user (admin)
+
+### BKT & Diagnosis (Service-BKT - Port 3002)
+- `GET /api/bkt/skills` — List skills
+- `GET /api/bkt/skills/tree` — Get skill tree
+- `POST /api/bkt/evidence` — Record student evidence
+- `GET /api/bkt/evidence/student/:id` — Get student evidence
+- `POST /api/bkt/diagnosis/run` — Run BKT diagnosis
+- `GET /api/bkt/diagnosis/student/:id` — Get student diagnosis
+- `GET /api/bkt/interventions` — List interventions
+
+### Class Management (Service-Class - Port 3003)
+- `GET /api/class/classes` — List classes
+- `POST /api/class/classes` — Create class
+- `GET /api/class/classes/:id` — Get class by ID
+- `GET /api/class/students` — List students
+- `GET /api/class/progress/:studentId` — Get student progress
+
+### Content Management (Service-Content - Port 3004)
+- `GET /api/content` — List content
+- `GET /api/content/:id` — Get content by ID
+- `GET /api/content/bundles` — List bundles
+- `GET /api/content/reports/aggregate` — Get reports
+
+### Sync Management (Service-Sync - Port 3005)
+- `GET /api/sync/status` — Get sync status
+- `GET /api/sync/devices` — List devices
+- `POST /api/sync/push` — Push data
+- `GET /api/sync/pull` — Pull data
+
+**📖 Full API Documentation:** [docs/03-development/API.md](./docs/03-development/API.md)
+
+---
+
+## 🚀 Development Workflow
+
+### Backend Development
+```bash
+# 1. Start infrastructure (optional)
+docker compose up -d
+
+# 2. Start all services
+cd service/gateway && npm run dev       # Terminal 1
+cd service/service-auth && npm run dev  # Terminal 2
+cd service/service-bkt && npm run dev   # Terminal 3
+cd service/service-class && npm run dev # Terminal 4
+cd service/service-content && npm run dev # Terminal 5
+cd service/service-sync && npm run dev  # Terminal 6
+
+# 3. Test with Postman
+# Import: service/postman_collection.json
+# Follow: service/POSTMAN_GUIDE.md
+
+# 4. Make changes
+# Files auto-reload with nodemon
+
+# 5. Run tests
+cd service/service-auth && npm test
+
+# 6. Check coverage
+cd service/service-auth && npm run test:cov
+
+# 7. Commit
+git add .
+git commit -m "feat(svc-auth): add new feature"
+git push
+```
+
+### Frontend Development (ưu tiên sau)
+```bash
+# 1. Start web-portal
+cd web-portal && pnpm dev
+
+# 2. Make changes
+# Files auto-reload with Next.js HMR
+
+# 3. Test
+pnpm test
+
+# 4. Commit
+git add .
+git commit -m "feat(web-portal): add dashboard"
+git push
+```
+
+---
+
+## 📊 Project Status
+
+### ✅ Completed (Backend Focus - Phase 2)
+- [x] 5 Microservices architecture
+- [x] API Gateway với Express
+- [x] Service-Auth: Authentication & Users
+- [x] Service-BKT: Basic structure
+- [x] Service-Class: Basic structure
+- [x] Service-Content: Basic structure
+- [x] Service-Sync: Basic structure
+- [x] PostgreSQL với 5 schema riêng biệt
+- [x] Prisma ORM integration
+- [x] Environment configuration
+- [x] Health check endpoints
+- [x] Postman collection
+- [x] Documentation
+
+### 🚧 In Progress
+- [ ] Service Discovery với Consul (optional)
+- [ ] Circuit Breaker với opossum
+- [ ] Distributed Tracing với Jaeger
+- [ ] Metrics với Prometheus
+- [ ] Complete BKT implementation
+- [ ] Complete Class management
+- [ ] Complete Content management
+- [ ] Complete Sync logic
+- [ ] Integration tests
+- [ ] E2E tests
+
+### 📋 Planned (Phase 3+)
+- [ ] Web-portal (Next.js) integration
+- [ ] Flutter app integration
+- [ ] Content pipeline
+- [ ] Research scripts
+- [ ] Full test coverage (80%+)
+- [ ] CI/CD pipeline
+- [ ] Production deployment
 
 ---
 

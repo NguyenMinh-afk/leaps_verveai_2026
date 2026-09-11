@@ -1,0 +1,39 @@
+{
+  "name": "@verveai/jwt-utils",
+  "version": "0.1.0",
+  "description": "JWT verification utilities for VERVEAI Gateway",
+  "main": "dist/verify.js",
+  "types": "dist/verify.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "jwt",
+    "auth",
+    "verification",
+    "gateway",
+    "verveai"
+  ],
+  "author": "VERVEAI Team",
+  "license": "MIT",
+  "peerDependencies": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^1.1.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

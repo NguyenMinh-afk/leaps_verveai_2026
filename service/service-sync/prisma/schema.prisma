@@ -1,0 +1,123 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["sync"]
+}
+
+model device {
+  id            String          @id @default(uuid())
+  type          device_type
+  name          String
+  last_seen_at  DateTime       @default(now())
+  created_at    DateTime       @default(now())
+  deleted_at    DateTime?
+  sync_logs     sync_log[]
+  conflicts     sync_conflict[]
+
+  @@schema("sync")
+  @@map("devices")
+}
+
+enum device_type {
+  ANDROID
+  WINDOWS
+  TABLET
+
+  @@schema("sync")
+  @@map("device_type")
+}
+
+model sync_log {
+  id            String         @id @default(uuid())
+  device_id     String
+  direction     sync_direction
+  status        sync_status    @default(PENDING)
+  record_count  Int            @default(0)
+  created_at    DateTime      @default(now())
+  completed_at  DateTime?
+  error_message String?
+  device        device         @relation(fields: [device_id], references: [id])
+
+  @@schema("sync")
+  @@map("sync_logs")
+}
+
+enum sync_direction {
+  PUSH
+  PULL
+
+  @@schema("sync")
+  @@map("sync_direction")
+}
+
+enum sync_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+
+  @@schema("sync")
+  @@map("sync_status")
+}
+
+model sync_conflict {
+  id              String                @id @default(uuid())
+  device_id       String
+  entity_type     String
+  entity_id       String
+  server_version  String
+  client_version  String
+  resolved_at     DateTime?
+  resolution      conflict_resolution?
+  detected_at     DateTime              @default(now())
+  device          device                @relation(fields: [device_id], references: [id])
+
+  @@schema("sync")
+  @@index([device_id])
+  @@index([resolved_at])
+  @@index([entity_type, entity_id])
+  @@map("sync_conflicts")
+}
+
+enum conflict_resolution {
+  SERVER_WINS
+  CLIENT_WINS
+  MERGED
+
+  @@schema("sync")
+  @@map("conflict_resolution")
+}
+
+model student_transfer {
+  id              String             @id @default(uuid())
+  from_device_id  String
+  to_device_id    String
+  status          transfer_status    @default(PENDING)
+  transferred_at  DateTime?
+  failed_at       DateTime?
+  error_reason    String?
+  student_ids     String[]           @default([])
+  created_at      DateTime           @default(now())
+  updated_at      DateTime           @updatedAt
+
+  @@schema("sync")
+  @@index([from_device_id])
+  @@index([to_device_id])
+  @@map("student_transfers")
+}
+
+enum transfer_status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+
+  @@schema("sync")
+  @@map("transfer_status")
+}

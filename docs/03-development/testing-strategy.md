@@ -1,6 +1,6 @@
 # Testing Strategy
 
-> **Bản này đồng bộ với `.cursor/rules/04-testing.mdc`.**
+> **Bản này đồng bộ với `.cursor/rules/07-testing.mdc`.**
 
 ## 📊 Coverage Requirements
 
@@ -9,6 +9,33 @@
 |-------|--------------|
 | `web-portal/src/app/` | **80%** |
 | Components | **70%** |
+
+### service/ (Node.js Microservices) ⭐ MỚI
+| Layer | Min Coverage |
+|-------|--------------|
+| Services (per service) | **80%** |
+| Routes (per service) | **70%** |
+| Middleware (per service) | **90%** |
+| Prisma client calls | **75%** |
+| Circuit breakers | **85%** |
+| Consul client calls | **80%** |
+
+### gateway/ (Express Gateway) ⭐ MỚI
+| Layer | Min Coverage |
+|-------|--------------|
+| Policies (jwt, rate-limit) | **80%** |
+| Routing config | **90%** |
+| Health checks | **85%** |
+
+### shared/ (Service shared code) ⭐ MỚI
+| Package | Min Coverage |
+|---------|--------------|
+| `shared/consul-client` | **85%** |
+| `shared/circuit-breaker` | **90%** |
+| `shared/jwt-utils` | **95%** |
+| `shared/error-types` | **90%** |
+| `shared/tracing` | **85%** |
+| `shared/common-node` ⭐ | **85%** |
 
 ### app/ (Flutter) — Ưu tiên sau
 | Layer | Min Coverage |
@@ -79,6 +106,29 @@ npm run lint                            # ESLint check
 npm run type-check                     # TypeScript check
 ```
 
+### service/ (Node.js Microservices) ⭐ MỚI
+```bash
+# Per service
+cd service/service-auth
+npm run test:unit             # Jest — mock Consul, mock Prisma
+npm run test:integration      # Test containers: Consul + Postgres
+npm run test:e2e              # E2E via Gateway
+npm run test:cov               # Coverage report
+
+# Shared code
+cd service/shared/consul-client
+npm run test:unit
+npm run test:cov
+```
+
+### gateway/ (Express Gateway) ⭐ MỚI
+```bash
+cd service/gateway
+npm run test:unit             # Jest
+npm run test:integration      # Integration với mock services
+npm run test:cov
+```
+
 ### Dart/Flutter
 ```bash
 cd app
@@ -98,6 +148,8 @@ make test-b                           # Bài kiểm B
 ```
 
 ## 📚 TÀI LIỆU LIÊN QUAN
-- [`.cursor/rules/04-testing.mdc`](../../.cursor/rules/04-testing.mdc) — Phiên bản rule.
+- [`.cursor/rules/07-testing.mdc`](../../.cursor/rules/07-testing.mdc) — Phiên bản rule (microservice).
 - [Bài kiểm A & B](../05-research/) — research/.
 - [app/test/README.md](../../app/test/README.md) — test hiện có.
+- [`service/README.md`](../../service/README.md) — Microservice overview.
+- [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 microservice.

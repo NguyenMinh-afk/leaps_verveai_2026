@@ -1,9 +1,22 @@
 {
-  "name": "@nekopath/workspace",
-  "version": "1.4.0",
+  "name": "@verveai/workspace",
+  "version": "1.4.5",
   "private": true,
-  "description": "NEKOPATH — Diagnostic Assessment Engine (Flutter/Dart). App Flutter chạy 100% offline; content-pipeline và review-console là phần online chạy trước triển khai.",
+  "description": "VERVEAI — Intelligent Offline-First Diagnostic Assessment Engine. Phase 1: web-portal + content-pipeline. Phase 2: microservice backend (5 service + Gateway). Phase 3: Flutter app.",
   "scripts": {
+    "dev:auth": "pnpm --filter svc-auth dev",
+    "dev:bkt": "pnpm --filter svc-bkt dev",
+    "dev:class": "pnpm --filter svc-class dev",
+    "dev:content": "pnpm --filter svc-content dev",
+    "dev:sync": "pnpm --filter svc-sync dev",
+    "dev:gateway": "pnpm --filter gateway dev",
+    "dev:all": "docker compose -f infra/docker-compose.yml up",
+    "test:shared": "pnpm --filter @verveai/common-node test",
+    "test:shared:cov": "pnpm --filter @verveai/common-node test:cov",
+    "test:shared:all": "pnpm -r --filter @verveai/shared test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "build:shared": "pnpm -r --filter @verveai/shared build",
     "app:test": "cd app && flutter test",
     "app:e2e": "cd app && flutter test integration_test",
     "app:build:android": "cd app && flutter build apk --release",
@@ -11,9 +24,7 @@
     "pipeline:build:bundle": "pnpm --filter @nekopath/content-pipeline build:bundle",
     "pipeline:sign:bundle": "pnpm --filter @nekopath/content-pipeline sign:bundle",
     "review:dev": "pnpm --filter @nekopath/review-console dev",
-    "research:test": "cd research && pytest",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "research:test": "cd research && pytest"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
@@ -21,5 +32,8 @@
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
+  },
+  "dependencies": {
+    "pnpm": "^9.15.9"
   }
 }

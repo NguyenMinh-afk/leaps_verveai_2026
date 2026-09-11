@@ -1,17 +1,17 @@
 ---
-description: Testing rules for VERVEAI (Next.js/TypeScript + Flutter/Dart + Python) — BA v1.4
+description: Testing rules for VERVEAI — Microservice backend + Next.js + Flutter/Dart + Python — BA v1.4.5
 globs: ["**/*.{dart,py,ts,tsx}"]
 alwaysApply: true
 ---
 
-# Testing Rules (VERVEAI — BA v1.4)
+# Testing Rules (VERVEAI — BA v1.4.5)
 
 ## Ưu tiên phát triển
 
 | Ưu tiên | Module | Test Coverage |
 |----------|--------|--------------|
 | **CAO NHẤT** | `web-portal/` | **80%** |
-| Sau | `backend/` | **80%** |
+| **CAO** | `service/` | **80%** |
 | Sau | `app/` + `research/` | **80%** |
 
 ## 📊 Coverage Requirements
@@ -22,13 +22,33 @@ alwaysApply: true
 | `web-portal/src/app/` | **80%** |
 | Components | **70%** |
 
-### backend/ (Node.js/TypeScript)
+### service/ (Node.js Microservices) ⭐ MỚI
 | Layer | Min Coverage |
 |-------|--------------|
-| Services | **80%** |
-| Controllers | **70%** |
-| Middleware | **90%** |
-| Repositories | **75%** |
+| Services (per service) | **80%** |
+| Routes (per service) | **70%** |
+| Middleware (per service) | **90%** |
+| Prisma client calls | **75%** |
+| Circuit breakers | **85%** |
+| Consul client calls | **80%** |
+
+### gateway/ (Express Gateway)
+| Layer | Min Coverage |
+|-------|--------------|
+| Policies (jwt, rate-limit) | **80%** |
+| Routing config | **90%** |
+| Health checks | **85%** |
+
+### shared/ (Service shared code)
+| Package | Min Coverage |
+|---------|--------------|
+| `shared/common-node` ⭐ | **85%** |
+| `shared/consul-client` | **85%** |
+| `shared/circuit-breaker` | **90%** |
+| `shared/jwt-utils` | **95%** |
+| `shared/error-types` | **90%** |
+| `shared/tracing` | **85%** |
+| `shared/prisma-schema` | **80%** |
 
 ### app/ (Flutter/Dart)
 | Layer | Min Coverage |
@@ -54,37 +74,260 @@ npm run lint              # ESLint
 npm run type-check        # TypeScript check
 ```
 
-### backend/ Tests
+### service/ Tests (per service) ⭐ MỚI
 ```bash
-cd backend
-npm test:unit             # Unit tests (Jest)
-npm test:integration      # Integration tests
-npm test:e2e              # E2E tests (Supertest)
-npm run test:cov          # Coverage report
+# Per service
+cd service/service-auth
+npm run test:unit             # Jest — mock Consul, mock Prisma
+npm run test:integration      # Test containers: Consul + Postgres
+npm run test:e2e              # E2E via Gateway
+npm run test:cov              # Coverage report
+
+# Shared code — all packages
+cd service/shared/common-node && npm run test:cov
+cd service/shared/consul-client && npm run test:cov
+cd service/shared/circuit-breaker && npm run test:cov
+cd service/shared/jwt-utils && npm run test:cov
+cd service/shared/error-types && npm run test:cov
+cd service/shared/tracing && npm run test:cov
+```
+
+### gateway/ Tests ⭐ MỚI
+```bash
+cd service/gateway
+npm run test:unit             # Jest
+npm run test:integration      # Integration với mock services
+npm run test:cov
 ```
 
 ### app/ Tests (Flutter)
 ```bash
 cd app
-flutter test               # unit + acceptance
-flutter test integration_test  # e2e thiết bị thật
+flutter test                 # unit + acceptance
+flutter test integration_test # e2e thiết bị thật
 ```
 
 ### research/ Tests (Python)
 ```bash
 cd research
-pytest                     # all tests
-pytest --cov             # with coverage
+pytest                       # all tests
+pytest --cov                # with coverage
 ```
 
 ## ✅ MUST
 - Mỗi PR phải có test — coverage không giảm
 - Test behavior, not implementation
 - web-portal/: Vitest/Jest + React Testing Library
-- backend/: Jest + Supertest + integration tests
+- service/: Jest + Supertest + test containers (Consul + Postgres)
+- gateway/: Jest + integration tests
 - app/: Flutter test + integration_test
 - research/: pytest + pytest-cov
 
 ## ❌ NEVER
 - Skip test không có lý do rõ ràng
 - Fake coverage — chỉ test happy path
+- Mock toàn bộ Consul — phải test với Consul test container
+- Mock toàn bộ database — integration test phải dùng test Postgres container
+- Test happy path only — phải test error cases
+
+## 🧪 Microservice Testing Strategy ⭐ MỚI
+
+### Unit Tests
+```typescript
+// service/service-auth/tests/unit/auth.service.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { AuthService } from '../src/services/auth.service';
+
+// Mock Consul — không gọi Consul thật
+vi.mock('@service/shared/consul-client', () => ({
+  Consul: {
+    resolve: vi.fn().mockResolvedValue('http://localhost:3001'),
+  },
+}));
+
+// Mock Prisma
+vi.mock('../src/prisma/client', () => ({
+  prisma: {
+    user: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
+  },
+}));
+
+describe('AuthService', () => {
+  it('should verify valid credentials', async () => {
+    // Test implementation
+  });
+
+  it('should throw AuthError for invalid credentials', async () => {
+    // Test implementation
+  });
+});
+```
+
+### Integration Tests (Test Containers) ⭐
+```typescript
+// service/service-auth/tests/integration/auth.integration.test.ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { StartedTestContainer } from 'testcontainers';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { GenericContainer } from 'testcontainers';
+
+// Start Consul container
+const consulContainer = await new GenericContainer('consul:1.15')
+  .withExposedPorts(8500)
+  .start();
+
+// Start Postgres container
+const postgresContainer = await new PostgreSqlContainer()
+  .withDatabase('verveai_auth_test')
+  .start();
+
+beforeAll(async () => {
+  // Setup test database
+  // Run migrations
+  // Register service with Consul
+});
+
+afterAll(async () => {
+  await consulContainer.stop();
+  await postgresContainer.stop();
+});
+
+describe('AuthService Integration', () => {
+  it('should login with real database', async () => {
+    // Test với Postgres thật
+  });
+});
+```
+
+### E2E Tests (via Gateway) ⭐
+```typescript
+// service/gateway/tests/e2e/auth.e2e.test.ts
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createApp } from '../src/index';
+import { StartedTestContainer } from 'testcontainers';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { GenericContainer } from 'testcontainers';
+
+// Start full stack: Gateway + 5 services + Consul + Postgres
+beforeAll(async () => {
+  // Start all containers
+  // Wait for health checks
+});
+
+afterAll(async () => {
+  // Stop all containers
+});
+
+describe('Auth E2E via Gateway', () => {
+  it('should login via gateway and get JWT', async () => {
+    const response = await fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@example.com', password: 'password' }),
+    });
+
+    expect(response.status).toBe(200);
+    const { token } = await response.json();
+    expect(token).toBeDefined();
+  });
+});
+```
+
+## 📋 Test Coverage Report Structure ⭐ MỚI
+
+```
+service/
+├── service-auth/
+│   ├── tests/
+│   │   ├── unit/
+│   │   │   ├── auth.service.test.ts       # 85% line coverage
+│   │   │   └── user.service.test.ts       # 80% line coverage
+│   │   ├── integration/
+│   │   │   ├── auth.integration.test.ts   # with Consul + Postgres containers
+│   │   │   └── user.integration.test.ts
+│   │   └── e2e/
+│   │       └── auth.e2e.test.ts           # via Gateway
+│   ├── coverage/
+│   │   ├── unit/
+│   │   │   └── lcov.info
+│   │   ├── integration/
+│   │   │   └── lcov.info
+│   │   └── e2e/
+│   │       └── lcov.info
+│   └── README.md                          # Coverage badges
+│
+├── service-bkt/
+│   └── ...
+│
+├── gateway/
+│   ├── tests/
+│   │   ├── unit/
+│   │   ├── integration/
+│   │   └── e2e/
+│   └── coverage/
+│
+└── shared/
+    ├── common-node/tests/
+    ├── consul-client/tests/
+    ├── circuit-breaker/tests/
+    ├── jwt-utils/tests/
+    ├── error-types/tests/
+    └── tracing/tests/
+```
+
+## 🎯 Quality Gates ⭐ MỚI
+
+### CI Pipeline
+```yaml
+# .github/workflows/test.yml
+jobs:
+  service-tests:
+    services:
+      postgres:
+        image: postgres:15
+      consul:
+        image: consul:1.15
+    steps:
+      - name: Run unit tests
+        run: npm run test:unit
+      - name: Run integration tests
+        run: npm run test:integration
+      - name: Check coverage
+        run: npm run test:cov
+
+  gateway-tests:
+    steps:
+      - name: Run gateway tests
+        run: npm run test
+      - name: Check coverage
+        run: npm run test:cov
+
+  shared-tests:
+    steps:
+      - name: Run shared code tests
+        run: npm run test
+      - name: Check coverage
+        run: npm run test:cov
+
+  quality-gate:
+    needs: [service-tests, gateway-tests, shared-tests]
+    steps:
+      - name: Verify coverage thresholds
+        run: |
+          # Fail if coverage < threshold
+          # Per service coverage must be >= 80%
+```
+
+### Coverage Thresholds (enforced by CI)
+| Module | Threshold |
+|--------|-----------|
+| Service (per) | 80% |
+| Gateway | 80% |
+| Shared | 85% |
+| web-portal | 80% |
+| app/engine | 80% |
+| app/hub+sync | 85% |
+| research | 80% |

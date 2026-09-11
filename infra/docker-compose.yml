@@ -1,8 +1,13 @@
 # LEAPS (VerveAI) - Docker Compose
-# Chỉ dùng cho backend và content-pipeline (online components)
-# app/ (Flutter) là offline-first, KHÔNG chạy trong Docker
+# Phase 2: 5 microservice + Gateway + Consul + Jaeger + Prometheus
+
+version: '3.8'
 
 services:
+  # ============================================================
+  # Infrastructure
+  # ============================================================
+
   postgres:
     image: postgres:15-alpine
     container_name: verveai-postgres
@@ -11,7 +16,7 @@ services:
       POSTGRES_USER: verveai
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verveai_dev_pass}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,73 +24,126 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - verveai-network
 
-  # Backend API server (Phase 2)
-  backend:
-    image: node:20-alpine
-    container_name: verveai-backend
-    working_dir: /app
-    command: >
-      sh -c "npm install && npm run dev"
+  consul:
+    image: consul:1.15
+    container_name: verveai-consul
+    command: agent -server -ui -bootstrap-expect=1 -client=0.0.0.0
     ports:
-      - "3001:3001"
+      - "8500:8500"   # Consul UI
+      - "8600:8600"   # DNS
     volumes:
-      - ../backend:/app
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://verveai:${POSTGRES_PASSWORD:-verveai_dev_pass}@postgres:5432/verveai
-      JWT_SECRET: ${JWT_SECRET:-dev_secret_change_in_production}
-      PORT: 3001
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - consul_data:/consul/data
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - verveai-network
 
-  # Content pipeline (TypeScript)
-  content-pipeline:
-    image: node:20-alpine
-    container_name: verveai-content-pipeline
-    working_dir: /app
-    command: >
-      sh -c "npm install && npm run dev"
+  jaeger:
+    image: jaegertracing/all-in-one:1.47
+    container_name: verveai-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+      SPAN_STORAGE_TYPE: badger
     ports:
-      - "4000:4000"
-    volumes:
-      - ../content-pipeline:/app
-      - content_bundles:/app/bundles
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://verveai:${POSTGRES_PASSWORD:-verveai_dev_pass}@postgres:5432/verveai
-      BUNDLE_OUTPUT_DIR: /app/bundles
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"   # OTLP HTTP
+      - "4317:4317"   # OTLP gRPC
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - verveai-network
 
-  # Review console (React/TypeScript)
-  review-console:
-    image: node:20-alpine
-    container_name: verveai-review-console
-    working_dir: /app
-    command: >
-      sh -c "npm install && npm run dev"
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: verveai-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
     ports:
-      - "4001:4001"
+      - "9090:9090"
     volumes:
-      - ../review-console:/app
-    environment:
-      NODE_ENV: development
-      API_URL: http://backend:3001
-    depends_on:
-      - backend
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - verveai-network
 
-  # Hub cục bộ cho dev (SC-05 - Phase 2)
-  # Dev: Chạy trong app/, không phải container riêng
-  # production: tích hợp trong Flutter app
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: verveai-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - verveai-network
+
+  # ============================================================
+  # NOTE: Gateway & Services run LOCALLY for development
+  # ============================================================
+  # Use scripts/dev-start-all.sh to run all services locally
+
+# ============================================================
+# Networks & Volumes
+# ============================================================
+
+networks:
+  verveai-network:
+    driver: bridge
 
 volumes:
   postgres_data:
-  content_bundles:
+  consul_data:
+  prometheus_data:
+  grafana_data:
+
+# ============================================================
+# Notes
+# ============================================================
 
 # Lưu ý:
+# - Docker Compose CHỈ chạy infrastructure: Postgres, Consul, Jaeger, Prometheus, Grafana
+# - Gateway & 5 services chạy LOCAL để phát triển (dùng scripts/dev-start-all.sh)
 # - app/ (Flutter) chạy offline trên thiết bị, không cần container
 # - research/ (Python) chạy local, không cần container
-# - web-portal/ (Next.js) deploy lên Vercel hoặc chạy local
+# - web-portal/ (Next.js) deploy lên Vercel hoặc chạy local (npm run dev)
+
+# Khởi động infrastructure:
+# cd infra
+# docker compose up -d
+
+# Khởi động tất cả services locally:
+# ./scripts/dev-start-all.sh
+
+# URLs:
+# - Gateway (API): http://localhost:8080  (chạy local)
+# - Consul UI: http://localhost:8500
+# - Jaeger UI: http://localhost:16686
+# - Prometheus: http://localhost:9090
+# - Grafana: http://localhost:3000 (admin/admin)
+
+# Smoke test:
+# curl http://localhost:8080/health
+# curl -X POST http://localhost:8080/api/auth/login \
+#   -H "Content-Type: application/json" \
+#   -d '{"email":"teacher@school.vn","password":"password"}'

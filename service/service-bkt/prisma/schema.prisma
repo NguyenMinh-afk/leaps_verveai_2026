@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "multiSchema"]
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["bkt"]
+}
+
+model skill {
+  id            String         @id @default(uuid())
+  code          String         @unique
+  name          String
+  difficulty    Int            @default(1)
+  description   String?
+  prereq_skills String[]      @default([])
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  diagnoses     diagnosis[]
+  interventions intervention[]
+
+  @@schema("bkt")
+  @@map("skills")
+}
+
+model diagnosis {
+  id         String           @id @default(uuid())
+  student_id String
+  skill_id   String
+  p_known    Float           @default(0.0)
+  confidence Float            @default(0.0)
+  status     diagnosis_status @default(PENDING)
+  created_at DateTime        @default(now())
+  updated_at DateTime        @updatedAt
+  skill      skill           @relation(fields: [skill_id], references: [id])
+  evidence   evidence[]
+
+  @@schema("bkt")
+  @@map("diagnoses")
+}
+
+enum diagnosis_status {
+  PENDING
+  DIAGNOSED
+  MASTERED
+  STRUGGLING
+
+  @@schema("bkt")
+  @@map("diagnosis_status")
+}
+
+model evidence {
+  id               String          @id @default(uuid())
+  diagnosis_id     String
+  item_id          String
+  extracted_answer String?
+  correct          Boolean?
+  confidence       Float           @default(0.0)
+  quality         evidence_quality @default(UNKNOWN)
+  created_at      DateTime        @default(now())
+  diagnosis       diagnosis       @relation(fields: [diagnosis_id], references: [id])
+
+  @@schema("bkt")
+  @@map("evidence_items")
+}
+
+enum evidence_quality {
+  HIGH
+  MEDIUM
+  LOW
+  UNKNOWN
+
+  @@schema("bkt")
+  @@map("evidence_quality")
+}
+
+model intervention {
+  id          String               @id @default(uuid())
+  student_id  String
+  skill_id    String
+  priority    Int                  @default(50)
+  status      intervention_status  @default(ACTIVE)
+  teacher_id  String?
+  notes       String?
+  created_at  DateTime             @default(now())
+  resolved_at DateTime?
+  skill       skill                @relation(fields: [skill_id], references: [id])
+  notes_list  intervention_note[]
+
+  @@schema("bkt")
+  @@map("interventions")
+}
+
+enum intervention_status {
+  ACTIVE
+  RESOLVED
+  CANCELLED
+
+  @@schema("bkt")
+  @@map("intervention_status")
+}
+
+model intervention_note {
+  id              String       @id @default(uuid())
+  intervention_id String
+  teacher_id      String
+  content         String
+  created_at      DateTime    @default(now())
+  intervention    intervention @relation(fields: [intervention_id], references: [id])
+
+  @@schema("bkt")
+  @@map("intervention_notes")
+}

@@ -3,8 +3,8 @@
 
 > **Tên mã nguồn:** VerveAI · **App:** Verve
 > **Phiên bản:** 1.4.5
-> **Ngày:** 05/09/2026
-> **Căn cứ:** BA Document v1.4.5 (Phụ lục F & G) + Project Management Plan v1.4.5
+> **Ngày:** 09/09/2026
+> **Căn cứ:** BA Document v1.4.5 (Phụ lục F & G) + Project Management Plan v1.4.5 + WORK_SPLIT.md v1.1
 
 ---
 
@@ -16,13 +16,12 @@
 |--------|----------|---------|------------|---------|
 | `app/` | Flutter/Dart | L0 — App học sinh + giáo viên + admin | **Offline 100%** | Pilot |
 | `web-portal/` | Next.js/TypeScript | L0 — Web portal cho giáo viên (dashboard, quản lý lớp) | Online | **Ưu tiên cao nhất** |
+| `service/` ⭐ MỚI | Node.js/TypeScript | 5 microservice + Gateway + Consul | Online | **Ưu tiên cao** (Phase 2) |
 | `content-pipeline/` | TypeScript | Tác giả nội dung + kiểm duyệt + đóng gói USB | Online (chạy trước triển khai) | - |
 | `research/` | Python | Bài kiểm A & B + BKT validation | Online hoặc offline | - |
 | `review-console/` | React/TypeScript | Rà soát nội dung (FR-20, SN-SC-03) | Online | - |
 
-Mỗi module có `README.md` riêng + build/deploy script riêng.
-
-> **Lộ trình:** `web-portal/` ưu tiên hoàn thành trước. `app/` (Flutter PWA) sẽ phát triển sau khi có thời gian.
+> **Lộ trình:** `web-portal/` ưu tiên hoàn thành trước. `service/` (Phase 2) phát triển song song. `app/` (Flutter PWA) sẽ phát triển sau khi có thời gian.
 
 ---
 
@@ -37,23 +36,48 @@ verveai/
 ├── LICENSE
 │
 ├── .cursor/
-│   └── rules/                               # Quy tắc AI assistant (00 → 06)
+│   └── rules/                               # Quy tắc AI assistant (00 → 07)
 │       ├── 00-project-overview.mdc          # BẮT BUỘC — Golden Rules
-│       ├── 01-folder-structure.mdc
-│       ├── 02-frontend.mdc                  # Dart/Flutter
-│       ├── 03-python.mdc
-│       ├── 04-testing.mdc
-│       ├── 05-git-workflow.mdc
-│       └── 06-architecture.mdc
+│       ├── 01-folder-structure.mdc          # ⭐ Cấu trúc microservice mới
+│       ├── 02-backend.mdc                   # ⭐ Microservice rules
+│       ├── 03-frontend.mdc                  # Flutter/Dart
+│       ├── 04-python.mdc                    # Python research
+│       ├── 05-git-workflow.mdc              # ⭐ Git với microservice scopes
+│       ├── 06-architecture.mdc              # ⭐ Architecture với Gateway
+│       └── 07-testing.mdc                   # ⭐ Testing với microservices
 │
 ├── docs/                                    # 📚 Tài liệu (xem docs/README.md)
 │   ├── README.md
 │   ├── 01-business/                         # BA, PMP, structure, stakeholders
 │   ├── 02-architecture/                     # ADRs + diagrams + privacy
+│   │   └── adr/
+│   │       ├── 0001-tech-stack-selection.md
+│   │       ├── 0002-sync-strategy.md
+│   │       ├── 0003-local-ai-architecture.md
+│   │       ├── 0004-microservices-architecture.md ⭐ MỚI
+│   │       ├── 0005-service-discovery.md     ⭐ MỚI
+│   │       └── 0006-api-gateway.md           ⭐ MỚI
 │   ├── 03-development/                      # coding-standards, git, testing
 │   ├── 04-operations/                       # build, USB distribution, runbook
 │   ├── 05-research/                         # Bài kiểm A & B, kappa
-│   └── 06-user/                             # hướng d�n GV/HS/Admin
+│   └── 06-user/                             # hướng dẫn GV/HS/Admin
+│
+├── service/                                 # ⭐ MỚI — Node.js Microservices — Phase 2
+│   ├── README.md                            # Tổng quan 5 service
+│   ├── WORK_SPLIT.md                        # ⭐ Canonical — Phân chia 5 microservice
+│   ├── shared/                              # Code dùng chung
+│   │   ├── consul-client/                   # Service discovery
+│   │   ├── circuit-breaker/                 # opossum wrapper
+│   │   ├── jwt-utils/                       # JWT verify (gateway-side)
+│   │   ├── prisma-schema/                   # 5 schema gốc
+│   │   ├── tracing/                         # OpenTelemetry init
+│   │   └── error-types/                     # Domain errors chuẩn
+│   ├── service-auth/                        # Dev 1 — port 3001
+│   ├── service-bkt/                         # Dev 2 — port 3002
+│   ├── service-class/                       # Dev 3 — port 3003
+│   ├── service-content/                     # Dev 1 — port 3004
+│   ├── service-sync/                        # Dev 3 — port 3005
+│   └── gateway/                             # ⭐ Express Gateway — port 8080
 │
 ├── app/                                     # 📱 Flutter app — CHẠY OFFLINE 100% (ưu tiên sau)
 │   ├── README.md
@@ -73,62 +97,80 @@ verveai/
 │   ├── tsconfig.json
 │   └── src/
 │       ├── app/                             # Next.js App Router
-│       │   ├── layout.tsx
-│       │   ├── page.tsx
-│       │   ├── error.tsx
-│       │   ├── loading.tsx
-│       │   └── not-found.tsx
 │       ├── styles/
-│       │   └── globals.css                  # Tailwind + CSS variables (shadcn/ui)
-│       ├── middleware.ts                     # Auth/routing middleware
-│       └── css.d.ts                         # CSS module types
+│       ├── middleware.ts
+│       └── lib/api/                         # ⭐ API client → Gateway (port 8080)
 │
-├── content-pipeline/                        # 🌐 TypeScript — chạy online
+├── content-pipeline/                         # 🌐 TypeScript — chạy online
 │   ├── README.md
 │   ├── package.json
 │   └── src/
-│       ├── authoring/
-│       ├── auto-verify/
-│       ├── age-appropriateness/             # ⭐ NFR-23 (G.9)
-│       ├── review/                          # FR-20, SN-SC-03
-│       └── export/
-│           ├── buildContentBundle.ts
-│           └── signBundle.ts                # ⭐ Ed25519 — TS-19/20
 │
 ├── review-console/                          # 🌐 React/TS — rà soát
 │   ├── README.md
 │   └── src/
 │
-├── research/                                # 🐍 Python — bài kiểm quyết định
+├── research/                                 # 🐍 Python — bài kiểm quyết định
 │   ├── README.md
-│   ├── Makefile
 │   ├── pyproject.toml
-│   ├── .gitignore                           # data/ không commit (DR-08)
-│   ├── model-eval/                          # Tài liệu & dữ liệu pilot (A & B)
-│   │   ├── README.md
-│   │   └── data/SCHEMA.md
-│   ├── src/research/
-│   │   ├── expert_agreement/kappa_analysis.py
-│   │   ├── simulation/self_consistency_check.py
-│   │   ├── reproducibility/exportForIndependentReview.py
-│   │   └── model_eval/                      # � Bảng F.5
-│   │       ├── test_a_extraction_quality.py
-│   │       ├── test_b_device_performance.py
-│   │       ├── csv_loader.py / csv_loader_b.py
-│   │       ├── metrics.py / device_probe.py
-│   │       └── verdict.py / verdict_b.py
-│   └── tests/                               # Pytest — unit tests
+│   └── ...
 │
-├── infra/                                   # docker-compose cho content-pipeline/review-console
+├── infra/                                    # ⭐ docker-compose cho 5 service + Consul + Jaeger
+│   ├── docker-compose.yml                   # ⭐ MỚI — 5 service + Gateway + Consul + Jaeger
+│   ├── prometheus.yml                       # ⭐ MỚI
+│   └── consul/                              # ⭐ MỚI — Consul config
 │
-├── scripts/                                 # Build/deploy
-│   ├── README.md
-│   ├── build.sh / build.bat
-│   ├── build-bundle.sh                      # Ký Ed25519
-│   └── deploy.sh                            # USB-deploy
+├── database/                                 # ⭐ MỚI — Schema SQL gốc, ERD, migrations
+│   ├── migrations/                          # Prisma migrations gốc
+│   ├── diagrams/                            # ERD
+│   └── seeds/                              # Data mẫu cho dev
+│
+├── scripts/                                  # Build/deploy
+│   └── build-bundle.sh                      # Ký Ed25519
 │
 └── pnpm-workspace.yaml                      # KHÔNG bao gồm app/ và research/
-    package.json
+```
+
+---
+
+## 📐 service/ structure (Node.js Microservices) ⭐ MỚI
+
+```
+service/
+├── WORK_SPLIT.md             # ⭐ Canonical — Phân chia 5 microservice
+├── README.md                 # Tổng quan, cách chạy
+│
+├── shared/                   # Code dùng chung (workspace packages)
+│   ├── consul-client/        # @service/shared/consul-client
+│   ├── circuit-breaker/      # @service/shared/circuit-breaker
+│   ├── jwt-utils/            # @service/shared/jwt-utils
+│   ├── prisma-schema/        # @service/shared/prisma-schema
+│   ├── tracing/              # @service/shared/tracing
+│   └── error-types/          # @service/shared/error-types
+│
+├── service-auth/             # Dev 1 — port 3001
+│   ├── src/
+│   │   ├── routes/           # Express routes
+│   │   ├── services/         # Business logic
+│   │   ├── prisma/           # Prisma client riêng
+│   │   ├── config/consul.ts  # Đăng ký với Consul
+│   │   ├── metrics.ts        # Prometheus client
+│   │   ├── tracing.ts        # OpenTelemetry
+│   │   └── index.ts          # Express app + register Consul
+│   ├── prisma/schema.prisma  # Import từ shared/prisma-schema
+│   ├── tests/
+│   ├── Dockerfile
+│   └── package.json
+│
+├── service-bkt/              # Dev 2 — port 3002
+├── service-class/            # Dev 3 — port 3003
+├── service-content/          # Dev 1 — port 3004
+├── service-sync/             # Dev 3 — port 3005
+│
+└── gateway/                  # Express Gateway — port 8080
+    ├── config/gateway.config.yml
+    ├── src/
+    └── package.json
 ```
 
 ---
@@ -141,24 +183,14 @@ app/lib/
 │
 ├── engine/                                  # Lớp 2 — TẤT ĐỊNH (TS-07) — Dart thuần
 │   ├── evidence/
-│   │   ├── record_attempt.dart
-│   │   └── evidence_context.dart
 │   ├── mastery/bkt.dart                     # FR-06 → FR-11 — 4 tham số const
 │   ├── diagnose/
-│   │   ├── hypothesis_ranking.dart
-│   │   ├── abstention.dart
-│   │   ├── non_knowledge_detector.dart
-│   │   └── language_barrier_detector.dart   # ⭐ FR-25 (G.9)
 │   ├── item_selection/
-│   │   ├── next_best_item.dart
-│   │   └── recent_item_tracker.dart         # FR-24
 │   ├── remediation/
-│   │   ├── build_plan.dart
-│   │   └── hold_out_check.dart
 │   ├── grouping/cluster_by_root_cause.dart  # BR-07, BR-08
 │   ├── knowledge_graph/                     # TS-06
 │   ├── versioning/                          # DR-07
-│   └── transfer/student_transfer.dart       # ⭐ FR-26 (G.9)
+│   └── transfer/student_transfer.dart        # FR-26
 │
 ├── inference/                               # [A] — Lớp 1 & 3 — chờ Bài kiểm A & B
 │   ├── ffi/llama_bindings.dart              # TS-02
@@ -166,81 +198,20 @@ app/lib/
 │   ├── grammar/                             # TS-04: GBNF
 │   ├── extraction/extract_evidence.dart     # Lớp 1 — AIR-25
 │   └── expression/                          # Lớp 3 — BR-13, AIR-24
-│       ├── explain_to_teacher.dart
-│       ├── fill_student_template.dart
-│       └── fact_check_guard.dart
 │
 ├── content/v1/
-│
 ├── bootstrap/                               # AS-28, TS-19/20
-│   ├── content_installer.dart
-│   ├── model_installer.dart
-│   ├── bundle_verify.dart
-│   └── first_run_wizard.dart
-│
 ├── storage/                                 # TS-05 — SQLite append-only
-│   ├── db.dart
-│   ├── event_log.dart
-│   ├── audit_log.dart                       # BR-05
-│   ├── integrity_check.dart                 # NFR-18
-│   └── recovery.dart
-│
 ├── hub/                                     # SC-05 — chính
-│   ├── server.dart
-│   ├── discovery.dart
-│   ├── crypto.dart
-│   ├── logical_clock.dart
-│   ├── merge.dart
-│   └── backup.dart                          # ⭐ NFR-22
-│
 ├── sync/                                    # SC-06 — dự phòng USB
-│   ├── file_exchange.dart
-│   ├── chunked_transfer.dart
-│   └── sync_strategy_resolver.dart
-│
 ├── privacy/
-│   ├── anonymize.dart                       # DR-08
-│   ├── export_delete.dart                   # FR-21, DR-09
-│   ├── retention_policy.dart                # ⭐ DR-12
-│   └── breach_notify.dart                   # ⭐ NFR-21
-│
-├── content_security/signature_verify.dart   # ⭐ Ed25519
+├── content_security/signature_verify.dart    # Ed25519
 ├── auth/profile_gate.dart                   # FR-22
 │
 └── ui/
     ├── student/                             # ⛔ CHƯA CODE — chờ OS-03
     ├── teacher/                             # CO-T-01 → CO-T-09
-    └── admin/data_governance_panel.dart
-```
-
----
-
-## 📐 research/ structure (Python)
-
-```
-research/
-├── pyproject.toml                           # Package, entry points, pytest config
-├── Makefile                                 # make install / test / test-a / test-b
-├── .gitignore                               # Không commit data thật (DR-08)
-│
-├── src/research/
-│   ├── expert_agreement/kappa_analysis.py
-│   ├── simulation/self_consistency_check.py       # TS-07
-│   ├── reproducibility/exportForIndependentReview.py
-│   └── model_eval/                                # ⭐ Bảng F.5
-│       ├── __init__.py
-│       ├── __main__.py
-│       ├── test_a_extraction_quality.py
-│       ├── test_b_device_performance.py
-│       ├── csv_loader.py / csv_loader_b.py
-│       ├── metrics.py / device_probe.py
-│       └── verdict.py / verdict_b.py
-│
-├── model-eval/                              # Tài liệu + dữ liệu pilot
-│   ├── README.md
-│   └── data/SCHEMA.md
-│
-└── tests/                                   # Pytest — unit tests
+    └── admin/
 ```
 
 ---
@@ -255,13 +226,27 @@ npm run dev                                 # Development server
 npm run build                               # Production build
 npm run lint                                # ESLint check
 
+# --- Microservice Backend (Phase 2) ⭐ MỚI ---
+docker compose -f infra/docker-compose.yml up    # Start all services
+# Hoặc từng service:
+cd service/service-auth
+npm install && npm run dev
+
+# Gateway health check:
+curl http://localhost:8080/health
+
+# Consul UI:
+open http://localhost:8500
+
+# Jaeger UI (tracing):
+open http://localhost:16686
+
 # --- App (Flutter) ---
 cd app
 flutter pub get
-flutter test                                # unit + acceptance
-flutter test integration_test               # e2e thiết bị thật
+flutter test
 flutter build apk --release                 # TS-17
-flutter build windows --release             # TS-18
+flutter build windows --release              # TS-18
 
 # --- Content pipeline (TypeScript) ---
 cd content-pipeline
@@ -274,10 +259,6 @@ pip install -e ".[dev]"
 make test-unit                              # pytest tests/
 make test-a                                 # Bài kiểm A
 make test-b                                 # Bài kiểm B
-
-# --- USB distribution (TS-19/20) ---
-./scripts/build-bundle.sh ./dist 2026.08.25
-PRIVATE_KEY_PATH=./keys/content-signing.key ./scripts/deploy.sh staging ./dist
 ```
 
 ---
@@ -286,41 +267,44 @@ PRIVATE_KEY_PATH=./keys/content-signing.key ./scripts/deploy.sh staging ./dist
 
 | Loại | Convention | Ví dụ |
 |------|-----------|-------|
-| **Folder** | kebab-case / snake_case | `language_barrier_detector`, `cluster_by_root_cause` |
+| **Service folder** | `service-{name}` | `service-auth`, `service-bkt` |
+| **Gateway folder** | `gateway` | `gateway/` |
+| **Folder (service)** | kebab-case / snake_case | `consul-client`, `circuit_breaker` |
 | **Dart class / enum** | PascalCase | `EvidenceEvent`, `ContextMode` |
 | **Dart file** | snake_case | `record_attempt.dart` |
-| **Dart constant** | lowerCamelCase / `k` prefix | `kMasteryThreshold` |
 | **Python file** | snake_case | `kappa_analysis.py` |
 | **Python class** | PascalCase | `TestAConfig` |
 | **TS/TSX file** | camelCase / kebab-case | `buildContentBundle.ts`, `review_queue.ts` |
 | **TS component** | PascalCase | `DashboardPage.tsx`, `TeacherPanel.tsx` |
-| **Branch** | `type/NEKO-{id}-{desc}` | `feature/NEKO-123-add-bkt-mastery` |
-| **Commit** | Conventional Commits | `feat(engine): add BKT mastery tracking` |
-
-Xem chi tiết tại:
-- `.cursor/rules/02-frontend.mdc` (Dart/Flutter)
-- `.cursor/rules/03-python.mdc` (Python)
-- `.cursor/rules/05-git-workflow.mdc` (Branch + Commit)
+| **Branch** | `type/VP-{id}-{desc}` | `feature/VP-123-add-bkt-mastery` |
+| **Commit** | Conventional Commits | `feat(svc-auth): add JWT refresh token` |
 
 ---
 
 ## 🚫 CẤM
 
-- ❌ Backend cloud (LEAPS chạy 100% offline).
-- ❌ Tạo thư mục ngoài cấu trúc này.
-- ❌ File `.ts`/`.tsx` trong `app/lib/`.
-- ❌ File `.dart` trong `content-pipeline/` hoặc `review-console/`.
-- ❌ Đặt `inference/` ra khỏi [A] trước khi Bài kiểm A & B đạt ngưỡng.
-- ❌ Code `app/lib/ui/student/` trước khi OS-03 chốt.
-- ❌ Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519.
+- ❌ **Dùng `backend/`** — đã lỗi thời, dùng `service/service-*`
+- ❌ Backend cloud (LEAPS chạy 100% offline cho app)
+- ❌ Tạo thư mục ngoài cấu trúc này
+- ❌ File `.ts`/`.tsx` trong `app/lib/`
+- ❌ File `.dart` trong `web-portal/`, `content-pipeline/`, `service/`
+- ❌ Đặt `inference/` ra khỏi [A] trước khi Bài kiểm A & B đạt ngưỡng
+- ❌ Code `app/lib/ui/student/` trước khi OS-03 chốt
+- ❌ Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
+- ❌ Hardcode URL service trong code — dùng Consul DNS
+- ❌ Gọi service trực tiếp từ web-portal — phải qua Gateway
+- ❌ Inter-service call không có circuit breaker
 
 ---
 
 ## 📚 TÀI LIỆU LIÊN QUAN
 
 - [VerveAI BA Document v1.4.5](../VerveAI_BA_Document_v1.4.md)
+- [`service/WORK_SPLIT.md`](../service/WORK_SPLIT.md) — ⭐ Phân chia 5 microservice (canonical)
+- [ADR-0004 Microservices Architecture](../02-architecture/adr/0004-microservices-architecture.md)
+- [ADR-0005 Service Discovery (Consul)](../02-architecture/adr/0005-service-discovery.md)
+- [ADR-0006 API Gateway (Express Gateway)](../02-architecture/adr/0006-api-gateway.md)
 - [Project Management Plan](./PROJECT_MANAGEMENT_PLAN.md)
-- [Architecture Overview](../02-architecture/README.md)
 - [Development Guide](../03-development/README.md)
 
 ---

@@ -1,16 +1,19 @@
 ---
-description: Backend (Node.js/Express/Prisma) rules for VERVEAI API server
-globs: ["backend/**/*.{ts,js,json}", "web-portal/prisma/**/*"]
+description: Microservice backend rules for VERVEAI — Node.js/Express/Prisma/Consul (5 services + Gateway) — BA v1.4.5
+globs: ["service/**/*.{ts,js,json}", "service/service-*/prisma/**/*"]
 alwaysApply: false
 ---
 
-# Backend Rules (VERVEAI — Node.js/Express/Prisma)
+# Backend Rules (VERVEAI — Node.js Microservices)
 
-> **Phase 2 Development** — Backend kết nối với web-portal (Next.js)
+> **Phase 2 Development** — 5 microservice + Gateway + Consul kết nối với web-portal (Next.js).
+>
+> **Canonical ref:** [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 service.
+> **Canonical ref:** [`docs/02-architecture/adr/0004-microservices-architecture.md`](../../docs/02-architecture/adr/0004-microservices-architecture.md).
 
 ## Ưu tiên
 - **`web-portal/`** (Next.js) — Phase 1: Frontend với mock data
-- **`backend/`** (Node.js) — Phase 2: API server, Prisma ORM
+- **`service/`** (Node.js Microservices) — Phase 2: 5 service + Gateway + Consul
 
 ---
 
@@ -18,38 +21,94 @@ alwaysApply: false
 
 | Loại | Convention | Ví dụ |
 |------|-----------|-------|
-| File | kebab-case | `auth-controller.ts`, `class-service.ts` |
-| Class | PascalCase | `AuthController`, `ClassService` |
-| Function/Variable | camelCase | `createUser`, `isValidEmail` |
-| Constant | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT` |
-| Interface | PascalCase với prefix `I` | `IUser`, `IClassResponse` |
-| Enum | PascalCase | `UserRole`, `AuthProvider` |
+| File | kebab-case | `auth-service.ts`, `class-route.ts` |
+| Class | PascalCase | `AuthService`, `ClassRoute` |
+| Function/Variable | camelCase | `createUser`, `isValidToken` |
+| Constant | UPPER_SNAKE_CASE | `MAX_RETRY_COUNT`, `CONSUL_HOST` |
+| Interface | PascalCase (KHÔNG prefix `I`) | `User`, `ClassResponse` |
+| Enum | PascalCase | `UserRole`, `DeviceType` |
 | Database table | snake_case (plural) | `users`, `student_classes` |
+
+> **Khác với backend cũ:** Không dùng `controllers/`, `repositories/` (theo WORK_SPLIT). Dùng `routes/` + `services/` trực tiếp với Prisma client.
 
 ## ✅ MUST
 
 ### Core
 - Node.js ≥ 20, TypeScript ≥ 5.0, strict mode
-- Express.js hoặc Fastify cho HTTP server
-- Prisma ORM cho database
+- Express.js cho HTTP server
+- **Prisma ORM** cho PostgreSQL (5 schema: `auth`, `bkt`, `class`, `content`, `sync`)
 - Zod cho request/response validation
 - Winston hoặc Pino cho logging
 
-### Architecture
-- **Controller → Service → Repository** pattern
+### Architecture (Microservice) ⭐
+- **Route → Service → Prisma Client** (KHÔNG controller/repository)
+- **Consul** cho Service Discovery — KHÔNG hardcode URL service
+- **opossum** Circuit Breaker cho inter-service call
+- **OpenTelemetry** cho Distributed Tracing (gửi về Jaeger)
+- **Prometheus client** cho metrics (gửi về Prometheus)
 - Dependency injection (không hardcode dependencies)
 - Environment variables cho mọi config (`.env`)
-- Graceful shutdown handler
+- Graceful shutdown handler — `SIGTERM` → deregister Consul → close Prisma → exit
+
+### Service Registration (Consul) ⭐
+```typescript
+// src/config/consul.ts
+import { Consul } from '@service/shared/consul-client';
+
+export async function registerService() {
+  await Consul.register({
+    name: 'svc-auth',
+    port: 3001,
+    healthCheck: '/health',
+    tags: ['auth', 'v1', 'microservice'],
+  });
+}
+
+process.on('SIGTERM', async () => {
+  await Consul.deregister();
+  process.exit(0);
+});
+```
+
+### Service Discovery (Consul) ⭐
+```typescript
+// KHÔNG: const authUrl = 'http://svc-auth:3001';
+// ĐÚNG:
+import { Consul } from '@service/shared/consul-client';
+
+const authUrl = await Consul.resolve('svc-auth');
+// → trả về URL hiện tại từ Consul (auto-failover nếu service chết)
+```
+
+### Circuit Breaker (opossum) ⭐
+```typescript
+import { createBreaker } from '@service/shared/circuit-breaker';
+
+const authBreaker = createBreaker('svc-auth', async (path: string, options?: RequestInit) => {
+  const url = await Consul.resolve('svc-auth');
+  return fetch(`${url}${path}`, options);
+}, {
+  timeout: 3000,           // 3s
+  errorThresholdPercentage: 50,
+  resetTimeout: 10000,     // 10s
+});
+
+// Sử dụng:
+const result = await authBreaker.fire('/api/auth/verify', { method: 'POST' });
+```
 
 ### Security
 - Helmet.js cho HTTP headers
-- Rate limiting (express-rate-limit)
+- Rate limiting (express-rate-limit) — 100 req/min auth, 1000 req/min API
 - Input validation với Zod
 - SQL injection prevention qua Prisma parameterized queries
 - CORS policy restrict origins
+- **JWT verify tại Gateway** — KHÔNG verify lại ở service (gateway đã làm)
+
+> ⚠️ **Quan trọng:** Service tin tưởng Gateway đã verify JWT. Service chỉ nhận `X-User-Id`, `X-User-Role` headers từ Gateway.
 
 ### API Design
-- RESTful endpoints (xem bảng dưới)
+- RESTful endpoints — xem bảng dưới
 - Consistent response format:
   ```json
   {
@@ -61,190 +120,282 @@ alwaysApply: false
 - Standard HTTP status codes
 - Pagination cho list endpoints
 
+### Metrics ⭐
+Mỗi service phải expose `/metrics` cho Prometheus:
+- `http_request_duration_seconds` — histogram
+- `http_requests_total` — counter
+- `circuit_breaker_state` — gauge (0=closed, 1=open, 2=half-open)
+- `db_query_duration_seconds` — histogram
+
+### Health Check ⭐
+Mỗi service phải có `/health` cho Consul:
+```typescript
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', service: 'svc-auth', version: '1.0.0' });
+  } catch (e) {
+    res.status(503).json({ status: 'down', error: String(e) });
+  }
+});
+```
+
 ## ❌ NEVER
 
 - `any` type — dùng `unknown` + type guards
-- `console.log` trong production — dùng logger
+- `console.log` trong production — dùng logger (Winston/Pino)
 - Hardcoded secrets — dùng env variables
+- Hardcode URL service — dùng Consul discovery
 - `var` — dùng `const` / `let`
 - Synchronous code trong request handlers
 - Query string concatenation cho SQL
 - Commit `.env`, `*.pem`, khoá riêng
+- Gọi trực tiếp service khác KHÔNG có circuit breaker
+- Re-verify JWT ở service (Gateway đã verify)
+- Dùng `controllers/` hoặc `repositories/` (theo WORK_SPLIT — không dùng)
 
 ---
 
-## 📁 Structure
+## 📁 Structure — Per Service
 
 ```
-backend/
+service/service-{name}/
 ├── src/
-│   ├── config/
-│   │   ├── index.ts           # Environment config
-│   │   └── database.ts       # Prisma client
-│   │
-│   ├── controllers/
-│   │   ├── auth.controller.ts
-│   │   ├── class.controller.ts
-│   │   ├── student.controller.ts
-│   │   ├── intervention.controller.ts
-│   │   └── admin.controller.ts
-│   │
-│   ├── services/
-│   │   ├── auth.service.ts
-│   │   ├── class.service.ts
-│   │   ├── student.service.ts
-│   │   ├── intervention.service.ts
-│   │   └── report.service.ts
-│   │
-│   ├── repositories/
-│   │   ├── user.repository.ts
-│   │   ├── class.repository.ts
-│   │   ├── student.repository.ts
-│   │   └── evidence.repository.ts
-│   │
-│   ├── middleware/
-│   │   ├── auth.middleware.ts
-│   │   ├── role.middleware.ts
-│   │   ├── error.middleware.ts
-│   │   ├── validate.middleware.ts
-│   │   └── rateLimit.middleware.ts
-│   │
-│   ├── routes/
-│   │   ├── index.ts
+│   ├── routes/              # Express routes (KHÔNG có controllers/)
 │   │   ├── auth.routes.ts
-│   │   ├── class.routes.ts
-│   │   ├── student.routes.ts
-│   │   ├── intervention.routes.ts
-│   │   └── admin.routes.ts
-│   │
-│   ├── validators/
-│   │   ├── auth.validator.ts
-│   │   ├── class.validator.ts
-│   │   └── student.validator.ts
-│   │
+│   │   └── user.routes.ts
+│   ├── services/            # Business logic (KHÔNG có repositories/)
+│   │   ├── auth.service.ts
+│   │   └── user.service.ts
+│   ├── prisma/              # Prisma client riêng cho từng service
+│   │   └── client.ts
+│   ├── config/
+│   │   ├── consul.ts        # ⭐ Đăng ký với Consul
+│   │   └── env.ts           # Validate env với Zod
+│   ├── middleware/
+│   │   ├── error.middleware.ts
+│   │   └── validate.middleware.ts
+│   ├── validators/          # Zod schemas
+│   │   └── auth.validator.ts
 │   ├── utils/
 │   │   ├── logger.ts
-│   │   ├── response.ts
-│   │   └── pagination.ts
-│   │
-│   ├── types/
-│   │   ├── index.ts
-│   │   ├── user.types.ts
-│   │   └── api.types.ts
-│   │
-│   └── app.ts                # Express app setup
+│   │   └── response.ts
+│   ├── metrics.ts           # ⭐ Prometheus client setup
+│   ├── tracing.ts           # ⭐ OpenTelemetry init
+│   └── index.ts             # Express app + register Consul
 │
 ├── prisma/
-│   ├── schema.prisma
-│   └── migrations/
+│   └── schema.prisma        # Import từ shared/prisma-schema (schema = {name})
 │
 ├── tests/
 │   ├── unit/
-│   ├── integration/
+│   ├── integration/         # Test với Consul test container
 │   └── fixtures/
 │
+├── Dockerfile
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
-└── .env                      # gitignore
+└── .env                     # gitignore
 ```
 
 ---
 
-## 🔌 API Endpoints
+## 📁 Structure — Shared Code
 
-### Auth
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| POST | `/api/auth/login` | Đăng nhập |
-| POST | `/api/auth/logout` | Đăng xuất |
-| GET | `/api/auth/session` | Lấy session hiện tại |
-| POST | `/api/auth/refresh` | Refresh token |
+```
+service/shared/
+├── common-node/              # ⭐ @verveai/common-node — logger, response, error, validation, middleware, notification, crypto, pagination, http, constants, config, utils
+│   ├── src/
+│   │   ├── logger/
+│   │   ├── response/
+│   │   ├── error/
+│   │   ├── validation/
+│   │   ├── middleware/
+│   │   ├── notification/
+│   │   ├── crypto/
+│   │   ├── pagination/
+│   │   ├── http/
+│   │   ├── constants/
+│   │   ├── config/
+│   │   └── utils/
+│   ├── package.json
+│   └── README.md
+├── consul-client/           # @service/shared/consul-client
+│   ├── src/index.ts         # Consul.register(), Consul.deregister(), Consul.resolve(name)
+│   └── package.json
+├── jwt-utils/               # @service/shared/jwt-utils (cho Gateway)
+│   ├── src/verify.ts
+│   └── package.json
+├── circuit-breaker/         # @service/shared/circuit-breaker
+│   ├── src/index.ts         # createBreaker<T>(name, fn, options)
+│   └── package.json
+├── prisma-schema/           # @service/shared/prisma-schema
+│   ├── schema.prisma        # 5 schema (auth, bkt, class, content, sync)
+│   └── seed.ts
+├── tracing/                 # @service/shared/tracing
+│   ├── src/init.ts          # OpenTelemetry init cho mỗi service
+│   └── package.json
+└── error-types/             # @service/shared/error-types
+    ├── src/index.ts         # DomainError, ValidationError, AuthError, NotFoundError
+    └── package.json
+```
 
-### Classes
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/classes` | Danh sách lớp của GV |
-| GET | `/api/classes/:id` | Chi tiết lớp |
-| POST | `/api/classes` | Tạo lớp mới |
-| PUT | `/api/classes/:id` | Cập nhật lớp |
-| DELETE | `/api/classes/:id` | Xóa lớp |
+> Mỗi service import shared packages bằng `@service/shared/*` (qua workspace config).
 
-### Students
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/students/:id` | Chi tiết HS |
-| GET | `/api/students/:id/evidence` | Bằng chứng của HS |
-| GET | `/api/students/:id/diagnosis` | Chẩn đoán của HS |
-| PUT | `/api/students/:id/override` | Override kết luận (FR-17) |
+---
 
-### Interventions
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/interventions` | Danh sách nhóm can thiệp |
-| GET | `/api/interventions/:id` | Chi tiết nhóm |
-| POST | `/api/interventions/:id/note` | Thêm ghi chú GV |
-| PUT | `/api/interventions/:id/status` | Cập nhật trạng thái |
+## 📁 Structure — Gateway
 
-### Evidence
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/evidence/:id` | Chi tiết bằng chứng |
-| POST | `/api/evidence/:id/note` | Thêm ghi chú GV |
-| GET | `/api/evidence/:id/chain` | Chuỗi suy luận |
+```
+gateway/
+├── src/
+│   ├── config/
+│   │   ├── gateway.config.yml   # Routes, pipelines, policies
+│   │   └── policies/
+│   │       ├── jwt.js          # Verify JWT
+│   │       └── rate-limit.js
+│   ├── tracing.ts
+│   └── index.ts                # Express app + register Consul
+├── tests/
+├── Dockerfile
+├── package.json
+└── .env.example
+```
 
-### Reports
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/reports/aggregate` | Báo cáo tổng hợp ẩn danh |
-| GET | `/api/reports/export/:type` | Export PDF/CSV |
+**`gateway.config.yml` mẫu:**
 
-### Admin
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/admin/users` | Danh sách người dùng |
-| POST | `/api/admin/users` | Tạo người dùng |
-| PUT | `/api/admin/users/:id` | Cập nhật người dùng |
-| DELETE | `/api/admin/users/:id` | Xóa người dùng |
-| GET | `/api/admin/devices` | Danh sách thiết bị |
-| GET | `/api/admin/sync-log` | Nhật ký sync |
+```yaml
+http:
+  port: 8080
+apiEndpoints:
+  auth:    { paths: '/api/auth/*' }
+  bkt:     { paths: '/api/bkt/*' }
+  class:   { paths: '/api/class/*' }
+  content: { paths: '/api/content/*' }
+  sync:    { paths: '/api/sync/*' }
+serviceEndpoints:
+  svc-auth:    { url: 'http://svc-auth:3001' }
+  svc-bkt:     { url: 'http://svc-bkt:3002' }
+  svc-class:   { url: 'http://svc-class:3003' }
+  svc-content: { url: 'http://svc-content:3004' }
+  svc-sync:    { url: 'http://svc-sync:3005' }
+pipelines:
+  default:
+    apiEndpoints: [auth, bkt, class, content, sync]
+    policies:
+      - cors
+      - rate-limit
+      - jwt        # ← Verify tại gateway, KHÔNG re-verify ở service
+      - proxy
+```
 
-### Student / Learning
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/learn/dashboard` | Dashboard học sinh |
-| GET | `/api/learn/session` | Phiên làm bài hiện tại |
-| POST | `/api/learn/session/start` | Bắt đầu phiên mới |
-| PUT | `/api/learn/session/:id/answer` | Gửi đáp án |
-| PUT | `/api/learn/session/:id/pause` | Tạm dừng phiên |
-| POST | `/api/learn/session/:id/complete` | Hoàn thành phiên |
-| GET | `/api/learn/session/:id/result` | Kết quả sau phiên |
-| GET | `/api/learn/progress` | Tiến độ pKnown tổng hợp |
-| GET | `/api/learn/progress/:skillId` | Tiến độ kỹ năng cụ thể |
-| GET | `/api/learn/pathway` | Lộ trình học tập |
-| GET | `/api/learn/skills` | Danh sách kỹ năng |
-| GET | `/api/learn/skills/:id` | Chi tiết kỹ năng |
-| GET | `/api/learn/lessons/:skillId` | Bài học cho kỹ năng |
-| GET | `/api/learn/badges` | Danh sách badge đạt được |
-| GET | `/api/learn/tasks` | Nhiệm vụ GV đã giao |
-| GET | `/api/learn/history` | Lịch sử hoạt động |
+---
 
-### Parent
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/parent/children` | Danh sách con |
-| GET | `/api/parent/child/:id/progress` | Tiến độ của con |
-| GET | `/api/parent/child/:id/skills` | Kỹ năng cần củng cố |
-| POST | `/api/parent/link` | Tạo link kết nối với con |
-| GET | `/api/parent/link/:code` | Xác nhận link qua QR |
+## 🔌 API Endpoints — Theo WORK_SPLIT.md
 
-### Supervisor
-| Method | Endpoint | Mô tả |
-|--------|----------|--------|
-| GET | `/api/supervisor/overview` | Tổng quan cụm/trường |
-| GET | `/api/supervisor/reports` | Báo cáo ẩn danh |
-| GET | `/api/supervisor/reports/:scope` | Báo cáo theo phạm vi |
-| GET | `/api/supervisor/alerts` | Danh sách cảnh báo |
+> **Lưu ý:** Mọi endpoint bên dưới được gọi qua Gateway (`http://gateway:8080/...`), không gọi trực tiếp.
+
+### svc-auth (3001) — Dev 1
+```
+POST   /api/auth/login          # Login → JWT
+POST   /api/auth/logout
+GET    /api/auth/session
+GET    /api/auth/me
+
+GET    /api/users               # List users (admin)
+POST   /api/users
+GET    /api/users/:id
+PUT    /api/users/:id
+DELETE /api/users/:id
+```
+
+### svc-bkt (3002) — Dev 2
+```
+POST   /api/bkt/diagnosis/run
+POST   /api/bkt/diagnosis/batch
+GET    /api/bkt/diagnosis/student/:id
+GET    /api/bkt/diagnosis/class/:id
+
+POST   /api/bkt/evidence
+GET    /api/bkt/evidence/:id
+GET    /api/bkt/evidence/:id/chain
+GET    /api/bkt/evidence/student/:id
+
+GET    /api/bkt/interventions
+GET    /api/bkt/interventions/class/:id
+GET    /api/bkt/interventions/:id
+PUT    /api/bkt/interventions/:id
+PUT    /api/bkt/interventions/:id/override      # Teacher override (FR-17)
+POST   /api/bkt/interventions/:id/note
+POST   /api/bkt/interventions/:id/resolve
+
+GET    /api/bkt/skills
+GET    /api/bkt/skills/:id
+GET    /api/bkt/skills/tree
+GET    /api/bkt/skills/:id/prerequisites
+```
+
+### svc-class (3003) — Dev 3
+```
+GET    /api/class/classes
+POST   /api/class/classes
+GET    /api/class/classes/:id
+PUT    /api/class/classes/:id
+DELETE /api/class/classes/:id
+GET    /api/class/classes/:id/stats
+
+GET    /api/class/students/:id
+POST   /api/class/students
+PUT    /api/class/students/:id
+DELETE /api/class/students/:id
+GET    /api/class/students/:id/evidence
+GET    /api/class/students/:id/diagnosis
+
+GET    /api/class/progress/:studentId
+GET    /api/class/progress/:studentId/history
+GET    /api/class/progress/:studentId/skills
+```
+
+### svc-content (3004) — Dev 1
+```
+GET    /api/content
+POST   /api/content
+GET    /api/content/:id
+PUT    /api/content/:id
+DELETE /api/content/:id
+
+GET    /api/content/bundles
+GET    /api/content/bundles/:id
+POST   /api/content/bundles/build
+POST   /api/content/bundles/:id/sign           # Ed25519
+POST   /api/content/bundles/:id/publish
+
+GET    /api/content/review
+POST   /api/content/review/:id/approve
+POST   /api/content/review/:id/reject
+GET    /api/content/review/stats
+
+GET    /api/content/reports/aggregate
+GET    /api/content/reports/class/:id
+GET    /api/content/reports/student/:id
+GET    /api/content/reports/export/:type
+```
+
+### svc-sync (3005) — Dev 3
+```
+GET    /api/sync/status
+POST   /api/sync/push
+GET    /api/sync/pull
+GET    /api/sync/pull/:since
+POST   /api/sync/resolve
+
+GET    /api/sync/devices
+GET    /api/sync/devices/:id
+PUT    /api/sync/devices/:id
+DELETE /api/sync/devices/:id
+GET    /api/sync/devices/:id/logs
+```
 
 ---
 
@@ -256,6 +407,14 @@ backend/
 // - PascalCase cho model names
 // - UUID cho primary keys
 // - createdAt/updatedAt tự động
+// - 5 schema riêng biệt: auth, bkt, class, content, sync
+
+// service-auth/prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["auth"]    // ← Chỉ dùng schema "auth"
+}
 
 model User {
   id        String   @id @default(uuid())
@@ -266,27 +425,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  classes   Class[]
-  notes     TeacherNote[]
-
+  @@schema("auth")
   @@map("users")
 }
 
 enum UserRole {
   TEACHER
-  STUDENT
   ADMIN
-  PARENT
   SUPERVISOR
+  @@schema("auth")
 }
 ```
+
+> **Quan trọng:** Schema gốc ở `service/shared/prisma-schema/schema.prisma` — mỗi service import và chỉ giữ schema của mình. Migration order quản lý tập trung ở `database/migrations/`.
 
 ### Migration Rules
 - Mỗi migration phải có tên mô tả
 - Không sửa migration đã apply
-- Dùng `prisma migrate dev` trong development
+- Dùng `prisma migrate dev` trong development (1 lần, áp dụng cho 5 schema)
 - Dùng `prisma migrate deploy` trong production
+- Cross-schema queries: dùng raw SQL qua Prisma (cẩn thận)
 
 ---
 
@@ -294,45 +452,126 @@ enum UserRole {
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Auth | JWT với refresh token |
+| Auth | JWT (ký ở svc-auth, verify ở Gateway) |
 | Password | bcrypt với cost factor ≥ 12 |
-| Rate Limit | 100 req/min cho auth, 1000 req/min cho API |
-| CORS | whitelist domains trong env |
-| HTTPS | enforce trong production |
+| Rate Limit | 100 req/min cho auth, 1000 req/min cho API (gateway-level) |
+| CORS | whitelist domains trong env (gateway-level) |
+| HTTPS | enforce trong production (gateway-level) |
 | SQL Injection | Prisma parameterized queries |
-| XSS | sanitize input, set CSP headers |
+| XSS | sanitize input, set CSP headers (gateway-level) |
 | CSRF | SameSite cookies + CSRF tokens |
+| Inter-service | Consul + circuit breaker + tracing |
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-# Unit tests
+# Trong từng service
+cd service/service-auth
+npm run test:unit             # Jest
+npm run test:integration      # Test với Consul test container + Postgres
+npm run test:e2e              # E2E qua Gateway
+npm run test:cov              # Coverage report
+
+# Gateway
+cd service/gateway
 npm run test:unit
-
-# Integration tests
 npm run test:integration
-
-# E2E tests
-npm run test:e2e
-
-# Coverage
-npm run test:cov
 ```
 
 ### Coverage Requirements
-| Layer | Min Coverage |
+| Layer (per service) | Min Coverage |
 |-------|--------------|
 | Services | **80%** |
-| Controllers | **70%** |
+| Routes | **70%** |
 | Middleware | **90%** |
-| Repositories | **75%** |
+| Prisma client calls | **75%** |
+| Circuit breakers | **85%** ⭐ MỚI |
+| Consul clients | **80%** ⭐ MỚI |
+
+### Gateway Coverage
+| Layer | Min Coverage |
+|-------|--------------|
+| Policies (jwt, rate-limit) | **80%** |
+| Routing config | **90%** |
+| Health checks | **85%** |
+
+### Shared Code Coverage
+| Package | Min Coverage |
+|---------|--------------|
+| `shared/consul-client` | **85%** |
+| `shared/circuit-breaker` | **90%** |
+| `shared/jwt-utils` | **95%** |
+| `shared/error-types` | **90%** |
+| `shared/common-node` ⭐ | **85%** |
+
+---
+
+## 🔗 Inter-Service Communication Pattern
+
+```typescript
+// ✅ ĐÚNG: Dùng Consul + Circuit Breaker
+import { Consul } from '@service/shared/consul-client';
+import { createBreaker } from '@service/shared/circuit-breaker';
+
+const breaker = createBreaker('svc-auth', async (path: string, init?: RequestInit) => {
+  const baseUrl = await Consul.resolve('svc-auth');
+  return fetch(`${baseUrl}${path}`, init);
+}, { timeout: 3000, errorThresholdPercentage: 50 });
+
+// Trong service:
+const verifyResult = await breaker.fire('/api/auth/verify', {
+  method: 'POST',
+  body: JSON.stringify({ token }),
+  headers: { 'Content-Type': 'application/json' },
+});
+```
+
+```typescript
+// ❌ SAI: Hardcode URL, không có circuit breaker
+const response = await fetch('http://svc-auth:3001/api/auth/verify', { ... });
+```
+
+---
+
+## 🚀 Development Workflow
+
+```bash
+# Start toàn bộ stack
+docker compose -f infra/docker-compose.yml up
+
+# Hoặc từng service (khi dev riêng):
+cd service/service-auth
+npm install
+npm run dev   # Tự động register với Consul khi khởi động
+
+# Test e2e qua Gateway
+curl http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"teacher@school.vn","password":"password"}'
+
+# Xem Consul UI
+open http://localhost:8500
+
+# Xem Jaeger UI (tracing)
+open http://localhost:16686
+
+# Xem Prometheus UI (metrics)
+open http://localhost:9090
+
+# Xem Grafana dashboard
+open http://localhost:3000
+```
 
 ---
 
 ## 📚 TÀI LIỆU LIÊN QUAN
 
+- [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 microservice (canonical)
+- [ADR-0004 Microservices Architecture](../../docs/02-architecture/adr/0004-microservices-architecture.md)
+- [ADR-0005 Service Discovery (Consul)](../../docs/02-architecture/adr/0005-service-discovery.md)
+- [ADR-0006 API Gateway (Express Gateway)](../../docs/02-architecture/adr/0006-api-gateway.md)
 - [web-portal-architecture.md](../../docs/02-architecture/web-portal-architecture.md)
 - [Privacy Architecture](../../docs/02-architecture/privacy-architecture.md)
 - [ADR-0002 Sync Strategy](../../docs/02-architecture/adr/0002-sync-strategy.md)

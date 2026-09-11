@@ -3,10 +3,10 @@
 
 > **Tên mã nguồn:** VerveAI · **App:** Verve
 > **Phiên bản:** 1.4.5
-> **Ngày:** 05/09/2026
+> **Ngày:** 09/09/2026
 > **Trạng thái:** 🔴 BẮT BUỘC — Mọi thành viên phải đọc và tuân thủ
 > **Owner:** Tech Lead + Project Manager
-> **Căn cứ:** BA Document v1.4.5
+> **Căn cứ:** BA Document v1.4.5 + WORK_SPLIT.md v1.1
 
 ---
 
@@ -40,7 +40,7 @@
 
 ```
 verveai/
-├── app/                    # Flutter app — OFFLINE 100% (ưu tiên sau web-portal)
+├── app/                    # Flutter app — OFFLINE 100% (ưu tiên sau web-portal + service)
 │   ├── lib/
 │   │   ├── engine/         # Lớp 2 TẤT ĐỊNH — Dart thuần
 │   │   ├── inference/      # [A] Lớp 1 & 3 — chờ Bài kiểm A & B
@@ -52,10 +52,21 @@ verveai/
 │   │   └── ui/            # CO-T-01..09, CO-A-01..05
 │   └── test/
 │
+├── service/                # ⭐ MỚI — Node.js Microservices — Phase 2
+│   ├── WORK_SPLIT.md      # ⭐ Canonical — Phân chia 5 microservice
+│   ├── shared/            # Code dùng chung
+│   ├── service-auth/      # Dev 1 — port 3001
+│   ├── service-bkt/       # Dev 2 — port 3002
+│   ├── service-class/     # Dev 3 — port 3003
+│   ├── service-content/    # Dev 1 — port 3004
+│   ├── service-sync/       # Dev 3 — port 3005
+│   └── gateway/           # Express Gateway — port 8080
+│
 ├── web-portal/             # Next.js/TypeScript — Web portal cho GV (ƯU TIÊN CAO NHẤT)
 │   └── src/
 │       ├── app/            # Next.js App Router
 │       ├── styles/         # Tailwind + CSS variables
+│       ├── lib/api/        # ⭐ API client → Gateway (port 8080)
 │       └── middleware.ts   # Auth/routing
 │
 ├── content-pipeline/        # TypeScript — chạy online trước triển khai
@@ -73,6 +84,10 @@ verveai/
 │
 ├── review-console/         # React/TS — rà soát nội dung
 │
+├── infra/                  # ⭐ docker-compose cho 5 service + Consul + Jaeger
+│   ├── docker-compose.yml
+│   └── prometheus.yml
+│
 └── docs/                  # Tài liệu BA, architecture, operations
 ```
 
@@ -81,14 +96,17 @@ verveai/
 | Ưu tiên | Module | Trạng thái |
 |---------|--------|------------|
 | **CAO NHẤT** | `web-portal/` | Đang phát triển |
-| Pilot | `app/` | Chờ web-portal hoàn thành |
+| **CAO** | `service/` ⭐ MỚI | Phase 2 — đang phát triển |
+| Pilot | `app/` | Chờ web-portal + service hoàn thành |
 
 ### 1.3 Cấm
 - ❌ KHÔNG tạo thư mục ngoài cấu trúc trên
+- ❌ KHÔNG dùng `backend/` — đã lỗi thời, dùng `service/service-*`
 - ❌ KHÔNG tạo file `.ts`/`.tsx` trong `app/lib/`
-- ❌ KHÔNG tạo file `.dart` trong `content-pipeline/` hoặc `review-console/`
+- ❌ KHÔNG tạo file `.dart` trong `content-pipeline/`, `review-console/`, hoặc `service/`
 - ❌ KHÔNG commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
-- ❌ Backend cloud — LEAPS chạy **100% offline**
+- ❌ KHÔNG hardcode URL service — dùng Consul DNS
+- ❌ Backend cloud — LEAPS chạy **100% offline** cho app
 
 ---
 
@@ -97,13 +115,14 @@ verveai/
 ### 2.1 Branch Naming
 
 ```bash
-# Format: <type>/<id>-<short-desc>
+# Format: <type>/VP-<id>-<short-desc>
 
 feature/VP-123-add-bkt-mastery      # Feature mới
+feature/VP-124-add-svc-auth         # ⭐ Microservice feature
 bugfix/VP-456-fix-sync-conflict     # Bug fix
 hotfix/VP-789-critical-fix          # Critical fix
 refactor/VP-234-cleanup-engine      # Refactor code
-docs/VP-345-update-readme           # Documentation only
+docs/VP-345-update-adr             # Documentation / ADR
 test/VP-456-add-engine-tests        # Test only
 chore/VP-567-update-deps            # Build/tooling
 ```
@@ -115,13 +134,18 @@ chore/VP-567-update-deps            # Build/tooling
 ```bash
 # Format: <type>(<scope>): <subject>
 
+# web-portal
+feat(web-portal): add teacher dashboard
+
+# Microservice
+feat(svc-auth): add JWT refresh token
+feat(svc-bkt): add BKT diagnosis endpoint
+feat(gateway): add JWT verification policy
+feat(infra): update docker-compose for 5 services
+
+# Flutter
 feat(engine): add BKT mastery tracking
-fix(sync): correct merge conflict resolution
-docs(readme): update setup instructions
-test(engine): add unit test for hypothesis ranking
-refactor(storage): extract event log to separate class
-perf(inference): add response caching
-chore(deps): upgrade flutter to 3.24
+docs(adr): add ADR-0004 microservice architecture
 ```
 
 **Types:**
@@ -385,6 +409,9 @@ class GrammarParser {
 | `hub/` + `sync/` | **85%** |
 | `inference/` | **60%** (mock via subclass) |
 | `ui/` | **70%** |
+| **service/ (per service)** ⭐ MỚI | **80%** |
+| **gateway/** ⭐ MỚI | **80%** |
+| **shared/ (per package)** ⭐ MỚI | **85-95%** |
 
 ### 5.2 Test Structure
 
@@ -536,12 +563,22 @@ python -m research.simulation.self_consistency_check
 1. [VerveAI BA Document v1.4.5](../VerveAI_BA_Document_v1.4.md)
 2. [Project Management Plan](./PROJECT_MANAGEMENT_PLAN.md)
 3. [Project Structure](./PROJECT_STRUCTURE.md)
-4. [ADR-0001 Tech Stack](../02-architecture/adr/0001-tech-stack-selection.md)
-5. [ADR-0003 AI 3 lớp](../02-architecture/adr/0003-local-ai-architecture.md)
+4. [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — ⭐ Phân chia 5 microservice
+5. [ADR-0001 Tech Stack](../02-architecture/adr/0001-tech-stack-selection.md)
+6. [ADR-0003 AI 3 lớp](../02-architecture/adr/0003-local-ai-architecture.md)
+7. [ADR-0004 Microservices Architecture](../02-architecture/adr/0004-microservices-architecture.md) ⭐ MỚI
+8. [ADR-0005 Service Discovery](../02-architecture/adr/0005-service-discovery.md) ⭐ MỚI
+9. [ADR-0006 API Gateway](../02-architecture/adr/0006-api-gateway.md) ⭐ MỚI
 
 ### Coding Standards chi tiết
-- [.cursor/rules/02-frontend.mdc](../../.cursor/rules/02-frontend.mdc) (Dart/Flutter)
-- [.cursor/rules/03-python.mdc](../../.cursor/rules/03-python.mdc) (Python)
+- [.cursor/rules/00-project-overview.mdc](../../.cursor/rules/00-project-overview.mdc) (Project Overview + Golden Rules)
+- [.cursor/rules/01-folder-structure.mdc](../../.cursor/rules/01-folder-structure.mdc) (Folder Structure)
+- [.cursor/rules/02-backend.mdc](../../.cursor/rules/02-backend.mdc) (Microservice Backend)
+- [.cursor/rules/03-frontend.mdc](../../.cursor/rules/03-frontend.mdc) (Dart/Flutter)
+- [.cursor/rules/04-python.mdc](../../.cursor/rules/04-python.mdc) (Python)
+- [.cursor/rules/05-git-workflow.mdc](../../.cursor/rules/05-git-workflow.mdc) (Git Workflow)
+- [.cursor/rules/06-architecture.mdc](../../.cursor/rules/06-architecture.mdc) (Architecture)
+- [.cursor/rules/07-testing.mdc](../../.cursor/rules/07-testing.mdc) (Testing)
 
 ### Workflow
 - [Git Workflow](../03-development/git-workflow.md)
@@ -561,6 +598,7 @@ Mỗi thành viên khi join dự án **PHẢI:**
 ---
 
 **Version Control:**
+- v1.4.5.1 (09/09/2026) - ⭐ MỚI: Thêm service/ microservice (WORK_SPLIT.md v1.1), 3 ADR mới (0004-0006), update rules
 - v1.4.5 (05/09/2026) - Cập nhật theo BA v1.4.5: đổi tên NEKOPATH → VerveAI → LEAPS, folder leaps_verveai_2026
 
 **END OF DOCUMENT**

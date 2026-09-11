@@ -1,0 +1,85 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["class"]
+}
+
+/// A teaching class managed by a teacher. Table is `classes` in the
+/// `class` Postgres schema.
+model Class {
+  id          String       @id @default(uuid())
+  name        String
+  subject     String
+  teacher_id  String
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  deleted_at  DateTime?
+  enrollments Enrollment[]
+
+  @@index([teacher_id])
+  @@index([deleted_at])
+  @@map("classes")
+  @@schema("class")
+}
+
+/// A learner enrolled in one or more classes. Table is `students` in the
+/// `class` Postgres schema.
+model Student {
+  id          String       @id @default(uuid())
+  name        String
+  email       String?      @unique
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  deleted_at  DateTime?
+  enrollments Enrollment[]
+  progress    Progress[]
+
+  @@index([deleted_at])
+  @@map("students")
+  @@schema("class")
+}
+
+/// Many-to-many between Class and Student. Soft-deletable so that removing
+/// a class can cascade without losing history.
+model Enrollment {
+  id          String    @id @default(uuid())
+  class_id    String
+  student_id  String
+  enrolled_at DateTime  @default(now())
+  dropped_at  DateTime?
+  deleted_at  DateTime?
+  class       Class     @relation(fields: [class_id], references: [id])
+  student     Student   @relation(fields: [student_id], references: [id])
+
+  @@unique([class_id, student_id])
+  @@index([class_id])
+  @@index([student_id])
+  @@index([deleted_at])
+  @@map("enrollments")
+  @@schema("class")
+}
+
+/// Per-skill mastery snapshot for a student. Mutates in place — the
+/// `last_p_known` field captures the previous BKT probability so that the
+/// `/history` endpoint can synthesize a 2-point transition.
+model Progress {
+  id            String   @id @default(uuid())
+  student_id    String
+  skill_id      String
+  p_known       Float    @default(0.0)
+  last_p_known  Float    @default(0.0)
+  attempt_count Int      @default(0)
+  updated_at    DateTime @updatedAt
+  student       Student  @relation(fields: [student_id], references: [id])
+
+  @@unique([student_id, skill_id])
+  @@index([student_id])
+  @@map("progress")
+  @@schema("class")
+}

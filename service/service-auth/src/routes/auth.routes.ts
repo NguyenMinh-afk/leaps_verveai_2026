@@ -1,13 +1,13 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import * as authService from '../services/auth.service';
-import { validate } from '../middleware/validate';
+import { validateBody } from '../middleware/validate';
 import { loginSchema, registerSchema, refreshSchema } from '../validators/auth.validator';
 import { logger } from '../utils/logger';
 
 const router = Router();
 
 // VP-221: Login endpoint
-router.post('/login', validate(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', validateBody(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
     const result = await authService.login(email, password);
@@ -23,7 +23,7 @@ router.post('/login', validate(loginSchema), async (req: Request, res: Response,
 });
 
 // VP-226: Register endpoint
-router.post('/register', validate(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/register', validateBody(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, name, role } = req.body;
     const user = await authService.register(email, password, name, role);
@@ -63,7 +63,7 @@ router.post('/logout', async (req: Request, res: Response, next: NextFunction) =
 });
 
 // VP-227: Refresh token endpoint
-router.post('/refresh', validate(refreshSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/refresh', validateBody(refreshSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
     const result = await authService.refreshTokens(refreshToken);

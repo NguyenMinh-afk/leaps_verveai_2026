@@ -1,0 +1,35 @@
+{
+  "name": "@verveai/prisma-schema",
+  "version": "0.1.0",
+  "description": "Canonical multi-schema Prisma schema for VERVEAI (auth + bkt + class + content + sync). Imported by each microservice's Prisma client.",
+  "main": "schema.prisma",
+  "files": [
+    "schema.prisma",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "prisma",
+    "verveai",
+    "schema",
+    "postgres"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "@prisma/client": "^5.18.0",
+    "prisma": "^5.18.0"
+  },
+  "peerDependenciesMeta": {
+    "prisma": {
+      "optional": true
+    }
+  }
+}

@@ -1,47 +1,162 @@
 ---
-description: VERVEAI Architecture Rules — Next.js + Flutter/Dart, BA v1.4.5 (Phụ lục F & G)
+description: VERVEAI Architecture Rules — Microservice backend + Next.js + Flutter/Dart, BA v1.4.5
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Architecture Rules (VERVEAI — BA v1.4)
+# Architecture Rules (VERVEAI — BA v1.4.5)
 
-> Xem ADR-0001 (tech stack), ADR-0002 (sync), ADR-0003 (AI 3 lớp) để biết lý do và lựa chọn.
+> Xem ADR-0001 (tech stack), ADR-0002 (sync), ADR-0003 (AI 3 lớp), **ADR-0004 (microservices)**, **ADR-0005 (Consul)**, **ADR-0006 (Gateway)** để biết lý do và lựa chọn.
 
 ## Ưu tiên phát triển
 
 | Ưu tiên | Module | Mô tả |
 |----------|--------|--------|
 | **CAO NHẤT** | `web-portal/` | Next.js/TypeScript — web portal cho giáo viên |
-| Sau | `backend/` | Node.js/Express — API server |
+| **CAO** | `service/` | Node.js/TypeScript Microservices — 5 service + Gateway |
 | Sau | `app/` | Flutter/Dart — PWA offline 100% |
 
-## 🔑 Core Architecture
+## 🔑 Core Architecture — 4 Module độc lập
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                    VERVEAI — 4 module độc lập                  │
-│                                                                │
-│   ┌────────────────────────────────────┐                      │
-│   │   web-portal/ (Next.js/TS)         │  ƯU TIÊN CAO NHẤT  │
-│   │   Dashboard GV, quản lý lớp        │                      │
-│   └────────────────────────────────────┘                      │
-│                                                                │
-│   ┌────────────────────────────────────┐                      │
-│   │   app/ (Flutter/Dart)              │  Ưu tiên sau         │
-│   │   ────────────────────────         │                      │
-│   │   Offline 100% cho HS              │                      │
-│   │   L0 — APK/EXE                    │                      │
-│   │   L2 — Engine tất định            │                      │
-│   │   L1 & L3 — [A] chờ Bài kiểm A&B │                      │
-│   └────────────────────────────────────┘                      │
-│                                                                │
-│   ┌────────────────────────────────────┐                      │
-│   │   content-pipeline/ (TypeScript)   │                      │
-│   │   research/ (Python)              │                      │
-│   └────────────────────────────────────┘                      │
-└────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    VERVEAI — 4 module độc lập                                  │
+│                                                                              │
+│   ┌────────────────────────────────────┐  ┌────────────────────────────────┐│
+│   │   web-portal/ (Next.js/TS)         │  │  content-pipeline/ (TS)        ││
+│   │   ───────────────────────────      │  │  ────────────────────────     ││
+│   │   ƯU TIÊN CAO NHẤT               │  │  • Online                     ││
+│   │   • Dashboard GV, quản lý lớp      │  │  • Tác giả nội dung           ││
+│   │   • Gọi Gateway (port 8080)        │  │  • Kiểm duyệt (NFR-23)       ││
+│   └────────────────────────────────────┘  │  • Ký Ed25519 (TS-19/20)      ││
+│                                           └────────────────────────────────┘│
+│   ┌────────────────────────────────────┐  ┌────────────────────────────────┐│
+│   │   service/ (Node.js Microservice)   │  │  research/ (Python)           ││
+│   │   ────────────────────────────────   │  │  ────────────────────────     ││
+│   │   ⭐ MỚI — Phase 2                │  │  • Bài kiểm A & B             ││
+│   │   • 5 service + Gateway            │  │  • Kappa analysis              ││
+│   │   • Consul discovery               │  │  • BKT validation              ││
+│   │   • Circuit breaker                │  │                                ││
+│   └────────────────────────────────────┘  └────────────────────────────────┘│
+│                                                                              │
+│   ┌──────────────────────────────────────────────────────────────────────┐  │
+│   │   app/ (Flutter/Dart)                                               │  │
+│   │   ────────────────────────────────────────────────────────────────   │  │
+│   │   (ưu tiên sau web-portal + service)                              │  │
+│   │   • Offline 100% cho HS                                             │  │
+│   │   • L0 — APK/EXE                                                   │  │
+│   │   • L2 — Engine tất định                                           │  │
+│   │   • L1 & L3 — [A] chờ Bài kiểm A & B                              │  │
+│   │   • Hub SC-05 + USB SC-06                                          │  │
+│   └──────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 🌐 service/ — Microservice Architecture ⭐ MỚI
+
+### Sơ đồ kiến trúc Microservice
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  Client (Browser / Flutter Hub)                                                   │
+│  Browser → http://gateway:8080/api/...                                           │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 │
+┌────────────────────────────────▼────────────────────────────────────────────────┐
+│  gateway/ (Express Gateway - port 8080)                                           │
+│  ─────────────────────────────────────────────────────────────────────────────── │
+│  • JWT verify (single point)                                                     │
+│  • Rate limit (100 req/min auth, 1000 req/min API)                               │
+│  • CORS whitelist                                                                │
+│  • Request routing → service tương ứng                                            │
+│  • Metrics → Prometheus                                                          │
+│  • Tracing → OpenTelemetry → Jaeger                                              │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 │
+                        Consul DNS (port 8500)
+                        ─────────────────────────────
+                        • Service registration
+                        • Health check
+                        • DNS-based discovery
+                                 │
+        ┌──────────┬──────────────┼──────────────┬──────────┐
+        │          │              │              │          │
+┌───────▼──┐ ┌────▼─────┐ ┌──────▼────┐ ┌─────▼─────┐ ┌──▼─────────┐
+│svc-auth   │ │svc-bkt    │ │svc-class   │ │svc-content│ │svc-sync    │
+│:3001      │ │:3002      │ │:3003       │ │:3004      │ │:3005       │
+│Dev 1      │ │Dev 2      │ │Dev 3       │ │Dev 1      │ │Dev 3       │
+│           │ │           │ │           │ │           │ │           │
+│• Login    │ │• BKT      │ │• Classes  │ │• Content │ │• Sync     │
+│• Users    │ │• Diagnose │ │• Students│ │• Bundles │ │• Devices │
+│• JWT      │ │• Evidence │ │• Progress│ │• Review  │ │• Conflicts│
+│           │ │• Interven │ │           │ │• Reports │ │           │
+└─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └─────┬─────┘
+      │             │             │             │             │
+      └─────────────┴─────────────┴─────────────┴─────────────┘
+                                │
+              ┌─────────────────┴─────────────────┐
+              │                                   │
+      ┌───────▼───────┐                 ┌───────▼───────┐
+      │ PostgreSQL     │                 │ Jaeger         │
+      │ (5 schema)    │                 │ (tracing)      │
+      │ • auth        │                 │ port 16686     │
+      │ • bkt         │                 └────────────────┘
+      │ • class       │
+      │ • content     │
+      │ • sync        │
+      └───────────────┘
+```
+
+### 5 Service — Phân chia theo WORK_SPLIT.md
+
+| Service | Port | Dev | Schema | Routes |
+|---------|------|-----|--------|--------|
+| `svc-auth` | 3001 | Dev 1 | `auth` | `/api/auth/*`, `/api/users/*` |
+| `svc-bkt` | 3002 | Dev 2 | `bkt` | `/api/bkt/*` |
+| `svc-class` | 3003 | Dev 3 | `class` | `/api/class/*` |
+| `svc-content` | 3004 | Dev 1 | `content` | `/api/content/*` |
+| `svc-sync` | 3005 | Dev 3 | `sync` | `/api/sync/*` |
+| `gateway` | 8080 | Dev Lead | — | All `/api/*` |
+
+### Key Components
+
+| Component | Technology | Purpose |
+|-----------|-------------|---------|
+| **Gateway** | Express Gateway (Node.js) | JWT verify, rate limit, routing |
+| **Discovery** | Consul | Service registry, health check |
+| **Circuit Breaker** | opossum | Prevent cascade failures |
+| **Tracing** | OpenTelemetry + Jaeger | Distributed tracing |
+| **Metrics** | Prometheus client | Monitor latency, errors |
+| **Logging** | Winston/Pino | Structured logging |
+
+### Stack cho mỗi Service
+
+- Node.js ≥ 20, TypeScript ≥ 5.0, strict mode
+- Express.js cho HTTP server
+- Prisma ORM cho PostgreSQL (1 schema riêng)
+- Zod cho validation
+- Winston hoặc Pino cho logging
+- **opossum** cho Circuit Breaker
+- **@opentelemetry/sdk-node** cho Tracing
+- **prom-client** cho Metrics
+
+### Pattern: Route → Service → Prisma Client
+
+> Mỗi service KHÔNG có `controllers/` và `repositories/` (theo WORK_SPLIT).
+
+```
+Request → Route handler (validate) → Service (logic) → Prisma Client → PostgreSQL
+                ↑
+                └── Circuit Breaker (opossum) cho inter-service call
+```
+
+### Inter-Service Communication
+
+- **Luôn dùng Consul DNS** — `Consul.resolve('svc-auth')` → URL hiện tại
+- **Luôn wrap trong Circuit Breaker** — `createBreaker('svc-auth', fn)`
+- **Luôn gửi tracing headers** — OpenTelemetry propagates context
 
 ---
 
@@ -63,35 +178,7 @@ web-portal/src/
 └── middleware.ts    # Auth/routing
 ```
 
----
-
-## backend/ (Node.js/Express)
-
-### Stack
-- Node.js ≥ 20, TypeScript ≥ 5.0
-- Express.js hoặc Fastify
-- Prisma ORM
-- Zod cho validation
-- Winston/Pino cho logging
-
-### Cấu trúc
-```
-backend/src/
-├── config/          # Environment config
-├── controllers/     # Request handlers
-├── services/        # Business logic
-├── repositories/    # Data access
-├── middleware/      # Auth, validation, error
-├── routes/         # API routes
-├── validators/      # Zod schemas
-├── utils/          # Logger, response helpers
-└── types/          # TypeScript types
-```
-
-### Pattern: Controller → Service → Repository
-- **Controller**: Handle HTTP request/response, validation
-- **Service**: Business logic, không biết HTTP
-- **Repository**: Data access, không biết business logic
+> ⚠️ **Web portal chỉ gọi Gateway (port 8080)** — không gọi trực tiếp service.
 
 ---
 
@@ -100,7 +187,7 @@ backend/src/
 ### AI 3 lớp (ADR-0003)
 
 | Lớp | Module | Đặc điểm |
-|-----|--------|----------|
+|------|--------|----------|
 | Lớp 1 — Trích xuất | `inference/extraction/` | GBNF ép nhãn đóng; [A] |
 | Lớp 2 — Tổng hợp & Quyết định | `engine/` | Tất định; chạy độc lập với LLM |
 | Lớp 3 — Diễn đạt | `inference/expression/` | Luôn qua `fact_check_guard`; [A] |
@@ -125,5 +212,21 @@ backend/src/
 - ❌ Đưa `app/lib/inference/` ra khỏi **[A]** trước khi Bài kiểm A & B đạt ngưỡng
 - ❌ Code `app/lib/ui/student/` trước khi OS-03 chốt
 - ❌ Commit `.gguf`, `*.verveai-bundle.zip`, khoá riêng Ed25519
-- ❌ File `.dart` trong `web-portal/`
+- ❌ File `.dart` trong `web-portal/`, `content-pipeline/`, `service/`
 - ❌ File `.ts`/`.tsx` trong `app/lib/`
+- ❌ Dùng `backend/` — đã lỗi thời, dùng `service/service-*`
+- ❌ Hardcode URL service trong code — dùng Consul DNS
+- ❌ Gọi service trực tiếp từ web-portal — phải qua Gateway
+- ❌ Inter-service call không có circuit breaker
+
+## 📚 TÀI LIỆU LIÊN QUAN
+
+- [`service/WORK_SPLIT.md`](../../service/WORK_SPLIT.md) — Phân chia 5 microservice (canonical)
+- [ADR-0004 Microservices Architecture](../../docs/02-architecture/adr/0004-microservices-architecture.md)
+- [ADR-0005 Service Discovery (Consul)](../../docs/02-architecture/adr/0005-service-discovery.md)
+- [ADR-0006 API Gateway (Express Gateway)](../../docs/02-architecture/adr/0006-api-gateway.md)
+- [ADR-0001 Tech Stack](../../docs/02-architecture/adr/0001-tech-stack-selection.md)
+- [ADR-0002 Sync Strategy](../../docs/02-architecture/adr/0002-sync-strategy.md)
+- [ADR-0003 AI 3 lớp](../../docs/02-architecture/adr/0003-local-ai-architecture.md)
+- [web-portal-architecture.md](../../docs/02-architecture/web-portal-architecture.md)
+- [Privacy Architecture](../../docs/02-architecture/privacy-architecture.md)
