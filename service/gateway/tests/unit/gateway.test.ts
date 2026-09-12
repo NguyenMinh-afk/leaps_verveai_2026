@@ -3,7 +3,10 @@ import { verifyJwt } from '../../src/policies/jwt';
 import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
-const JWT_SECRET = 'test-secret-min-32-chars!!';
+const JWT_SECRET = process.env['JWT_SECRET'] ?? 'fallback-secret-min-32-chars!!';
+
+// Ensure same secret in jwt policy and tests for unit-level verification
+process.env['JWT_SECRET'] = JWT_SECRET;
 
 describe('Gateway JWT Policy', () => {
   let mockReq: Partial<Request>;

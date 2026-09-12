@@ -1,12 +1,9 @@
 // Design System Types
 export * from './design-system'
-
 // Teacher Portal Types
 export * from './teacher'
-
 // Student Portal Types
 export * from './student'
-
 // Admin Portal Types
 export * from './admin'
 
@@ -28,7 +25,6 @@ export type {
   KpiCard,
   BreadcrumbItem,
 } from './design-system'
-
 export type {
   TeacherClass,
   TeacherStudent,
@@ -36,7 +32,6 @@ export type {
   Assignment,
   ActivityLogEntry,
 } from './teacher'
-
 export type {
   TeacherDashboardStats,
   MasteryDistribution,
@@ -45,7 +40,6 @@ export type {
   QuestionFilters,
   AssignmentFilters,
 } from './teacher'
-
 export type {
   StudentProfile,
   StudentTopicMastery,
@@ -58,7 +52,6 @@ export type {
   StudentDashboardStats,
   LearningActivity,
 } from './student'
-
 export type {
   AdminUser,
   AdminCourse,
@@ -74,3 +67,49 @@ export type {
   SettingsGroup,
   Setting,
 } from './admin'
+
+// ===== Types from feature branch (temporary) =====
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+}
+
+export interface ClassSummary {
+  id: string;
+  name: string;
+  subject: string | null;
+  teacherId: string;
+  studentCount?: number;
+  averageMastery?: number | null;
+}
+
+export interface StudentSummary {
+  id: string;
+  name: string;
+  email: string | null;
+  externalId: string | null;
+}
+
+export type ContentType = 'QUESTION' | 'EXPLANATION' | 'EXAMPLE' | 'EXERCISE';
+export type ContentStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface ContentItem {
+  id: string;
+  type: ContentType;
+  title: string;
+  body: string;
+  difficulty: number;
+  status: ContentStatus;
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DashboardStats {
+  classCount: number;
+  studentCount: number;
+  pendingInterventions: number;
+  skillCount: number;
+}

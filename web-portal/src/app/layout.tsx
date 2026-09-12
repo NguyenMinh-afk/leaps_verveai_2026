@@ -6,7 +6,7 @@ import '@/styles/globals.css';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
-  display: 'swap',
+  display: 'swap',D
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
