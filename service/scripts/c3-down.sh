@@ -24,6 +24,9 @@ PGPASSWORD="${PG_PASS:-verveai_c3_pass}" psql -h "${PG_HOST:-localhost}" -p "${P
   -U "${PG_USER:-verveai}" -d "${PG_DB:-verveai}" \
   -c "TRUNCATE bkt.diagnoses, bkt.evidence_items, bkt.interventions, bkt.intervention_notes CASCADE;
       DELETE FROM bkt.skills WHERE code = 'MATH-ADD-001';" 2>/dev/null || true
+PGPASSWORD="${PG_PASS:-verveai_c3_pass}" psql -h "${PG_HOST:-localhost}" -p "${PG_PORT:-5432}" \
+  -U "${PG_USER:-verveai}" -d "${PG_DB:-verveai}" \
+  -c "TRUNCATE sync.sync_conflicts, sync.sync_logs, sync.student_transfers, sync.devices CASCADE;" 2>/dev/null || true
 echo "    done"
 
 step "Remove containers"

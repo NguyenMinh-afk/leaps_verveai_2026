@@ -10,6 +10,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVICE_BKT="$REPO_ROOT/service/service-bkt"
 SERVICE_CLASS="$REPO_ROOT/service/service-class"
+SERVICE_SYNC="$REPO_ROOT/service/service-sync"
 
 PG_USER="${PG_USER:-verveai}"
 PG_PASS="${PG_PASS:-verveai_c3_pass}"
@@ -19,6 +20,7 @@ PG_DB="${PG_DB:-verveai}"
 PG_URL="postgresql://${PG_USER}:${PG_PASS}@${PG_HOST}:${PG_PORT}/${PG_DB}"
 PG_URL_BKT="${PG_URL}?schema=bkt"
 PG_URL_CLASS="${PG_URL}?schema=class"
+PG_URL_SYNC="${PG_URL}?schema=sync"
 
 CONSUL_HOST="${CONSUL_HOST:-localhost}"
 CONSUL_PORT="${CONSUL_PORT:-8500}"
@@ -51,25 +53,31 @@ if ! PGPASSWORD="$PG_PASS" psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$P
 fi
 echo "    Postgres OK at ${PG_HOST}:${PG_PORT}"
 
-step "3/6 Schemas"
+step "3/7 Schemas"
 PGPASSWORD="$PG_PASS" psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" \
-  -c "CREATE SCHEMA IF NOT EXISTS class; CREATE SCHEMA IF NOT EXISTS bkt;" >/dev/null
-echo "    class, bkt"
+  -c "CREATE SCHEMA IF NOT EXISTS class; CREATE SCHEMA IF NOT EXISTS bkt; CREATE SCHEMA IF NOT EXISTS sync;" >/dev/null
+echo "    class, bkt, sync"
 
-step "4/6 service-class migrations"
+step "4/7 service-class migrations"
 ( cd "$SERVICE_CLASS" && \
   DATABASE_URL="$PG_URL_CLASS" npx prisma migrate deploy >/dev/null )
 
-step "5/6 service-bkt migrations"
+step "5/7 service-bkt migrations"
 ( cd "$SERVICE_BKT" && \
   DATABASE_URL="$PG_URL_BKT" npx prisma migrate deploy >/dev/null )
 
-step "6/6 Seed data"
+step "6/7 service-sync migrations"
+( cd "$SERVICE_SYNC" && \
+  DATABASE_URL="$PG_URL_SYNC" npx prisma migrate deploy >/dev/null )
+
+step "7/7 Seed data"
 ( cd "$SERVICE_CLASS" && \
   DATABASE_URL="$PG_URL_CLASS" npx tsx prisma/seed-c3.ts >/dev/null )
 PGPASSWORD="$PG_PASS" psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" \
   -f "$SERVICE_BKT/tests/integration/c3-seed.sql" >/dev/null
-echo "    1 class, 2 students, 2 enrollments, 1 skill, 2 diagnoses"
+PGPASSWORD="$PG_PASS" psql -h "$PG_HOST" -p "$PG_PORT" -U "$PG_USER" -d "$PG_DB" \
+  -f "$SERVICE_SYNC/tests/integration/c3-seed.sql" >/dev/null
+echo "    1 class, 2 students, 2 enrollments, 1 skill, 2 diagnoses, 2 devices, 3 conflicts"
 
 step "svc-class process"
 # Already running? Leave it; otherwise start it detached.
@@ -94,8 +102,9 @@ fi
 echo
 echo "Plan C3 infrastructure is ready."
 echo "  - Consul    : http://${CONSUL_HOST}:${CONSUL_PORT}"
-echo "  - Postgres  : ${PG_HOST}:${PG_PORT} (db=${PG_DB}, schemas=class,bkt)"
+echo "  - Postgres  : ${PG_HOST}:${PG_PORT} (db=${PG_DB}, schemas=class,bkt,sync)"
 echo "  - svc-class : http://localhost:3003/health"
 echo
-echo "Run the suite from service/service-bkt:"
-echo "  DATABASE_URL='${PG_URL_BKT}' npm run test:integration"
+echo "Run the suite:"
+echo "  cd service/service-bkt && DATABASE_URL='${PG_URL_BKT}' npm run test:integration"
+echo "  cd service/service-sync && DATABASE_URL='${PG_URL_SYNC}' npm run test:integration"
