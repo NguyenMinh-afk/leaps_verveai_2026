@@ -13,7 +13,7 @@ import { verifyJwt } from '../../src/policies/jwt';
 import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
-describe('Gateway JWT Policy', () => {
+describe('Gateway JWT Policy', () => { 
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
   let nextFn: NextFunction;
