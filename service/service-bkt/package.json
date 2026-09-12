@@ -14,6 +14,7 @@
     "test:cov": "vitest run --config vitest.config.ts --coverage",
     "test:watch": "vitest --config vitest.config.ts --watch",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:smoke": "vitest run --config vitest.integration.config.ts tests/smoke/",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "db:generate": "prisma generate",

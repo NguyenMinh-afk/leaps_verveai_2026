@@ -4,7 +4,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/unit/**/*.test.ts', 'src/**/*.test.ts'],
+    // Include unit + e2e tests so the coverage report reflects all code
+    // exercised by HTTP-layer tests. Integration tests (which exercise
+    // the service layer with mocked Prisma) are excluded because they
+    // run under a separate config (`vitest.integration.config.ts`).
+    include: [
+      'tests/unit/**/*.test.ts',
+      'tests/e2e/**/*.test.ts',
+      'src/**/*.test.ts',
+    ],
     exclude: ['node_modules', 'dist', 'coverage', 'tests/integration/**'],
     coverage: {
       provider: 'v8',
@@ -21,6 +29,8 @@ export default defineConfig({
         'src/prisma/client.ts',
         'src/config/consul.ts',
         'src/middleware/metrics*.ts',
+        'src/middleware/metricsRegistry.ts',
+        'src/app.ts',
         '**/*.test.ts',
         '**/*.config.ts',
         'vitest.config.ts',
