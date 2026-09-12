@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/prisma/client', () => ({
+vi.mock('../../src/prisma/client', () => ({
   prisma: {
     sync_conflict: {
       findMany: vi.fn(),
@@ -19,12 +19,12 @@ vi.mock('../../../src/prisma/client', () => ({
   },
 }));
 
-import { prisma } from '../../../src/prisma/client.js';
+import { prisma } from '../../src/prisma/client';
 import {
   detectConflict,
   listConflicts,
   resolveConflict,
-} from '../../../src/services/conflict.service.js';
+} from '../../src/services/conflict.service';
 
 describe('conflict.service', () => {
   beforeEach(() => {

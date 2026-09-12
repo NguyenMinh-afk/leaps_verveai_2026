@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/prisma/client', () => ({
+vi.mock('../../src/prisma/client', () => ({
   prisma: {
     device: {
       findFirst: vi.fn(),
@@ -17,12 +17,12 @@ vi.mock('../../../src/prisma/client', () => ({
   },
 }));
 
-import { prisma } from '../../../src/prisma/client.js';
+import { prisma } from '../../src/prisma/client';
 import {
   completeTransfer,
   failTransfer,
   initiateTransfer,
-} from '../../../src/services/transfer.service.js';
+} from '../../src/services/transfer.service';
 
 describe('transfer.service', () => {
   beforeEach(() => {

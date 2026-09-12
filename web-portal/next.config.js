@@ -5,7 +5,16 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: ['localhost', 'verveai.io'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'verveai.io',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
   },
 
