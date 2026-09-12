@@ -11,17 +11,25 @@ import * as crypto from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const KEYS_DIR = process.env['KEYS_DIR'] ?? '/app/keys';
+/**
+ * Resolve the key directory at call time so tests can override
+ * `process.env['KEYS_DIR']` in `beforeAll` (the module is already
+ * imported by then, so a module-level `const` would have frozen the
+ * default `/app/keys` path).
+ */
+function keysDir(): string {
+  return process.env['KEYS_DIR'] ?? '/app/keys';
+}
 
 const PRIV_FILENAME = 'private.pem';
 const PUB_FILENAME = 'public.pem';
 
 function privPath(): string {
-  return path.join(KEYS_DIR, PRIV_FILENAME);
+  return path.join(keysDir(), PRIV_FILENAME);
 }
 
 function pubPath(): string {
-  return path.join(KEYS_DIR, PUB_FILENAME);
+  return path.join(keysDir(), PUB_FILENAME);
 }
 
 /**
@@ -43,7 +51,7 @@ export async function getOrCreateKeyPair(): Promise<{ publicKey: string; private
     const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
     const privPem = privateKey.export({ format: 'pem', type: 'pkcs8' }).toString();
     const pubPem = publicKey.export({ format: 'pem', type: 'spki' }).toString();
-    await fs.mkdir(KEYS_DIR, { recursive: true });
+    await fs.mkdir(keysDir(), { recursive: true });
     await fs.writeFile(priv, privPem, { mode: 0o600 });
     await fs.writeFile(pub, pubPem, { mode: 0o644 });
     return { publicKey: pubPem, privateKey: privPem };
