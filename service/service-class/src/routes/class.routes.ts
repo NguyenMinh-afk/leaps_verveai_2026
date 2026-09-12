@@ -9,7 +9,8 @@ import {
   getClass,
   updateClass,
   deleteClass,
-  getClassStats
+  getClassStats,
+  getClassStudents
 } from '../services/class.service.js';
 import {
   createClassSchema,
@@ -157,6 +158,24 @@ router.get(
     const ctx = extractInterServiceHeaders(req);
     const stats = await getClassStats(req.params['id'] as string, ctx);
     res.json({ success: true, data: stats });
+  })
+);
+
+/**
+ * GET /api/class/classes/:id/students
+ * Roster for the class — list of student IDs currently enrolled.
+ *
+ * Cross-service: this endpoint is the one `svc-bkt` calls when assembling
+ * a class-level BKT diagnosis view (`getClassDiagnoses`). Returns the
+ * `{ success, data: { students: [{ id }, ...] } }` envelope that
+ * svc-bkt's `diagnosis.service.ts` expects.
+ */
+router.get(
+  '/:id/students',
+  validate(classIdSchema, 'params'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const roster = await getClassStudents(req.params['id'] as string);
+    res.json({ success: true, data: roster });
   })
 );
 
