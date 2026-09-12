@@ -46,7 +46,31 @@ pnpm dev        # tsx watch src/index.ts
 pnpm test       # vitest
 ```
 
+## Tests
+
+The test suite is split into three configurations so coverage and runtime
+stay cheap:
+
+| Script                | Includes                                          | Count |
+| --------------------- | ------------------------------------------------- | ----- |
+| `pnpm test:unit`      | unit + E2E (for coverage)                         | 106   |
+| `pnpm test:integration` | service-level integration + E2E                  | 62    |
+| `pnpm test:smoke`     | live HTTP smoke (boots Express on real port) + demo | 14    |
+
+The smoke test boots the Express app on `port 0` (OS-picked) and
+exercises every documented endpoint via Node's `fetch`. It also
+includes a `tests/smoke/full-flow-demo.smoke.ts` walkthrough that
+prints a per-step trace of the BKT happy path (run → evidence →
+chain → override → resolve).
+
 ## Coverage
 
 Per `07-testing.mdc` — services 80 %, routes 70 %, middleware 90 %.
-CI gate enforced via `vitest.config.ts` thresholds.
+CI gate enforced via `vitest.config.ts` thresholds. Current values:
+
+| Metric     | Value | Threshold |
+| ---------- | ----- | --------- |
+| Lines      | 84 %  | ≥ 80 %    |
+| Functions  | 88 %  | ≥ 80 %    |
+| Statements | 84 %  | ≥ 80 %    |
+| Branches   | 73 %  | ≥ 70 %    |
