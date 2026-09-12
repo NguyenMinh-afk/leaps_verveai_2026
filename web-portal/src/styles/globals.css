@@ -2,60 +2,177 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   VERVE AI Design System - CSS Variables
+   Brand Identity aligned with official VERVE AI logo
+   (Crimson / Magenta primary, Orange/Yellow accents)
+   ============================================ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ============================================
+       BRAND COLORS - Crimson / Magenta with Orange/Yellow accents
+       Aligned with official VERVE AI logo
+       ============================================ */
+    /* Primary Brand - Crimson/Magenta (#B91C4B) */
+    --verve-primary: 348 83% 47%;           /* #B91C4B - Crimson */
+    --verve-primary-light: 348 75% 55%;   /* #D64B73 - Lighter crimson */
+    --verve-primary-dark: 348 83% 35%;     /* #8B1538 - Darker crimson */
+    
+    /* Brand Accent - Orange (#EA580C) */
+    --verve-accent: 21 90% 48%;            /* #EA580C - Orange */
+    --verve-accent-light: 24 95% 53%;     /* #F07D3A - Light orange */
+    --verve-accent-dark: 21 90% 40%;      /* #C74A0A - Dark orange */
+    
+    /* Brand Highlight - Amber (#F59E0B) */
+    --verve-highlight: 38 92% 50%;         /* #F59E0B - Amber/Yellow */
+    --verve-highlight-light: 38 95% 55%;  /* #FBBF38 - Light amber */
+    --verve-highlight-dark: 38 92% 40%;   /* #D97706 - Dark amber */
+    
+    /* Legacy alias for backward compatibility */
+    --verve-secondary: var(--verve-accent);
+    --verve-secondary-light: var(--verve-accent-light);
+    --verve-secondary-dark: var(--verve-accent-dark);
+
+    /* ============================================
+       SEMANTIC COLORS - Preserved for their meaning
+       ============================================ */
+    /* Success - Forest Green (mastery, positive outcomes) */
+    --verve-success: 160 84% 39%;          /* #059669 - Forest Green */
+    
+    /* Info/System - Teal (informational, system states) */
+    --verve-info: 182 58% 40%;             /* #0D6B6E - Deep Teal */
+    
+    /* Warning - Amber (attention, caution) */
+    --verve-warning: 38 92% 50%;            /* #F59E0B - Amber (same as highlight) */
+    
+    /* Error - Red (destructive, errors) */
+    --verve-error: 0 72% 51%;              /* #DC2626 - Clear Red */
+
+    /* ============================================
+       SHADCN/UI CSS VARIABLES (Mapped to VERVE Brand)
+       ============================================ */
+    /* Primary - Crimson/Magenta */
+    --primary: var(--verve-primary);
+    --primary-foreground: 0 0% 100%;       /* White on crimson */
+
+    /* Secondary - Warm Amber/Orange */
+    --secondary: 21 90% 96%;               /* Light orange background */
+    --secondary-foreground: 21 90% 20%;     /* Dark orange text */
+
+    /* Accent - Highlight/Energy */
+    --accent: var(--verve-highlight);
+    --accent-foreground: 38 92% 10%;        /* Dark amber text */
+
+    /* Muted - Slate tones */
+    --muted: 210 40% 96%;                  /* #f1f5f9 */
+    --muted-foreground: 215 16% 47%;        /* #64748b */
+
+    /* Destructive - Clear Red */
+    --destructive: var(--verve-error);
+    --destructive-foreground: 0 0% 100%;
+
+    /* Background & Foreground */
+    --background: 0 0% 100%;               /* White */
+    --foreground: 222 47% 11%;              /* #0f172a - Slate 900 */
+
+    /* Card */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 271 81% 56%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
-    --radius: 0.5rem;
+    --popover-foreground: 222 47% 11%;
+
+    /* Border & Input */
+    --border: 213 27% 90%;                 /* Slate 200 */
+    --input: 213 27% 90%;
+    --ring: var(--verve-primary);           /* Crimson ring for focus */
+
+    /* ============================================
+       MASTERY COLORS (BKT Visualization)
+       Semantic - must remain green-based for success states
+       ============================================ */
+    --mastery-mastered: 160 84% 39%;        /* #059669 - Green (pKnown >= 0.8) */
+    --mastery-learning: 38 92% 50%;         /* #F59E0B - Amber (pKnown 0.4-0.8) */
+    --mastery-needs-support: 0 72% 51%;     /* #DC2626 - Red (pKnown < 0.4) */
+    --mastery-unknown: 215 16% 47%;         /* #64748B - Gray (No data) */
+
+    /* ============================================
+       BORDER RADIUS
+       ============================================ */
+    --radius: 0.5rem;                      /* 8px */
+
+    /* ============================================
+       MOTION TOKENS
+       ============================================ */
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 400ms;
+    --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  /* ============================================
+     DARK MODE
+     ============================================ */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    /* Primary - Lighter crimson for dark mode */
+    --primary: 348 70% 55%;                /* #D64B73 - Lighter crimson */
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 217 33% 17%;              /* Slate 800 */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 271 81% 56%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 199 89% 48%;
+
+    /* Accent */
+    --accent: 38 85% 55%;                  /* Lighter amber */
+    --accent-foreground: 38 92% 10%;
+
+    /* Muted */
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Destructive */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Background & Foreground */
+    --background: 222 47% 6%;              /* Slate 950 */
+    --foreground: 210 40% 98%;
+
+    /* Card */
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+
+    /* Popover */
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Border & Input */
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 348 70% 55%;                   /* Lighter crimson */
+
+    /* Mastery colors remain the same for consistency */
   }
 }
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Smooth scrolling */
@@ -63,80 +180,225 @@
     scroll-behavior: smooth;
   }
 
-  /* Custom scrollbar */
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), system-ui, sans-serif;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  h1 { @apply text-4xl; }
+  h2 { @apply text-3xl; }
+  h3 { @apply text-2xl; }
+  h4 { @apply text-xl; }
+  h5 { @apply text-lg; }
+  h6 { @apply text-base; }
+
+  /* ============================================
+     FOCUS STYLES (Accessibility)
+     ============================================ */
+  :focus-visible {
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--ring);
+  }
+
+  /* Remove default focus for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ============================================
+     SELECTION
+     ============================================ */
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
+
+@layer base {
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-muted;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/30 rounded-full;
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+    transition: background-color 150ms;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/50;
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.slate.300') transparent;
+  }
+
+  .dark * {
+    scrollbar-color: theme('colors.slate.600') transparent;
   }
 }
 
-@layer components {
-  /* Button variants */
-  .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
-  }
-
-  .btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
-  }
-
-  .btn-outline {
-    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
-  }
-
-  .btn-ghost {
-    @apply hover:bg-accent hover:text-accent-foreground;
-  }
-
-  .btn-destructive {
-    @apply bg-destructive text-destructive-foreground hover:bg-destructive/90;
-  }
-
-  /* Card styles */
-  .card {
-    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
-  }
-
-  /* Input styles */
-  .input {
-    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
-  }
-}
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 
 @layer utilities {
   /* Container */
-  .container-custom {
+  .container-verve {
     @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  /* Text gradient */
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  /* Text gradient - Brand crimson to orange (use sparingly) */
+  .text-gradient-verve {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--verve-primary)) 0%, hsl(var(--verve-accent)) 100%);
   }
 
-  /* Glass effect */
-  .glass {
-    @apply bg-background/80 backdrop-blur-md border border-border/50;
+  /* Brand gradient - Crimson to Orange */
+  .bg-gradient-verve {
+    background-image: linear-gradient(135deg, hsl(var(--verve-primary)) 0%, hsl(var(--verve-accent)) 100%);
+  }
+
+  /* Glass effect (use sparingly) */
+  .glass-verve {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50;
   }
 
   /* Focus ring */
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  }
+
+  /* Mastery color utilities */
+  .text-mastery-mastered {
+    color: hsl(var(--mastery-mastered));
+  }
+
+  .text-mastery-learning {
+    color: hsl(var(--mastery-learning));
+  }
+
+  .text-mastery-needs-support {
+    color: hsl(var(--mastery-needs-support));
+  }
+
+  .text-mastery-unknown {
+    color: hsl(var(--mastery-unknown));
+  }
+
+  .bg-mastery-mastered {
+    background-color: hsl(var(--mastery-mastered));
+  }
+
+  .bg-mastery-learning {
+    background-color: hsl(var(--mastery-learning));
+  }
+
+  .bg-mastery-needs-support {
+    background-color: hsl(var(--mastery-needs-support));
+  }
+
+  .bg-mastery-unknown {
+    background-color: hsl(var(--mastery-unknown));
+  }
+
+  /* Intervention severity colors */
+  .border-severity-high {
+    border-left-color: hsl(var(--destructive));
+  }
+
+  .border-severity-medium {
+    border-left-color: hsl(var(--verve-warning));
+  }
+
+  .border-severity-low {
+    border-left-color: hsl(var(--verve-info));
+  }
+
+  /* Safe area insets for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Reduce motion */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-safe\:animate-none {
+      animation: none !important;
+    }
+
+    .motion-reduce\:transition-none {
+      transition: none !important;
+    }
+  }
+}
+
+/* ============================================
+   COMPONENT BASE CLASSES
+   ============================================ */
+
+@layer components {
+  /* Card styles */
+  .card-verve {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+    @apply transition-shadow duration-250;
+  }
+
+  .card-verve:hover {
+    @apply shadow-md;
+  }
+
+  .card-interactive {
+    @apply card-verve cursor-pointer;
+    @apply hover:shadow-lg hover:-translate-y-0.5;
+    @apply transition-all duration-250;
+  }
+
+  /* Input styles */
+  .input-verve {
+    @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm;
+    @apply placeholder:text-muted-foreground;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+    @apply transition-colors duration-150;
+  }
+
+  /* Button base */
+  .btn-verve {
+    @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    @apply disabled:pointer-events-none disabled:opacity-50;
+    @apply transition-colors duration-150;
+  }
+
+  /* Badge base */
+  .badge-verve {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply transition-colors duration-150;
   }
 }

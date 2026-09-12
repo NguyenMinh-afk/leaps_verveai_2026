@@ -1,9 +1,74 @@
-/**
- * VERVEAI — Domain types shared by API + UI layers.
- */
+// Design System Types
+export * from './design-system'
+// Teacher Portal Types
+export * from './teacher'
+// Student Portal Types
+export * from './student'
+// Admin Portal Types
+export * from './admin'
 
-export type UserRole = 'TEACHER' | 'ADMIN' | 'SUPERVISOR' | 'STUDENT' | 'PARENT';
+// Re-export commonly used types for convenience
+export type {
+  UserRole,
+  MasteryLevel,
+  SeverityLevel,
+  ButtonVariant,
+  ButtonSize,
+  BadgeVariant,
+  CardVariant,
+  ToastType,
+  Toast,
+  NavItem,
+  InterventionGroup,
+  Student,
+  Skill,
+  KpiCard,
+  BreadcrumbItem,
+} from './design-system'
+export type {
+  TeacherClass,
+  TeacherStudent,
+  Question,
+  Assignment,
+  ActivityLogEntry,
+} from './teacher'
+export type {
+  TeacherDashboardStats,
+  MasteryDistribution,
+  TopicMastery,
+  QuestionOption,
+  QuestionFilters,
+  AssignmentFilters,
+} from './teacher'
+export type {
+  StudentProfile,
+  StudentTopicMastery,
+  SubjectMastery,
+  LearningRecommendation,
+  EvidenceItem,
+  StudentAssignment,
+  StudentExam,
+  ExamResult,
+  StudentDashboardStats,
+  LearningActivity,
+} from './student'
+export type {
+  AdminUser,
+  AdminCourse,
+  AdminQuestion,
+  AIGenerationJob,
+  AuditLogEntry,
+  ModerationItem,
+  SystemHealthStatus,
+  AdminDashboardStats,
+  Role,
+  Permission,
+  RolePermission,
+  SettingsGroup,
+  Setting,
+} from './admin'
 
+// ===== Types from feature branch (temporary) =====
 export interface User {
   id: string;
   email: string;
@@ -25,15 +90,6 @@ export interface StudentSummary {
   name: string;
   email: string | null;
   externalId: string | null;
-}
-
-export interface Skill {
-  id: string;
-  code: string;
-  name: string;
-  difficulty: number;
-  description: string | null;
-  prereqSkills: string[];
 }
 
 export type ContentType = 'QUESTION' | 'EXPLANATION' | 'EXAMPLE' | 'EXERCISE';

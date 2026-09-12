@@ -88,3 +88,6 @@ infra/logs/
 # Research outputs
 research/**/outputs/
 research/**/reports/
+
+# === Cursor ===
+.cursor/skills/
