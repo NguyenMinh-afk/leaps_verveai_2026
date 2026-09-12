@@ -54,6 +54,7 @@ const mockPrisma = {
   progress: {
     findMany: vi.fn<() => Promise<unknown>>(),
   },
+    $transaction: vi.fn(),
 };
 
 vi.mock('../../src/prisma/client.js', () => ({
@@ -95,7 +96,7 @@ const FIXTURE_ENROLLMENTS = [
     dropped_at: null,
     deleted_at: null,
     class: {
-      id: 'c1111111-1111-4111-8111-111111111111',
+      id: 'a1111111-1111-4111-8111-111111111111',
       name: 'Math 101',
       subject: 'Mathematics',
     },
@@ -105,7 +106,7 @@ const FIXTURE_ENROLLMENTS = [
     dropped_at: null,
     deleted_at: null,
     class: {
-      id: 'c2222222-2222-4222-8222-222222222222',
+      id: 'a2222222-2222-4222-8222-222222222222',
       name: 'Science 201',
       subject: 'Science',
     },
@@ -113,9 +114,9 @@ const FIXTURE_ENROLLMENTS = [
 ];
 
 const FIXTURE_PROGRESS = [
-  { id: 'p1', student_id: FIXTURE_STUDENT.id, skill_id: 'sk1', p_known: 0.9, last_p_known: 0.7, attempt_count: 5, updated_at: FIXTURE_NOW },
-  { id: 'p2', student_id: FIXTURE_STUDENT.id, skill_id: 'sk2', p_known: 0.3, last_p_known: 0.2, attempt_count: 2, updated_at: FIXTURE_NOW },
-  { id: 'p3', student_id: FIXTURE_STUDENT.id, skill_id: 'sk3', p_known: 0.6, last_p_known: 0.5, attempt_count: 1, updated_at: FIXTURE_NOW },
+  { id: 'p1', student_id: FIXTURE_STUDENT.id, skill_id: 'd1111111-1111-4111-8111-111111111111', p_known: 0.9, last_p_known: 0.7, attempt_count: 5, updated_at: FIXTURE_NOW },
+  { id: 'p2', student_id: FIXTURE_STUDENT.id, skill_id: 'd2222222-2222-4222-8222-222222222222', p_known: 0.3, last_p_known: 0.2, attempt_count: 2, updated_at: FIXTURE_NOW },
+  { id: 'p3', student_id: FIXTURE_STUDENT.id, skill_id: 'd3333333-1111-4111-8111-111111111111', p_known: 0.6, last_p_known: 0.5, attempt_count: 1, updated_at: FIXTURE_NOW },
 ];
 
 // ── Setup / Teardown ──────────────────────────────────────────────────────────
@@ -355,7 +356,7 @@ describe('getStudentEvidence', () => {
 
 describe('getStudentDiagnosis', () => {
   const diagnosisData = [
-    { id: 'd1', studentId: FIXTURE_STUDENT.id, skillId: 'sk1', pKnown: 0.85, status: 'MASTERED', createdAt: FIXTURE_NOW.toISOString() },
+    { id: 'd1', studentId: FIXTURE_STUDENT.id, skillId: 'd1111111-1111-4111-8111-111111111111', pKnown: 0.85, status: 'MASTERED', createdAt: FIXTURE_NOW.toISOString() },
   ];
 
   it('returns diagnoses when svc-bkt responds', async () => {

@@ -50,6 +50,7 @@ const mockPrisma = {
     update: vi.fn<() => Promise<unknown>>(),
     count: vi.fn<() => Promise<number>>(),
   },
+    $transaction: vi.fn(),
 };
 
 vi.mock('../../src/prisma/client.js', () => ({
@@ -216,11 +217,52 @@ describe('updateProgress', () => {
     expect(result.attemptCount).toBe(4); // incremented
   });
 
-  it('throws ValidationError for p_known above 1', async () => {
-    mockPrisma.student.findFirst.mockResolvedValue({ id: FIXTURE_STUDENT_ID });
+it('clamps p_known to [0, 1] range', async () => {
+  mockPrisma.student.findFirst.mockResolvedValue({ id: FIXTURE_STUDENT_ID });
+  mockPrisma.progress.findUnique.mockResolvedValue(null);
 
-    await expect(
-      updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, 1.5)
+  mockPrisma.progress.create.mockImplementation(async (args: unknown) => {
+    const a = args as { data: { p_known: number } };
+
+    return {
+      id: 'new-id',
+      student_id: FIXTURE_STUDENT_ID,
+      skill_id: FIXTURE_SKILL_ID,
+      p_known: a.data.p_known,
+      last_p_known: 0,
+      attempt_count: 1,
+      updated_at: FIXTURE_NOW,
+    };
+  });
+
+  await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, 1.5);
+
+  expect(mockPrisma.progress.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        p_known: 1,
+      }),
+    })
+  );
+
+  mockPrisma.progress.create.mockClear();
+
+  await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, -0.3);
+
+  expect(mockPrisma.progress.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        p_known: 0,
+      }),
+    })
+  );
+});
+
+it('throws ValidationError for malformed skill UUID', async () => {
+  await expect(
+    updateProgress(FIXTURE_STUDENT_ID, 'bad-uuid', 0.5)
+  ).rejects.toThrow('Invalid skill id');
+});
     ).rejects.toThrow('Invalid pKnown');
   });
 });

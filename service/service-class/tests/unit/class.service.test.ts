@@ -53,6 +53,7 @@ const mockPrisma = {
     findMany: vi.fn<() => Promise<unknown>>(),
     updateMany: vi.fn<() => Promise<unknown>>(),
   },
+    $transaction: vi.fn(),
 };
 
 vi.mock('../../src/prisma/client.js', () => ({
@@ -75,7 +76,7 @@ const { listClasses, createClass, updateClass, deleteClass, getClassStats } =
 const FIXTURE_NOW = new Date('2025-01-15T12:00:00Z');
 
 const FIXTURE_CLASS = {
-  id: 'c1111111-1111-4111-8111-111111111111',
+  id: 'a1111111-1111-4111-8111-111111111111',
   name: 'Math 101',
   subject: 'Mathematics',
   teacher_id: '91111111-1111-4111-8111-111111111111',

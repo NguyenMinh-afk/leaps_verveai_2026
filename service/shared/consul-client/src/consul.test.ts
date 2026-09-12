@@ -1,9 +1,22 @@
 /**
  * Tests for Consul HTTP API wrapper
- * Mocks global fetch to test API interactions without a real Consul server
+ * Mocks `node-fetch` (the module consul.ts uses) so we can run unit
+ * tests without a real Consul server. `global.fetch` is left untouched
+ * because consul.ts relies on the `node-fetch` import specifically.
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+
+// `vi.mock` is hoisted to the top of the file by vitest, so any variables
+// it references must be created with `vi.hoisted(...)` — otherwise the
+// factory runs before the variable exists and we get a ReferenceError.
+const mockFetch = vi.hoisted(() => vi.fn());
+
+vi.mock('node-fetch', () => ({
+  __esModule: true,
+  default: mockFetch,
+}));
+
 import {
   registerService,
   deregisterService,
@@ -15,12 +28,8 @@ import {
   getConsulPort,
 } from './consul';
 
-// Mock global fetch
-const mockFetch = vi.fn();
-
 beforeEach(() => {
   mockFetch.mockReset();
-  global.fetch = mockFetch as unknown as typeof fetch;
   delete process.env.CONSUL_HOST;
   delete process.env.CONSUL_PORT;
 });

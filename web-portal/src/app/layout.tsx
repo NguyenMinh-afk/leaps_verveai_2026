@@ -1,21 +1,28 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Providers } from '@/components/providers';
 import '@/styles/globals.css';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',D
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-plus-jakarta',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: {
-    default: 'VerveAI - AI-Powered Platform',
+    default: 'VerveAI - LEAPS Platform',
     template: '%s | VerveAI',
   },
   description:
-    'VerveAI is an advanced AI platform that helps you build, deploy, and scale AI applications with ease.',
-  keywords: ['AI', 'Artificial Intelligence', 'Machine Learning', 'NLP', 'Chatbot', 'VerveAI'],
+    'VerveAI is an AI-powered learning platform that helps students master skills through adaptive diagnostics and personalized intervention.',
+  keywords: ['AI', 'Education', 'Learning', 'Adaptive Learning', 'BKT', 'Mastery Learning', 'LEAPS'],
   authors: [{ name: 'VerveAI Team' }],
   creator: 'VerveAI',
   openGraph: {
@@ -45,14 +52,42 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Inline script to prevent flash of wrong theme
+ * This runs before React hydrates
+ */
+const themeScript = `
+  (function() {
+    try {
+      var theme = localStorage.getItem('verveai-theme');
+      var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var resolved = theme === 'dark' || (theme !== 'light' && systemDark);
+      if (resolved) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.add('light');
+      }
+    } catch (e) {
+      document.documentElement.classList.add('light');
+    }
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="min-h-screen bg-background antialiased">{children}</body>
+    <html lang="vi" className={`${inter.variable} ${plusJakarta.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-screen bg-background antialiased font-sans">
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }
