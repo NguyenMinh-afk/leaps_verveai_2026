@@ -1,7 +1,7 @@
 {
   "name": "@verveai/service-bkt",
   "version": "1.0.0",
-  "description": "VERVEAI BKT Service - Bayesian Knowledge Tracing, Diagnosis, Evidence, Interventions, Skills",
+  "description": "VERVEAI BKT Service — Bayesian Knowledge Tracing, Diagnosis, Evidence, Interventions, Skills",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -13,6 +13,7 @@
     "test:unit": "vitest run --config vitest.config.ts",
     "test:cov": "vitest run --config vitest.config.ts --coverage",
     "test:watch": "vitest --config vitest.config.ts --watch",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "db:generate": "prisma generate",
@@ -45,6 +46,8 @@
     "@vitest/coverage-v8": "^2.1.4",
     "eslint": "^9.15.0",
     "prisma": "^5.22.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"

@@ -144,7 +144,7 @@ exports.Prisma.DiagnosisScalarFieldEnum = {
   updated_at: 'updated_at'
 };
 
-exports.Prisma.EvidenceScalarFieldEnum = {
+exports.Prisma.EvidenceItemScalarFieldEnum = {
   id: 'id',
   diagnosis_id: 'diagnosis_id',
   item_id: 'item_id',
@@ -167,7 +167,7 @@ exports.Prisma.InterventionScalarFieldEnum = {
   resolved_at: 'resolved_at'
 };
 
-exports.Prisma.Intervention_noteScalarFieldEnum = {
+exports.Prisma.InterventionNoteScalarFieldEnum = {
   id: 'id',
   intervention_id: 'intervention_id',
   teacher_id: 'teacher_id',
@@ -189,32 +189,32 @@ exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
 };
-exports.diagnosis_status = exports.$Enums.diagnosis_status = {
+exports.DiagnosisStatus = exports.$Enums.DiagnosisStatus = {
   PENDING: 'PENDING',
   DIAGNOSED: 'DIAGNOSED',
   MASTERED: 'MASTERED',
   STRUGGLING: 'STRUGGLING'
 };
 
-exports.evidence_quality = exports.$Enums.evidence_quality = {
+exports.EvidenceQuality = exports.$Enums.EvidenceQuality = {
   HIGH: 'HIGH',
   MEDIUM: 'MEDIUM',
   LOW: 'LOW',
   UNKNOWN: 'UNKNOWN'
 };
 
-exports.intervention_status = exports.$Enums.intervention_status = {
+exports.InterventionStatus = exports.$Enums.InterventionStatus = {
   ACTIVE: 'ACTIVE',
   RESOLVED: 'RESOLVED',
   CANCELLED: 'CANCELLED'
 };
 
 exports.Prisma.ModelName = {
-  skill: 'skill',
-  diagnosis: 'diagnosis',
-  evidence: 'evidence',
-  intervention: 'intervention',
-  intervention_note: 'intervention_note'
+  Skill: 'Skill',
+  Diagnosis: 'Diagnosis',
+  EvidenceItem: 'EvidenceItem',
+  Intervention: 'Intervention',
+  InterventionNote: 'InterventionNote'
 };
 
 /**

@@ -335,7 +335,7 @@ export async function overrideIntervention(
       },
     });
 
-    await tx.intervention_note.create({
+    await tx.interventionNote.create({
       data: {
         intervention_id: id,
         teacher_id: teacherId,
@@ -395,7 +395,7 @@ export async function addNote(
     throw new NotFoundError('Intervention', interventionId);
   }
 
-  const note = await prisma.intervention_note.create({
+  const note = await prisma.interventionNote.create({
     data: {
       intervention_id: interventionId,
       teacher_id: teacherId,

@@ -26,7 +26,7 @@ import {
   updateMastery,
   updateMasterySequence,
   diagnosisConfidence,
-} from '../../../src/services/bkt-engine';
+} from '../../src/services/bkt-engine';
 
 describe('BKT Engine — Determinism', () => {
   it('is deterministic: updateMastery is pure (call twice, same result)', () => {
