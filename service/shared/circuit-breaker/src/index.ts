@@ -42,6 +42,8 @@ export interface BreakerStats {
   latencyMean: number;
 }
 
+import { createOpossumBreaker } from './breaker';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface CircuitBreaker<T extends (...args: any[]) => any> {
   fire(...args: Parameters<T>): Promise<ReturnType<T>>;
@@ -57,12 +59,11 @@ export function createBreaker<T extends (...args: any[]) => any>(
   fn: T,
   options?: BreakerOptions,
 ): CircuitBreaker<T> {
-  // Implementation delegates to the .js (compiled) module so that we
-  // don't have to keep two copies of `opossum` typings in sync.
-  // The require is resolved at runtime by Node when the .js file is built.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { createOpossumBreaker } = require('./breaker');
+  // Delegate to the same underlying implementation that the re-export
+  // exposes. Tests import this module via vitest's TS loader; using a
+  // plain ESM-style `import` (instead of `require`) keeps Node's module
+  // resolver happy across vitest, tsx and the compiled `dist/`.
   return createOpossumBreaker(name, fn, options);
 }
 
-export { createOpossumBreaker } from './breaker';
+export { createOpossumBreaker };
