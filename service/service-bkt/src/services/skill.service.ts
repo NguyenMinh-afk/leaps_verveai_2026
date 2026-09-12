@@ -146,7 +146,7 @@ async function computeSkillStats(skillId: string): Promise<SkillWithStatsDto['st
       where: { skill_id: skillId },
       _count: { _all: true },
     }),
-    prisma.evidence.count({ where: { diagnosis: { skill_id: skillId } } }),
+    prisma.evidenceItem.count({ where: { diagnosis: { skill_id: skillId } } }),
   ]);
 
   let mastered = 0;

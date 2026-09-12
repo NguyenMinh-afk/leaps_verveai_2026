@@ -14,76 +14,83 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 
 /**
- * Model skill
- * 
+ * Model Skill
+ * A learnable skill. `prereq_skills` is a flat list of skill codes
+ * (TEXT[]) so we can resolve a dependency graph without a join table.
  */
-export type skill = $Result.DefaultSelection<Prisma.$skillPayload>
+export type Skill = $Result.DefaultSelection<Prisma.$SkillPayload>
 /**
- * Model diagnosis
- * 
+ * Model Diagnosis
+ * Per-(student, skill) mastery snapshot. The engine upserts this on
+ * every evidence observation; `confidence` reflects how many
+ * observations the snapshot is based on.
  */
-export type diagnosis = $Result.DefaultSelection<Prisma.$diagnosisPayload>
+export type Diagnosis = $Result.DefaultSelection<Prisma.$DiagnosisPayload>
 /**
- * Model evidence
- * 
+ * Model EvidenceItem
+ * A single piece of evidence (one item answered) attached to a
+ * diagnosis. Carries the LLM-extracted answer (Lớp 1), the binary
+ * correctness signal, and an engine-assigned quality tag.
  */
-export type evidence = $Result.DefaultSelection<Prisma.$evidencePayload>
+export type EvidenceItem = $Result.DefaultSelection<Prisma.$EvidenceItemPayload>
 /**
- * Model intervention
- * 
+ * Model Intervention
+ * A recommended teaching action surfaced to the dashboard when a
+ * student is stuck or has a mastery gap. Created automatically by the
+ * engine, can be edited or resolved by a teacher (FR-17 override).
  */
-export type intervention = $Result.DefaultSelection<Prisma.$interventionPayload>
+export type Intervention = $Result.DefaultSelection<Prisma.$InterventionPayload>
 /**
- * Model intervention_note
- * 
+ * Model InterventionNote
+ * Free-form teacher note attached to an intervention. Append-only.
  */
-export type intervention_note = $Result.DefaultSelection<Prisma.$intervention_notePayload>
+export type InterventionNote = $Result.DefaultSelection<Prisma.$InterventionNotePayload>
 
 /**
  * Enums
  */
 export namespace $Enums {
-  export const diagnosis_status: {
+  export const DiagnosisStatus: {
   PENDING: 'PENDING',
   DIAGNOSED: 'DIAGNOSED',
   MASTERED: 'MASTERED',
   STRUGGLING: 'STRUGGLING'
 };
 
-export type diagnosis_status = (typeof diagnosis_status)[keyof typeof diagnosis_status]
+export type DiagnosisStatus = (typeof DiagnosisStatus)[keyof typeof DiagnosisStatus]
 
 
-export const evidence_quality: {
+export const EvidenceQuality: {
   HIGH: 'HIGH',
   MEDIUM: 'MEDIUM',
   LOW: 'LOW',
   UNKNOWN: 'UNKNOWN'
 };
 
-export type evidence_quality = (typeof evidence_quality)[keyof typeof evidence_quality]
+export type EvidenceQuality = (typeof EvidenceQuality)[keyof typeof EvidenceQuality]
 
 
-export const intervention_status: {
+export const InterventionStatus: {
   ACTIVE: 'ACTIVE',
   RESOLVED: 'RESOLVED',
   CANCELLED: 'CANCELLED'
 };
 
-export type intervention_status = (typeof intervention_status)[keyof typeof intervention_status]
+export type InterventionStatus = (typeof InterventionStatus)[keyof typeof InterventionStatus]
 
 }
 
-export type diagnosis_status = $Enums.diagnosis_status
+export type DiagnosisStatus = $Enums.DiagnosisStatus
 
-export const diagnosis_status: typeof $Enums.diagnosis_status
+export const DiagnosisStatus: typeof $Enums.DiagnosisStatus
 
-export type evidence_quality = $Enums.evidence_quality
+export type EvidenceQuality = $Enums.EvidenceQuality
 
-export const evidence_quality: typeof $Enums.evidence_quality
+export const EvidenceQuality: typeof $Enums.EvidenceQuality
 
-export type intervention_status = $Enums.intervention_status
+export type InterventionStatus = $Enums.InterventionStatus
 
-export const intervention_status: typeof $Enums.intervention_status
+export const InterventionStatus: typeof $Enums.InterventionStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -209,54 +216,54 @@ export class PrismaClient<
   $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb, ExtArgs>
 
       /**
-   * `prisma.skill`: Exposes CRUD operations for the **skill** model.
+   * `prisma.skill`: Exposes CRUD operations for the **Skill** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more Skills
     * const skills = await prisma.skill.findMany()
     * ```
     */
-  get skill(): Prisma.skillDelegate<ExtArgs>;
+  get skill(): Prisma.SkillDelegate<ExtArgs>;
 
   /**
-   * `prisma.diagnosis`: Exposes CRUD operations for the **diagnosis** model.
+   * `prisma.diagnosis`: Exposes CRUD operations for the **Diagnosis** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more Diagnoses
     * const diagnoses = await prisma.diagnosis.findMany()
     * ```
     */
-  get diagnosis(): Prisma.diagnosisDelegate<ExtArgs>;
+  get diagnosis(): Prisma.DiagnosisDelegate<ExtArgs>;
 
   /**
-   * `prisma.evidence`: Exposes CRUD operations for the **evidence** model.
+   * `prisma.evidenceItem`: Exposes CRUD operations for the **EvidenceItem** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Evidences
-    * const evidences = await prisma.evidence.findMany()
+    * // Fetch zero or more EvidenceItems
+    * const evidenceItems = await prisma.evidenceItem.findMany()
     * ```
     */
-  get evidence(): Prisma.evidenceDelegate<ExtArgs>;
+  get evidenceItem(): Prisma.EvidenceItemDelegate<ExtArgs>;
 
   /**
-   * `prisma.intervention`: Exposes CRUD operations for the **intervention** model.
+   * `prisma.intervention`: Exposes CRUD operations for the **Intervention** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more Interventions
     * const interventions = await prisma.intervention.findMany()
     * ```
     */
-  get intervention(): Prisma.interventionDelegate<ExtArgs>;
+  get intervention(): Prisma.InterventionDelegate<ExtArgs>;
 
   /**
-   * `prisma.intervention_note`: Exposes CRUD operations for the **intervention_note** model.
+   * `prisma.interventionNote`: Exposes CRUD operations for the **InterventionNote** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Intervention_notes
-    * const intervention_notes = await prisma.intervention_note.findMany()
+    * // Fetch zero or more InterventionNotes
+    * const interventionNotes = await prisma.interventionNote.findMany()
     * ```
     */
-  get intervention_note(): Prisma.intervention_noteDelegate<ExtArgs>;
+  get interventionNote(): Prisma.InterventionNoteDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -698,11 +705,11 @@ export namespace Prisma {
 
 
   export const ModelName: {
-    skill: 'skill',
-    diagnosis: 'diagnosis',
-    evidence: 'evidence',
-    intervention: 'intervention',
-    intervention_note: 'intervention_note'
+    Skill: 'Skill',
+    Diagnosis: 'Diagnosis',
+    EvidenceItem: 'EvidenceItem',
+    Intervention: 'Intervention',
+    InterventionNote: 'InterventionNote'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -718,357 +725,357 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "skill" | "diagnosis" | "evidence" | "intervention" | "intervention_note"
+      modelProps: "skill" | "diagnosis" | "evidenceItem" | "intervention" | "interventionNote"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
-      skill: {
-        payload: Prisma.$skillPayload<ExtArgs>
-        fields: Prisma.skillFieldRefs
+      Skill: {
+        payload: Prisma.$SkillPayload<ExtArgs>
+        fields: Prisma.SkillFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.skillFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload> | null
+            args: Prisma.SkillFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.skillFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           findFirst: {
-            args: Prisma.skillFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload> | null
+            args: Prisma.SkillFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.skillFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           findMany: {
-            args: Prisma.skillFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>[]
+            args: Prisma.SkillFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>[]
           }
           create: {
-            args: Prisma.skillCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           createMany: {
-            args: Prisma.skillCreateManyArgs<ExtArgs>
+            args: Prisma.SkillCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.skillCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>[]
+            args: Prisma.SkillCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>[]
           }
           delete: {
-            args: Prisma.skillDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           update: {
-            args: Prisma.skillUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           deleteMany: {
-            args: Prisma.skillDeleteManyArgs<ExtArgs>
+            args: Prisma.SkillDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.skillUpdateManyArgs<ExtArgs>
+            args: Prisma.SkillUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.skillUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$skillPayload>
+            args: Prisma.SkillUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SkillPayload>
           }
           aggregate: {
             args: Prisma.SkillAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateSkill>
           }
           groupBy: {
-            args: Prisma.skillGroupByArgs<ExtArgs>
+            args: Prisma.SkillGroupByArgs<ExtArgs>
             result: $Utils.Optional<SkillGroupByOutputType>[]
           }
           count: {
-            args: Prisma.skillCountArgs<ExtArgs>
+            args: Prisma.SkillCountArgs<ExtArgs>
             result: $Utils.Optional<SkillCountAggregateOutputType> | number
           }
         }
       }
-      diagnosis: {
-        payload: Prisma.$diagnosisPayload<ExtArgs>
-        fields: Prisma.diagnosisFieldRefs
+      Diagnosis: {
+        payload: Prisma.$DiagnosisPayload<ExtArgs>
+        fields: Prisma.DiagnosisFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.diagnosisFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload> | null
+            args: Prisma.DiagnosisFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.diagnosisFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           findFirst: {
-            args: Prisma.diagnosisFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload> | null
+            args: Prisma.DiagnosisFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.diagnosisFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           findMany: {
-            args: Prisma.diagnosisFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>[]
+            args: Prisma.DiagnosisFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>[]
           }
           create: {
-            args: Prisma.diagnosisCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           createMany: {
-            args: Prisma.diagnosisCreateManyArgs<ExtArgs>
+            args: Prisma.DiagnosisCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.diagnosisCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>[]
+            args: Prisma.DiagnosisCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>[]
           }
           delete: {
-            args: Prisma.diagnosisDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           update: {
-            args: Prisma.diagnosisUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           deleteMany: {
-            args: Prisma.diagnosisDeleteManyArgs<ExtArgs>
+            args: Prisma.DiagnosisDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.diagnosisUpdateManyArgs<ExtArgs>
+            args: Prisma.DiagnosisUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.diagnosisUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$diagnosisPayload>
+            args: Prisma.DiagnosisUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiagnosisPayload>
           }
           aggregate: {
             args: Prisma.DiagnosisAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateDiagnosis>
           }
           groupBy: {
-            args: Prisma.diagnosisGroupByArgs<ExtArgs>
+            args: Prisma.DiagnosisGroupByArgs<ExtArgs>
             result: $Utils.Optional<DiagnosisGroupByOutputType>[]
           }
           count: {
-            args: Prisma.diagnosisCountArgs<ExtArgs>
+            args: Prisma.DiagnosisCountArgs<ExtArgs>
             result: $Utils.Optional<DiagnosisCountAggregateOutputType> | number
           }
         }
       }
-      evidence: {
-        payload: Prisma.$evidencePayload<ExtArgs>
-        fields: Prisma.evidenceFieldRefs
+      EvidenceItem: {
+        payload: Prisma.$EvidenceItemPayload<ExtArgs>
+        fields: Prisma.EvidenceItemFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.evidenceFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload> | null
+            args: Prisma.EvidenceItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.evidenceFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           findFirst: {
-            args: Prisma.evidenceFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload> | null
+            args: Prisma.EvidenceItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.evidenceFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           findMany: {
-            args: Prisma.evidenceFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>[]
+            args: Prisma.EvidenceItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>[]
           }
           create: {
-            args: Prisma.evidenceCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           createMany: {
-            args: Prisma.evidenceCreateManyArgs<ExtArgs>
+            args: Prisma.EvidenceItemCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.evidenceCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>[]
+            args: Prisma.EvidenceItemCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>[]
           }
           delete: {
-            args: Prisma.evidenceDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           update: {
-            args: Prisma.evidenceUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           deleteMany: {
-            args: Prisma.evidenceDeleteManyArgs<ExtArgs>
+            args: Prisma.EvidenceItemDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.evidenceUpdateManyArgs<ExtArgs>
+            args: Prisma.EvidenceItemUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.evidenceUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$evidencePayload>
+            args: Prisma.EvidenceItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EvidenceItemPayload>
           }
           aggregate: {
-            args: Prisma.EvidenceAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateEvidence>
+            args: Prisma.EvidenceItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateEvidenceItem>
           }
           groupBy: {
-            args: Prisma.evidenceGroupByArgs<ExtArgs>
-            result: $Utils.Optional<EvidenceGroupByOutputType>[]
+            args: Prisma.EvidenceItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<EvidenceItemGroupByOutputType>[]
           }
           count: {
-            args: Prisma.evidenceCountArgs<ExtArgs>
-            result: $Utils.Optional<EvidenceCountAggregateOutputType> | number
+            args: Prisma.EvidenceItemCountArgs<ExtArgs>
+            result: $Utils.Optional<EvidenceItemCountAggregateOutputType> | number
           }
         }
       }
-      intervention: {
-        payload: Prisma.$interventionPayload<ExtArgs>
-        fields: Prisma.interventionFieldRefs
+      Intervention: {
+        payload: Prisma.$InterventionPayload<ExtArgs>
+        fields: Prisma.InterventionFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.interventionFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload> | null
+            args: Prisma.InterventionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.interventionFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           findFirst: {
-            args: Prisma.interventionFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload> | null
+            args: Prisma.InterventionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.interventionFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           findMany: {
-            args: Prisma.interventionFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>[]
+            args: Prisma.InterventionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>[]
           }
           create: {
-            args: Prisma.interventionCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           createMany: {
-            args: Prisma.interventionCreateManyArgs<ExtArgs>
+            args: Prisma.InterventionCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.interventionCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>[]
+            args: Prisma.InterventionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>[]
           }
           delete: {
-            args: Prisma.interventionDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           update: {
-            args: Prisma.interventionUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           deleteMany: {
-            args: Prisma.interventionDeleteManyArgs<ExtArgs>
+            args: Prisma.InterventionDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.interventionUpdateManyArgs<ExtArgs>
+            args: Prisma.InterventionUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.interventionUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$interventionPayload>
+            args: Prisma.InterventionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionPayload>
           }
           aggregate: {
             args: Prisma.InterventionAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateIntervention>
           }
           groupBy: {
-            args: Prisma.interventionGroupByArgs<ExtArgs>
+            args: Prisma.InterventionGroupByArgs<ExtArgs>
             result: $Utils.Optional<InterventionGroupByOutputType>[]
           }
           count: {
-            args: Prisma.interventionCountArgs<ExtArgs>
+            args: Prisma.InterventionCountArgs<ExtArgs>
             result: $Utils.Optional<InterventionCountAggregateOutputType> | number
           }
         }
       }
-      intervention_note: {
-        payload: Prisma.$intervention_notePayload<ExtArgs>
-        fields: Prisma.intervention_noteFieldRefs
+      InterventionNote: {
+        payload: Prisma.$InterventionNotePayload<ExtArgs>
+        fields: Prisma.InterventionNoteFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.intervention_noteFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload> | null
+            args: Prisma.InterventionNoteFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.intervention_noteFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           findFirst: {
-            args: Prisma.intervention_noteFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload> | null
+            args: Prisma.InterventionNoteFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.intervention_noteFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           findMany: {
-            args: Prisma.intervention_noteFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>[]
+            args: Prisma.InterventionNoteFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>[]
           }
           create: {
-            args: Prisma.intervention_noteCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           createMany: {
-            args: Prisma.intervention_noteCreateManyArgs<ExtArgs>
+            args: Prisma.InterventionNoteCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.intervention_noteCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>[]
+            args: Prisma.InterventionNoteCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>[]
           }
           delete: {
-            args: Prisma.intervention_noteDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           update: {
-            args: Prisma.intervention_noteUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           deleteMany: {
-            args: Prisma.intervention_noteDeleteManyArgs<ExtArgs>
+            args: Prisma.InterventionNoteDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.intervention_noteUpdateManyArgs<ExtArgs>
+            args: Prisma.InterventionNoteUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.intervention_noteUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$intervention_notePayload>
+            args: Prisma.InterventionNoteUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InterventionNotePayload>
           }
           aggregate: {
-            args: Prisma.Intervention_noteAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateIntervention_note>
+            args: Prisma.InterventionNoteAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInterventionNote>
           }
           groupBy: {
-            args: Prisma.intervention_noteGroupByArgs<ExtArgs>
-            result: $Utils.Optional<Intervention_noteGroupByOutputType>[]
+            args: Prisma.InterventionNoteGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InterventionNoteGroupByOutputType>[]
           }
           count: {
-            args: Prisma.intervention_noteCountArgs<ExtArgs>
-            result: $Utils.Optional<Intervention_noteCountAggregateOutputType> | number
+            args: Prisma.InterventionNoteCountArgs<ExtArgs>
+            result: $Utils.Optional<InterventionNoteCountAggregateOutputType> | number
           }
         }
       }
@@ -1257,14 +1264,14 @@ export namespace Prisma {
    * SkillCountOutputType without action
    */
   export type SkillCountOutputTypeCountDiagnosesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
   }
 
   /**
    * SkillCountOutputType without action
    */
   export type SkillCountOutputTypeCountInterventionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
   }
 
 
@@ -1295,7 +1302,7 @@ export namespace Prisma {
    * DiagnosisCountOutputType without action
    */
   export type DiagnosisCountOutputTypeCountEvidenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
   }
 
 
@@ -1326,7 +1333,7 @@ export namespace Prisma {
    * InterventionCountOutputType without action
    */
   export type InterventionCountOutputTypeCountNotes_listArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
   }
 
 
@@ -1335,7 +1342,7 @@ export namespace Prisma {
    */
 
   /**
-   * Model skill
+   * Model Skill
    */
 
   export type AggregateSkill = {
@@ -1429,37 +1436,37 @@ export namespace Prisma {
 
   export type SkillAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which skill to aggregate.
+     * Filter which Skill to aggregate.
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of skills to fetch.
+     * Determine the order of Skills to fetch.
      */
-    orderBy?: skillOrderByWithRelationInput | skillOrderByWithRelationInput[]
+    orderBy?: SkillOrderByWithRelationInput | SkillOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: skillWhereUniqueInput
+    cursor?: SkillWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` skills from the position of the cursor.
+     * Take `±n` Skills from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` skills.
+     * Skip the first `n` Skills.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned skills
+     * Count returned Skills
     **/
     _count?: true | SkillCountAggregateInputType
     /**
@@ -1499,11 +1506,11 @@ export namespace Prisma {
 
 
 
-  export type skillGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: skillWhereInput
-    orderBy?: skillOrderByWithAggregationInput | skillOrderByWithAggregationInput[]
+  export type SkillGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SkillWhereInput
+    orderBy?: SkillOrderByWithAggregationInput | SkillOrderByWithAggregationInput[]
     by: SkillScalarFieldEnum[] | SkillScalarFieldEnum
-    having?: skillScalarWhereWithAggregatesInput
+    having?: SkillScalarWhereWithAggregatesInput
     take?: number
     skip?: number
     _count?: SkillCountAggregateInputType | true
@@ -1529,7 +1536,7 @@ export namespace Prisma {
     _max: SkillMaxAggregateOutputType | null
   }
 
-  type GetSkillGroupByPayload<T extends skillGroupByArgs> = Prisma.PrismaPromise<
+  type GetSkillGroupByPayload<T extends SkillGroupByArgs> = Prisma.PrismaPromise<
     Array<
       PickEnumerable<SkillGroupByOutputType, T['by']> &
         {
@@ -1543,7 +1550,7 @@ export namespace Prisma {
     >
 
 
-  export type skillSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type SkillSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     code?: boolean
     name?: boolean
@@ -1552,12 +1559,12 @@ export namespace Prisma {
     prereq_skills?: boolean
     created_at?: boolean
     updated_at?: boolean
-    diagnoses?: boolean | skill$diagnosesArgs<ExtArgs>
-    interventions?: boolean | skill$interventionsArgs<ExtArgs>
+    diagnoses?: boolean | Skill$diagnosesArgs<ExtArgs>
+    interventions?: boolean | Skill$interventionsArgs<ExtArgs>
     _count?: boolean | SkillCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["skill"]>
 
-  export type skillSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type SkillSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     code?: boolean
     name?: boolean
@@ -1568,7 +1575,7 @@ export namespace Prisma {
     updated_at?: boolean
   }, ExtArgs["result"]["skill"]>
 
-  export type skillSelectScalar = {
+  export type SkillSelectScalar = {
     id?: boolean
     code?: boolean
     name?: boolean
@@ -1579,18 +1586,18 @@ export namespace Prisma {
     updated_at?: boolean
   }
 
-  export type skillInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    diagnoses?: boolean | skill$diagnosesArgs<ExtArgs>
-    interventions?: boolean | skill$interventionsArgs<ExtArgs>
+  export type SkillInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    diagnoses?: boolean | Skill$diagnosesArgs<ExtArgs>
+    interventions?: boolean | Skill$interventionsArgs<ExtArgs>
     _count?: boolean | SkillCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type skillIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type SkillIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
 
-  export type $skillPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "skill"
+  export type $SkillPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Skill"
     objects: {
-      diagnoses: Prisma.$diagnosisPayload<ExtArgs>[]
-      interventions: Prisma.$interventionPayload<ExtArgs>[]
+      diagnoses: Prisma.$DiagnosisPayload<ExtArgs>[]
+      interventions: Prisma.$InterventionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -1605,18 +1612,18 @@ export namespace Prisma {
     composites: {}
   }
 
-  type skillGetPayload<S extends boolean | null | undefined | skillDefaultArgs> = $Result.GetResult<Prisma.$skillPayload, S>
+  type SkillGetPayload<S extends boolean | null | undefined | SkillDefaultArgs> = $Result.GetResult<Prisma.$SkillPayload, S>
 
-  type skillCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<skillFindManyArgs, 'select' | 'include' | 'distinct'> & {
+  type SkillCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SkillFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: SkillCountAggregateInputType | true
     }
 
-  export interface skillDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['skill'], meta: { name: 'skill' } }
+  export interface SkillDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Skill'], meta: { name: 'Skill' } }
     /**
      * Find zero or one Skill that matches the filter.
-     * @param {skillFindUniqueArgs} args - Arguments to find a Skill
+     * @param {SkillFindUniqueArgs} args - Arguments to find a Skill
      * @example
      * // Get one Skill
      * const skill = await prisma.skill.findUnique({
@@ -1625,12 +1632,12 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUnique<T extends skillFindUniqueArgs>(args: SelectSubset<T, skillFindUniqueArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends SkillFindUniqueArgs>(args: SelectSubset<T, SkillFindUniqueArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
      * Find one Skill that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {skillFindUniqueOrThrowArgs} args - Arguments to find a Skill
+     * @param {SkillFindUniqueOrThrowArgs} args - Arguments to find a Skill
      * @example
      * // Get one Skill
      * const skill = await prisma.skill.findUniqueOrThrow({
@@ -1639,13 +1646,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUniqueOrThrow<T extends skillFindUniqueOrThrowArgs>(args: SelectSubset<T, skillFindUniqueOrThrowArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends SkillFindUniqueOrThrowArgs>(args: SelectSubset<T, SkillFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
      * Find the first Skill that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillFindFirstArgs} args - Arguments to find a Skill
+     * @param {SkillFindFirstArgs} args - Arguments to find a Skill
      * @example
      * // Get one Skill
      * const skill = await prisma.skill.findFirst({
@@ -1654,14 +1661,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirst<T extends skillFindFirstArgs>(args?: SelectSubset<T, skillFindFirstArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends SkillFindFirstArgs>(args?: SelectSubset<T, SkillFindFirstArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
      * Find the first Skill that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillFindFirstOrThrowArgs} args - Arguments to find a Skill
+     * @param {SkillFindFirstOrThrowArgs} args - Arguments to find a Skill
      * @example
      * // Get one Skill
      * const skill = await prisma.skill.findFirstOrThrow({
@@ -1670,13 +1677,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirstOrThrow<T extends skillFindFirstOrThrowArgs>(args?: SelectSubset<T, skillFindFirstOrThrowArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends SkillFindFirstOrThrowArgs>(args?: SelectSubset<T, SkillFindFirstOrThrowArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
      * Find zero or more Skills that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {SkillFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Skills
      * const skills = await prisma.skill.findMany()
@@ -1688,11 +1695,11 @@ export namespace Prisma {
      * const skillWithIdOnly = await prisma.skill.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends skillFindManyArgs>(args?: SelectSubset<T, skillFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findMany">>
+    findMany<T extends SkillFindManyArgs>(args?: SelectSubset<T, SkillFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findMany">>
 
     /**
      * Create a Skill.
-     * @param {skillCreateArgs} args - Arguments to create a Skill.
+     * @param {SkillCreateArgs} args - Arguments to create a Skill.
      * @example
      * // Create one Skill
      * const Skill = await prisma.skill.create({
@@ -1702,11 +1709,11 @@ export namespace Prisma {
      * })
      * 
      */
-    create<T extends skillCreateArgs>(args: SelectSubset<T, skillCreateArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends SkillCreateArgs>(args: SelectSubset<T, SkillCreateArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
      * Create many Skills.
-     * @param {skillCreateManyArgs} args - Arguments to create many Skills.
+     * @param {SkillCreateManyArgs} args - Arguments to create many Skills.
      * @example
      * // Create many Skills
      * const skill = await prisma.skill.createMany({
@@ -1716,11 +1723,11 @@ export namespace Prisma {
      * })
      *     
      */
-    createMany<T extends skillCreateManyArgs>(args?: SelectSubset<T, skillCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends SkillCreateManyArgs>(args?: SelectSubset<T, SkillCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many Skills and returns the data saved in the database.
-     * @param {skillCreateManyAndReturnArgs} args - Arguments to create many Skills.
+     * @param {SkillCreateManyAndReturnArgs} args - Arguments to create many Skills.
      * @example
      * // Create many Skills
      * const skill = await prisma.skill.createManyAndReturn({
@@ -1740,11 +1747,11 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends skillCreateManyAndReturnArgs>(args?: SelectSubset<T, skillCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "createManyAndReturn">>
+    createManyAndReturn<T extends SkillCreateManyAndReturnArgs>(args?: SelectSubset<T, SkillCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "createManyAndReturn">>
 
     /**
      * Delete a Skill.
-     * @param {skillDeleteArgs} args - Arguments to delete one Skill.
+     * @param {SkillDeleteArgs} args - Arguments to delete one Skill.
      * @example
      * // Delete one Skill
      * const Skill = await prisma.skill.delete({
@@ -1754,11 +1761,11 @@ export namespace Prisma {
      * })
      * 
      */
-    delete<T extends skillDeleteArgs>(args: SelectSubset<T, skillDeleteArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends SkillDeleteArgs>(args: SelectSubset<T, SkillDeleteArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
      * Update one Skill.
-     * @param {skillUpdateArgs} args - Arguments to update one Skill.
+     * @param {SkillUpdateArgs} args - Arguments to update one Skill.
      * @example
      * // Update one Skill
      * const skill = await prisma.skill.update({
@@ -1771,11 +1778,11 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends skillUpdateArgs>(args: SelectSubset<T, skillUpdateArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends SkillUpdateArgs>(args: SelectSubset<T, SkillUpdateArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
      * Delete zero or more Skills.
-     * @param {skillDeleteManyArgs} args - Arguments to filter Skills to delete.
+     * @param {SkillDeleteManyArgs} args - Arguments to filter Skills to delete.
      * @example
      * // Delete a few Skills
      * const { count } = await prisma.skill.deleteMany({
@@ -1785,13 +1792,13 @@ export namespace Prisma {
      * })
      * 
      */
-    deleteMany<T extends skillDeleteManyArgs>(args?: SelectSubset<T, skillDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends SkillDeleteManyArgs>(args?: SelectSubset<T, SkillDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more Skills.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {SkillUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many Skills
      * const skill = await prisma.skill.updateMany({
@@ -1804,11 +1811,11 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends skillUpdateManyArgs>(args: SelectSubset<T, skillUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends SkillUpdateManyArgs>(args: SelectSubset<T, SkillUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one Skill.
-     * @param {skillUpsertArgs} args - Arguments to update or create a Skill.
+     * @param {SkillUpsertArgs} args - Arguments to update or create a Skill.
      * @example
      * // Update or create a Skill
      * const skill = await prisma.skill.upsert({
@@ -1823,14 +1830,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    upsert<T extends skillUpsertArgs>(args: SelectSubset<T, skillUpsertArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends SkillUpsertArgs>(args: SelectSubset<T, SkillUpsertArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
 
     /**
      * Count the number of Skills.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillCountArgs} args - Arguments to filter Skills to count.
+     * @param {SkillCountArgs} args - Arguments to filter Skills to count.
      * @example
      * // Count the number of Skills
      * const count = await prisma.skill.count({
@@ -1839,8 +1846,8 @@ export namespace Prisma {
      *   }
      * })
     **/
-    count<T extends skillCountArgs>(
-      args?: Subset<T, skillCountArgs>,
+    count<T extends SkillCountArgs>(
+      args?: Subset<T, SkillCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
@@ -1879,7 +1886,7 @@ export namespace Prisma {
      * Group by Skill.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {skillGroupByArgs} args - Group by arguments.
+     * @param {SkillGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -1894,14 +1901,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends skillGroupByArgs,
+      T extends SkillGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: skillGroupByArgs['orderBy'] }
-        : { orderBy?: skillGroupByArgs['orderBy'] },
+        ? { orderBy: SkillGroupByArgs['orderBy'] }
+        : { orderBy?: SkillGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -1950,23 +1957,23 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, skillGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkillGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, SkillGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSkillGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the skill model
+   * Fields of the Skill model
    */
-  readonly fields: skillFieldRefs;
+  readonly fields: SkillFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for skill.
+   * The delegate class that acts as a "Promise-like" for Skill.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__skillClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__SkillClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    diagnoses<T extends skill$diagnosesArgs<ExtArgs> = {}>(args?: Subset<T, skill$diagnosesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findMany"> | Null>
-    interventions<T extends skill$interventionsArgs<ExtArgs> = {}>(args?: Subset<T, skill$interventionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findMany"> | Null>
+    diagnoses<T extends Skill$diagnosesArgs<ExtArgs> = {}>(args?: Subset<T, Skill$diagnosesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findMany"> | Null>
+    interventions<T extends Skill$interventionsArgs<ExtArgs> = {}>(args?: Subset<T, Skill$interventionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1993,387 +2000,387 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the skill model
+   * Fields of the Skill model
    */ 
-  interface skillFieldRefs {
-    readonly id: FieldRef<"skill", 'String'>
-    readonly code: FieldRef<"skill", 'String'>
-    readonly name: FieldRef<"skill", 'String'>
-    readonly difficulty: FieldRef<"skill", 'Int'>
-    readonly description: FieldRef<"skill", 'String'>
-    readonly prereq_skills: FieldRef<"skill", 'String[]'>
-    readonly created_at: FieldRef<"skill", 'DateTime'>
-    readonly updated_at: FieldRef<"skill", 'DateTime'>
+  interface SkillFieldRefs {
+    readonly id: FieldRef<"Skill", 'String'>
+    readonly code: FieldRef<"Skill", 'String'>
+    readonly name: FieldRef<"Skill", 'String'>
+    readonly difficulty: FieldRef<"Skill", 'Int'>
+    readonly description: FieldRef<"Skill", 'String'>
+    readonly prereq_skills: FieldRef<"Skill", 'String[]'>
+    readonly created_at: FieldRef<"Skill", 'DateTime'>
+    readonly updated_at: FieldRef<"Skill", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * skill findUnique
+   * Skill findUnique
    */
-  export type skillFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter, which skill to fetch.
+     * Filter, which Skill to fetch.
      */
-    where: skillWhereUniqueInput
+    where: SkillWhereUniqueInput
   }
 
   /**
-   * skill findUniqueOrThrow
+   * Skill findUniqueOrThrow
    */
-  export type skillFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter, which skill to fetch.
+     * Filter, which Skill to fetch.
      */
-    where: skillWhereUniqueInput
+    where: SkillWhereUniqueInput
   }
 
   /**
-   * skill findFirst
+   * Skill findFirst
    */
-  export type skillFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter, which skill to fetch.
+     * Filter, which Skill to fetch.
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of skills to fetch.
+     * Determine the order of Skills to fetch.
      */
-    orderBy?: skillOrderByWithRelationInput | skillOrderByWithRelationInput[]
+    orderBy?: SkillOrderByWithRelationInput | SkillOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for skills.
+     * Sets the position for searching for Skills.
      */
-    cursor?: skillWhereUniqueInput
+    cursor?: SkillWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` skills from the position of the cursor.
+     * Take `±n` Skills from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` skills.
+     * Skip the first `n` Skills.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of skills.
+     * Filter by unique combinations of Skills.
      */
     distinct?: SkillScalarFieldEnum | SkillScalarFieldEnum[]
   }
 
   /**
-   * skill findFirstOrThrow
+   * Skill findFirstOrThrow
    */
-  export type skillFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter, which skill to fetch.
+     * Filter, which Skill to fetch.
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of skills to fetch.
+     * Determine the order of Skills to fetch.
      */
-    orderBy?: skillOrderByWithRelationInput | skillOrderByWithRelationInput[]
+    orderBy?: SkillOrderByWithRelationInput | SkillOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for skills.
+     * Sets the position for searching for Skills.
      */
-    cursor?: skillWhereUniqueInput
+    cursor?: SkillWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` skills from the position of the cursor.
+     * Take `±n` Skills from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` skills.
+     * Skip the first `n` Skills.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of skills.
+     * Filter by unique combinations of Skills.
      */
     distinct?: SkillScalarFieldEnum | SkillScalarFieldEnum[]
   }
 
   /**
-   * skill findMany
+   * Skill findMany
    */
-  export type skillFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter, which skills to fetch.
+     * Filter, which Skills to fetch.
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of skills to fetch.
+     * Determine the order of Skills to fetch.
      */
-    orderBy?: skillOrderByWithRelationInput | skillOrderByWithRelationInput[]
+    orderBy?: SkillOrderByWithRelationInput | SkillOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing skills.
+     * Sets the position for listing Skills.
      */
-    cursor?: skillWhereUniqueInput
+    cursor?: SkillWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` skills from the position of the cursor.
+     * Take `±n` Skills from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` skills.
+     * Skip the first `n` Skills.
      */
     skip?: number
     distinct?: SkillScalarFieldEnum | SkillScalarFieldEnum[]
   }
 
   /**
-   * skill create
+   * Skill create
    */
-  export type skillCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * The data needed to create a skill.
+     * The data needed to create a Skill.
      */
-    data: XOR<skillCreateInput, skillUncheckedCreateInput>
+    data: XOR<SkillCreateInput, SkillUncheckedCreateInput>
   }
 
   /**
-   * skill createMany
+   * Skill createMany
    */
-  export type skillCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many skills.
+     * The data used to create many Skills.
      */
-    data: skillCreateManyInput | skillCreateManyInput[]
+    data: SkillCreateManyInput | SkillCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * skill createManyAndReturn
+   * Skill createManyAndReturn
    */
-  export type skillCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelectCreateManyAndReturn<ExtArgs> | null
+    select?: SkillSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * The data used to create many skills.
+     * The data used to create many Skills.
      */
-    data: skillCreateManyInput | skillCreateManyInput[]
+    data: SkillCreateManyInput | SkillCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * skill update
+   * Skill update
    */
-  export type skillUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * The data needed to update a skill.
+     * The data needed to update a Skill.
      */
-    data: XOR<skillUpdateInput, skillUncheckedUpdateInput>
+    data: XOR<SkillUpdateInput, SkillUncheckedUpdateInput>
     /**
-     * Choose, which skill to update.
+     * Choose, which Skill to update.
      */
-    where: skillWhereUniqueInput
+    where: SkillWhereUniqueInput
   }
 
   /**
-   * skill updateMany
+   * Skill updateMany
    */
-  export type skillUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update skills.
+     * The data used to update Skills.
      */
-    data: XOR<skillUpdateManyMutationInput, skillUncheckedUpdateManyInput>
+    data: XOR<SkillUpdateManyMutationInput, SkillUncheckedUpdateManyInput>
     /**
-     * Filter which skills to update
+     * Filter which Skills to update
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
   }
 
   /**
-   * skill upsert
+   * Skill upsert
    */
-  export type skillUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * The filter to search for the skill to update in case it exists.
+     * The filter to search for the Skill to update in case it exists.
      */
-    where: skillWhereUniqueInput
+    where: SkillWhereUniqueInput
     /**
-     * In case the skill found by the `where` argument doesn't exist, create a new skill with this data.
+     * In case the Skill found by the `where` argument doesn't exist, create a new Skill with this data.
      */
-    create: XOR<skillCreateInput, skillUncheckedCreateInput>
+    create: XOR<SkillCreateInput, SkillUncheckedCreateInput>
     /**
-     * In case the skill was found with the provided `where` argument, update it with this data.
+     * In case the Skill was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<skillUpdateInput, skillUncheckedUpdateInput>
+    update: XOR<SkillUpdateInput, SkillUncheckedUpdateInput>
   }
 
   /**
-   * skill delete
+   * Skill delete
    */
-  export type skillDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
     /**
-     * Filter which skill to delete.
+     * Filter which Skill to delete.
      */
-    where: skillWhereUniqueInput
+    where: SkillWhereUniqueInput
   }
 
   /**
-   * skill deleteMany
+   * Skill deleteMany
    */
-  export type skillDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which skills to delete
+     * Filter which Skills to delete
      */
-    where?: skillWhereInput
+    where?: SkillWhereInput
   }
 
   /**
-   * skill.diagnoses
+   * Skill.diagnoses
    */
-  export type skill$diagnosesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Skill$diagnosesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
-    where?: diagnosisWhereInput
-    orderBy?: diagnosisOrderByWithRelationInput | diagnosisOrderByWithRelationInput[]
-    cursor?: diagnosisWhereUniqueInput
+    include?: DiagnosisInclude<ExtArgs> | null
+    where?: DiagnosisWhereInput
+    orderBy?: DiagnosisOrderByWithRelationInput | DiagnosisOrderByWithRelationInput[]
+    cursor?: DiagnosisWhereUniqueInput
     take?: number
     skip?: number
     distinct?: DiagnosisScalarFieldEnum | DiagnosisScalarFieldEnum[]
   }
 
   /**
-   * skill.interventions
+   * Skill.interventions
    */
-  export type skill$interventionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Skill$interventionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
-    where?: interventionWhereInput
-    orderBy?: interventionOrderByWithRelationInput | interventionOrderByWithRelationInput[]
-    cursor?: interventionWhereUniqueInput
+    include?: InterventionInclude<ExtArgs> | null
+    where?: InterventionWhereInput
+    orderBy?: InterventionOrderByWithRelationInput | InterventionOrderByWithRelationInput[]
+    cursor?: InterventionWhereUniqueInput
     take?: number
     skip?: number
     distinct?: InterventionScalarFieldEnum | InterventionScalarFieldEnum[]
   }
 
   /**
-   * skill without action
+   * Skill without action
    */
-  export type skillDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type SkillDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the skill
+     * Select specific fields to fetch from the Skill
      */
-    select?: skillSelect<ExtArgs> | null
+    select?: SkillSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: skillInclude<ExtArgs> | null
+    include?: SkillInclude<ExtArgs> | null
   }
 
 
   /**
-   * Model diagnosis
+   * Model Diagnosis
    */
 
   export type AggregateDiagnosis = {
@@ -2400,7 +2407,7 @@ export namespace Prisma {
     skill_id: string | null
     p_known: number | null
     confidence: number | null
-    status: $Enums.diagnosis_status | null
+    status: $Enums.DiagnosisStatus | null
     created_at: Date | null
     updated_at: Date | null
   }
@@ -2411,7 +2418,7 @@ export namespace Prisma {
     skill_id: string | null
     p_known: number | null
     confidence: number | null
-    status: $Enums.diagnosis_status | null
+    status: $Enums.DiagnosisStatus | null
     created_at: Date | null
     updated_at: Date | null
   }
@@ -2475,37 +2482,37 @@ export namespace Prisma {
 
   export type DiagnosisAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which diagnosis to aggregate.
+     * Filter which Diagnosis to aggregate.
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of diagnoses to fetch.
+     * Determine the order of Diagnoses to fetch.
      */
-    orderBy?: diagnosisOrderByWithRelationInput | diagnosisOrderByWithRelationInput[]
+    orderBy?: DiagnosisOrderByWithRelationInput | DiagnosisOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: diagnosisWhereUniqueInput
+    cursor?: DiagnosisWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` diagnoses from the position of the cursor.
+     * Take `±n` Diagnoses from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` diagnoses.
+     * Skip the first `n` Diagnoses.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned diagnoses
+     * Count returned Diagnoses
     **/
     _count?: true | DiagnosisCountAggregateInputType
     /**
@@ -2545,11 +2552,11 @@ export namespace Prisma {
 
 
 
-  export type diagnosisGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: diagnosisWhereInput
-    orderBy?: diagnosisOrderByWithAggregationInput | diagnosisOrderByWithAggregationInput[]
+  export type DiagnosisGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiagnosisWhereInput
+    orderBy?: DiagnosisOrderByWithAggregationInput | DiagnosisOrderByWithAggregationInput[]
     by: DiagnosisScalarFieldEnum[] | DiagnosisScalarFieldEnum
-    having?: diagnosisScalarWhereWithAggregatesInput
+    having?: DiagnosisScalarWhereWithAggregatesInput
     take?: number
     skip?: number
     _count?: DiagnosisCountAggregateInputType | true
@@ -2565,7 +2572,7 @@ export namespace Prisma {
     skill_id: string
     p_known: number
     confidence: number
-    status: $Enums.diagnosis_status
+    status: $Enums.DiagnosisStatus
     created_at: Date
     updated_at: Date
     _count: DiagnosisCountAggregateOutputType | null
@@ -2575,7 +2582,7 @@ export namespace Prisma {
     _max: DiagnosisMaxAggregateOutputType | null
   }
 
-  type GetDiagnosisGroupByPayload<T extends diagnosisGroupByArgs> = Prisma.PrismaPromise<
+  type GetDiagnosisGroupByPayload<T extends DiagnosisGroupByArgs> = Prisma.PrismaPromise<
     Array<
       PickEnumerable<DiagnosisGroupByOutputType, T['by']> &
         {
@@ -2589,7 +2596,7 @@ export namespace Prisma {
     >
 
 
-  export type diagnosisSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type DiagnosisSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -2598,12 +2605,12 @@ export namespace Prisma {
     status?: boolean
     created_at?: boolean
     updated_at?: boolean
-    skill?: boolean | skillDefaultArgs<ExtArgs>
-    evidence?: boolean | diagnosis$evidenceArgs<ExtArgs>
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
+    evidence?: boolean | Diagnosis$evidenceArgs<ExtArgs>
     _count?: boolean | DiagnosisCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["diagnosis"]>
 
-  export type diagnosisSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type DiagnosisSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -2612,10 +2619,10 @@ export namespace Prisma {
     status?: boolean
     created_at?: boolean
     updated_at?: boolean
-    skill?: boolean | skillDefaultArgs<ExtArgs>
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["diagnosis"]>
 
-  export type diagnosisSelectScalar = {
+  export type DiagnosisSelectScalar = {
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -2626,20 +2633,20 @@ export namespace Prisma {
     updated_at?: boolean
   }
 
-  export type diagnosisInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    skill?: boolean | skillDefaultArgs<ExtArgs>
-    evidence?: boolean | diagnosis$evidenceArgs<ExtArgs>
+  export type DiagnosisInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
+    evidence?: boolean | Diagnosis$evidenceArgs<ExtArgs>
     _count?: boolean | DiagnosisCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type diagnosisIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    skill?: boolean | skillDefaultArgs<ExtArgs>
+  export type DiagnosisIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
   }
 
-  export type $diagnosisPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "diagnosis"
+  export type $DiagnosisPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Diagnosis"
     objects: {
-      skill: Prisma.$skillPayload<ExtArgs>
-      evidence: Prisma.$evidencePayload<ExtArgs>[]
+      skill: Prisma.$SkillPayload<ExtArgs>
+      evidence: Prisma.$EvidenceItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2647,25 +2654,25 @@ export namespace Prisma {
       skill_id: string
       p_known: number
       confidence: number
-      status: $Enums.diagnosis_status
+      status: $Enums.DiagnosisStatus
       created_at: Date
       updated_at: Date
     }, ExtArgs["result"]["diagnosis"]>
     composites: {}
   }
 
-  type diagnosisGetPayload<S extends boolean | null | undefined | diagnosisDefaultArgs> = $Result.GetResult<Prisma.$diagnosisPayload, S>
+  type DiagnosisGetPayload<S extends boolean | null | undefined | DiagnosisDefaultArgs> = $Result.GetResult<Prisma.$DiagnosisPayload, S>
 
-  type diagnosisCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<diagnosisFindManyArgs, 'select' | 'include' | 'distinct'> & {
+  type DiagnosisCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DiagnosisFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: DiagnosisCountAggregateInputType | true
     }
 
-  export interface diagnosisDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['diagnosis'], meta: { name: 'diagnosis' } }
+  export interface DiagnosisDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Diagnosis'], meta: { name: 'Diagnosis' } }
     /**
      * Find zero or one Diagnosis that matches the filter.
-     * @param {diagnosisFindUniqueArgs} args - Arguments to find a Diagnosis
+     * @param {DiagnosisFindUniqueArgs} args - Arguments to find a Diagnosis
      * @example
      * // Get one Diagnosis
      * const diagnosis = await prisma.diagnosis.findUnique({
@@ -2674,12 +2681,12 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUnique<T extends diagnosisFindUniqueArgs>(args: SelectSubset<T, diagnosisFindUniqueArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends DiagnosisFindUniqueArgs>(args: SelectSubset<T, DiagnosisFindUniqueArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
      * Find one Diagnosis that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {diagnosisFindUniqueOrThrowArgs} args - Arguments to find a Diagnosis
+     * @param {DiagnosisFindUniqueOrThrowArgs} args - Arguments to find a Diagnosis
      * @example
      * // Get one Diagnosis
      * const diagnosis = await prisma.diagnosis.findUniqueOrThrow({
@@ -2688,13 +2695,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUniqueOrThrow<T extends diagnosisFindUniqueOrThrowArgs>(args: SelectSubset<T, diagnosisFindUniqueOrThrowArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends DiagnosisFindUniqueOrThrowArgs>(args: SelectSubset<T, DiagnosisFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
      * Find the first Diagnosis that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisFindFirstArgs} args - Arguments to find a Diagnosis
+     * @param {DiagnosisFindFirstArgs} args - Arguments to find a Diagnosis
      * @example
      * // Get one Diagnosis
      * const diagnosis = await prisma.diagnosis.findFirst({
@@ -2703,14 +2710,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirst<T extends diagnosisFindFirstArgs>(args?: SelectSubset<T, diagnosisFindFirstArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends DiagnosisFindFirstArgs>(args?: SelectSubset<T, DiagnosisFindFirstArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
      * Find the first Diagnosis that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisFindFirstOrThrowArgs} args - Arguments to find a Diagnosis
+     * @param {DiagnosisFindFirstOrThrowArgs} args - Arguments to find a Diagnosis
      * @example
      * // Get one Diagnosis
      * const diagnosis = await prisma.diagnosis.findFirstOrThrow({
@@ -2719,13 +2726,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirstOrThrow<T extends diagnosisFindFirstOrThrowArgs>(args?: SelectSubset<T, diagnosisFindFirstOrThrowArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends DiagnosisFindFirstOrThrowArgs>(args?: SelectSubset<T, DiagnosisFindFirstOrThrowArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
      * Find zero or more Diagnoses that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {DiagnosisFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Diagnoses
      * const diagnoses = await prisma.diagnosis.findMany()
@@ -2737,11 +2744,11 @@ export namespace Prisma {
      * const diagnosisWithIdOnly = await prisma.diagnosis.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends diagnosisFindManyArgs>(args?: SelectSubset<T, diagnosisFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findMany">>
+    findMany<T extends DiagnosisFindManyArgs>(args?: SelectSubset<T, DiagnosisFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findMany">>
 
     /**
      * Create a Diagnosis.
-     * @param {diagnosisCreateArgs} args - Arguments to create a Diagnosis.
+     * @param {DiagnosisCreateArgs} args - Arguments to create a Diagnosis.
      * @example
      * // Create one Diagnosis
      * const Diagnosis = await prisma.diagnosis.create({
@@ -2751,11 +2758,11 @@ export namespace Prisma {
      * })
      * 
      */
-    create<T extends diagnosisCreateArgs>(args: SelectSubset<T, diagnosisCreateArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends DiagnosisCreateArgs>(args: SelectSubset<T, DiagnosisCreateArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
      * Create many Diagnoses.
-     * @param {diagnosisCreateManyArgs} args - Arguments to create many Diagnoses.
+     * @param {DiagnosisCreateManyArgs} args - Arguments to create many Diagnoses.
      * @example
      * // Create many Diagnoses
      * const diagnosis = await prisma.diagnosis.createMany({
@@ -2765,11 +2772,11 @@ export namespace Prisma {
      * })
      *     
      */
-    createMany<T extends diagnosisCreateManyArgs>(args?: SelectSubset<T, diagnosisCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends DiagnosisCreateManyArgs>(args?: SelectSubset<T, DiagnosisCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many Diagnoses and returns the data saved in the database.
-     * @param {diagnosisCreateManyAndReturnArgs} args - Arguments to create many Diagnoses.
+     * @param {DiagnosisCreateManyAndReturnArgs} args - Arguments to create many Diagnoses.
      * @example
      * // Create many Diagnoses
      * const diagnosis = await prisma.diagnosis.createManyAndReturn({
@@ -2789,11 +2796,11 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends diagnosisCreateManyAndReturnArgs>(args?: SelectSubset<T, diagnosisCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "createManyAndReturn">>
+    createManyAndReturn<T extends DiagnosisCreateManyAndReturnArgs>(args?: SelectSubset<T, DiagnosisCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "createManyAndReturn">>
 
     /**
      * Delete a Diagnosis.
-     * @param {diagnosisDeleteArgs} args - Arguments to delete one Diagnosis.
+     * @param {DiagnosisDeleteArgs} args - Arguments to delete one Diagnosis.
      * @example
      * // Delete one Diagnosis
      * const Diagnosis = await prisma.diagnosis.delete({
@@ -2803,11 +2810,11 @@ export namespace Prisma {
      * })
      * 
      */
-    delete<T extends diagnosisDeleteArgs>(args: SelectSubset<T, diagnosisDeleteArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends DiagnosisDeleteArgs>(args: SelectSubset<T, DiagnosisDeleteArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
      * Update one Diagnosis.
-     * @param {diagnosisUpdateArgs} args - Arguments to update one Diagnosis.
+     * @param {DiagnosisUpdateArgs} args - Arguments to update one Diagnosis.
      * @example
      * // Update one Diagnosis
      * const diagnosis = await prisma.diagnosis.update({
@@ -2820,11 +2827,11 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends diagnosisUpdateArgs>(args: SelectSubset<T, diagnosisUpdateArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends DiagnosisUpdateArgs>(args: SelectSubset<T, DiagnosisUpdateArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
      * Delete zero or more Diagnoses.
-     * @param {diagnosisDeleteManyArgs} args - Arguments to filter Diagnoses to delete.
+     * @param {DiagnosisDeleteManyArgs} args - Arguments to filter Diagnoses to delete.
      * @example
      * // Delete a few Diagnoses
      * const { count } = await prisma.diagnosis.deleteMany({
@@ -2834,13 +2841,13 @@ export namespace Prisma {
      * })
      * 
      */
-    deleteMany<T extends diagnosisDeleteManyArgs>(args?: SelectSubset<T, diagnosisDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends DiagnosisDeleteManyArgs>(args?: SelectSubset<T, DiagnosisDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more Diagnoses.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {DiagnosisUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many Diagnoses
      * const diagnosis = await prisma.diagnosis.updateMany({
@@ -2853,11 +2860,11 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends diagnosisUpdateManyArgs>(args: SelectSubset<T, diagnosisUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends DiagnosisUpdateManyArgs>(args: SelectSubset<T, DiagnosisUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one Diagnosis.
-     * @param {diagnosisUpsertArgs} args - Arguments to update or create a Diagnosis.
+     * @param {DiagnosisUpsertArgs} args - Arguments to update or create a Diagnosis.
      * @example
      * // Update or create a Diagnosis
      * const diagnosis = await prisma.diagnosis.upsert({
@@ -2872,14 +2879,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    upsert<T extends diagnosisUpsertArgs>(args: SelectSubset<T, diagnosisUpsertArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends DiagnosisUpsertArgs>(args: SelectSubset<T, DiagnosisUpsertArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
 
     /**
      * Count the number of Diagnoses.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisCountArgs} args - Arguments to filter Diagnoses to count.
+     * @param {DiagnosisCountArgs} args - Arguments to filter Diagnoses to count.
      * @example
      * // Count the number of Diagnoses
      * const count = await prisma.diagnosis.count({
@@ -2888,8 +2895,8 @@ export namespace Prisma {
      *   }
      * })
     **/
-    count<T extends diagnosisCountArgs>(
-      args?: Subset<T, diagnosisCountArgs>,
+    count<T extends DiagnosisCountArgs>(
+      args?: Subset<T, DiagnosisCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
@@ -2928,7 +2935,7 @@ export namespace Prisma {
      * Group by Diagnosis.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {diagnosisGroupByArgs} args - Group by arguments.
+     * @param {DiagnosisGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -2943,14 +2950,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends diagnosisGroupByArgs,
+      T extends DiagnosisGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: diagnosisGroupByArgs['orderBy'] }
-        : { orderBy?: diagnosisGroupByArgs['orderBy'] },
+        ? { orderBy: DiagnosisGroupByArgs['orderBy'] }
+        : { orderBy?: DiagnosisGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -2999,23 +3006,23 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, diagnosisGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiagnosisGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, DiagnosisGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiagnosisGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the diagnosis model
+   * Fields of the Diagnosis model
    */
-  readonly fields: diagnosisFieldRefs;
+  readonly fields: DiagnosisFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for diagnosis.
+   * The delegate class that acts as a "Promise-like" for Diagnosis.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__diagnosisClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__DiagnosisClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    skill<T extends skillDefaultArgs<ExtArgs> = {}>(args?: Subset<T, skillDefaultArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    evidence<T extends diagnosis$evidenceArgs<ExtArgs> = {}>(args?: Subset<T, diagnosis$evidenceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findMany"> | Null>
+    skill<T extends SkillDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SkillDefaultArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    evidence<T extends Diagnosis$evidenceArgs<ExtArgs> = {}>(args?: Subset<T, Diagnosis$evidenceArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3042,412 +3049,412 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the diagnosis model
+   * Fields of the Diagnosis model
    */ 
-  interface diagnosisFieldRefs {
-    readonly id: FieldRef<"diagnosis", 'String'>
-    readonly student_id: FieldRef<"diagnosis", 'String'>
-    readonly skill_id: FieldRef<"diagnosis", 'String'>
-    readonly p_known: FieldRef<"diagnosis", 'Float'>
-    readonly confidence: FieldRef<"diagnosis", 'Float'>
-    readonly status: FieldRef<"diagnosis", 'diagnosis_status'>
-    readonly created_at: FieldRef<"diagnosis", 'DateTime'>
-    readonly updated_at: FieldRef<"diagnosis", 'DateTime'>
+  interface DiagnosisFieldRefs {
+    readonly id: FieldRef<"Diagnosis", 'String'>
+    readonly student_id: FieldRef<"Diagnosis", 'String'>
+    readonly skill_id: FieldRef<"Diagnosis", 'String'>
+    readonly p_known: FieldRef<"Diagnosis", 'Float'>
+    readonly confidence: FieldRef<"Diagnosis", 'Float'>
+    readonly status: FieldRef<"Diagnosis", 'DiagnosisStatus'>
+    readonly created_at: FieldRef<"Diagnosis", 'DateTime'>
+    readonly updated_at: FieldRef<"Diagnosis", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * diagnosis findUnique
+   * Diagnosis findUnique
    */
-  export type diagnosisFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter, which diagnosis to fetch.
+     * Filter, which Diagnosis to fetch.
      */
-    where: diagnosisWhereUniqueInput
+    where: DiagnosisWhereUniqueInput
   }
 
   /**
-   * diagnosis findUniqueOrThrow
+   * Diagnosis findUniqueOrThrow
    */
-  export type diagnosisFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter, which diagnosis to fetch.
+     * Filter, which Diagnosis to fetch.
      */
-    where: diagnosisWhereUniqueInput
+    where: DiagnosisWhereUniqueInput
   }
 
   /**
-   * diagnosis findFirst
+   * Diagnosis findFirst
    */
-  export type diagnosisFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter, which diagnosis to fetch.
+     * Filter, which Diagnosis to fetch.
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of diagnoses to fetch.
+     * Determine the order of Diagnoses to fetch.
      */
-    orderBy?: diagnosisOrderByWithRelationInput | diagnosisOrderByWithRelationInput[]
+    orderBy?: DiagnosisOrderByWithRelationInput | DiagnosisOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for diagnoses.
+     * Sets the position for searching for Diagnoses.
      */
-    cursor?: diagnosisWhereUniqueInput
+    cursor?: DiagnosisWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` diagnoses from the position of the cursor.
+     * Take `±n` Diagnoses from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` diagnoses.
+     * Skip the first `n` Diagnoses.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of diagnoses.
+     * Filter by unique combinations of Diagnoses.
      */
     distinct?: DiagnosisScalarFieldEnum | DiagnosisScalarFieldEnum[]
   }
 
   /**
-   * diagnosis findFirstOrThrow
+   * Diagnosis findFirstOrThrow
    */
-  export type diagnosisFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter, which diagnosis to fetch.
+     * Filter, which Diagnosis to fetch.
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of diagnoses to fetch.
+     * Determine the order of Diagnoses to fetch.
      */
-    orderBy?: diagnosisOrderByWithRelationInput | diagnosisOrderByWithRelationInput[]
+    orderBy?: DiagnosisOrderByWithRelationInput | DiagnosisOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for diagnoses.
+     * Sets the position for searching for Diagnoses.
      */
-    cursor?: diagnosisWhereUniqueInput
+    cursor?: DiagnosisWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` diagnoses from the position of the cursor.
+     * Take `±n` Diagnoses from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` diagnoses.
+     * Skip the first `n` Diagnoses.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of diagnoses.
+     * Filter by unique combinations of Diagnoses.
      */
     distinct?: DiagnosisScalarFieldEnum | DiagnosisScalarFieldEnum[]
   }
 
   /**
-   * diagnosis findMany
+   * Diagnosis findMany
    */
-  export type diagnosisFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter, which diagnoses to fetch.
+     * Filter, which Diagnoses to fetch.
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of diagnoses to fetch.
+     * Determine the order of Diagnoses to fetch.
      */
-    orderBy?: diagnosisOrderByWithRelationInput | diagnosisOrderByWithRelationInput[]
+    orderBy?: DiagnosisOrderByWithRelationInput | DiagnosisOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing diagnoses.
+     * Sets the position for listing Diagnoses.
      */
-    cursor?: diagnosisWhereUniqueInput
+    cursor?: DiagnosisWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` diagnoses from the position of the cursor.
+     * Take `±n` Diagnoses from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` diagnoses.
+     * Skip the first `n` Diagnoses.
      */
     skip?: number
     distinct?: DiagnosisScalarFieldEnum | DiagnosisScalarFieldEnum[]
   }
 
   /**
-   * diagnosis create
+   * Diagnosis create
    */
-  export type diagnosisCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * The data needed to create a diagnosis.
+     * The data needed to create a Diagnosis.
      */
-    data: XOR<diagnosisCreateInput, diagnosisUncheckedCreateInput>
+    data: XOR<DiagnosisCreateInput, DiagnosisUncheckedCreateInput>
   }
 
   /**
-   * diagnosis createMany
+   * Diagnosis createMany
    */
-  export type diagnosisCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many diagnoses.
+     * The data used to create many Diagnoses.
      */
-    data: diagnosisCreateManyInput | diagnosisCreateManyInput[]
+    data: DiagnosisCreateManyInput | DiagnosisCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * diagnosis createManyAndReturn
+   * Diagnosis createManyAndReturn
    */
-  export type diagnosisCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelectCreateManyAndReturn<ExtArgs> | null
+    select?: DiagnosisSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * The data used to create many diagnoses.
+     * The data used to create many Diagnoses.
      */
-    data: diagnosisCreateManyInput | diagnosisCreateManyInput[]
+    data: DiagnosisCreateManyInput | DiagnosisCreateManyInput[]
     skipDuplicates?: boolean
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisIncludeCreateManyAndReturn<ExtArgs> | null
+    include?: DiagnosisIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * diagnosis update
+   * Diagnosis update
    */
-  export type diagnosisUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * The data needed to update a diagnosis.
+     * The data needed to update a Diagnosis.
      */
-    data: XOR<diagnosisUpdateInput, diagnosisUncheckedUpdateInput>
+    data: XOR<DiagnosisUpdateInput, DiagnosisUncheckedUpdateInput>
     /**
-     * Choose, which diagnosis to update.
+     * Choose, which Diagnosis to update.
      */
-    where: diagnosisWhereUniqueInput
+    where: DiagnosisWhereUniqueInput
   }
 
   /**
-   * diagnosis updateMany
+   * Diagnosis updateMany
    */
-  export type diagnosisUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update diagnoses.
+     * The data used to update Diagnoses.
      */
-    data: XOR<diagnosisUpdateManyMutationInput, diagnosisUncheckedUpdateManyInput>
+    data: XOR<DiagnosisUpdateManyMutationInput, DiagnosisUncheckedUpdateManyInput>
     /**
-     * Filter which diagnoses to update
+     * Filter which Diagnoses to update
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
   }
 
   /**
-   * diagnosis upsert
+   * Diagnosis upsert
    */
-  export type diagnosisUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * The filter to search for the diagnosis to update in case it exists.
+     * The filter to search for the Diagnosis to update in case it exists.
      */
-    where: diagnosisWhereUniqueInput
+    where: DiagnosisWhereUniqueInput
     /**
-     * In case the diagnosis found by the `where` argument doesn't exist, create a new diagnosis with this data.
+     * In case the Diagnosis found by the `where` argument doesn't exist, create a new Diagnosis with this data.
      */
-    create: XOR<diagnosisCreateInput, diagnosisUncheckedCreateInput>
+    create: XOR<DiagnosisCreateInput, DiagnosisUncheckedCreateInput>
     /**
-     * In case the diagnosis was found with the provided `where` argument, update it with this data.
+     * In case the Diagnosis was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<diagnosisUpdateInput, diagnosisUncheckedUpdateInput>
+    update: XOR<DiagnosisUpdateInput, DiagnosisUncheckedUpdateInput>
   }
 
   /**
-   * diagnosis delete
+   * Diagnosis delete
    */
-  export type diagnosisDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
     /**
-     * Filter which diagnosis to delete.
+     * Filter which Diagnosis to delete.
      */
-    where: diagnosisWhereUniqueInput
+    where: DiagnosisWhereUniqueInput
   }
 
   /**
-   * diagnosis deleteMany
+   * Diagnosis deleteMany
    */
-  export type diagnosisDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which diagnoses to delete
+     * Filter which Diagnoses to delete
      */
-    where?: diagnosisWhereInput
+    where?: DiagnosisWhereInput
   }
 
   /**
-   * diagnosis.evidence
+   * Diagnosis.evidence
    */
-  export type diagnosis$evidenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Diagnosis$evidenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
-    where?: evidenceWhereInput
-    orderBy?: evidenceOrderByWithRelationInput | evidenceOrderByWithRelationInput[]
-    cursor?: evidenceWhereUniqueInput
+    include?: EvidenceItemInclude<ExtArgs> | null
+    where?: EvidenceItemWhereInput
+    orderBy?: EvidenceItemOrderByWithRelationInput | EvidenceItemOrderByWithRelationInput[]
+    cursor?: EvidenceItemWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: EvidenceScalarFieldEnum | EvidenceScalarFieldEnum[]
+    distinct?: EvidenceItemScalarFieldEnum | EvidenceItemScalarFieldEnum[]
   }
 
   /**
-   * diagnosis without action
+   * Diagnosis without action
    */
-  export type diagnosisDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type DiagnosisDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the diagnosis
+     * Select specific fields to fetch from the Diagnosis
      */
-    select?: diagnosisSelect<ExtArgs> | null
+    select?: DiagnosisSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: diagnosisInclude<ExtArgs> | null
+    include?: DiagnosisInclude<ExtArgs> | null
   }
 
 
   /**
-   * Model evidence
+   * Model EvidenceItem
    */
 
-  export type AggregateEvidence = {
-    _count: EvidenceCountAggregateOutputType | null
-    _avg: EvidenceAvgAggregateOutputType | null
-    _sum: EvidenceSumAggregateOutputType | null
-    _min: EvidenceMinAggregateOutputType | null
-    _max: EvidenceMaxAggregateOutputType | null
+  export type AggregateEvidenceItem = {
+    _count: EvidenceItemCountAggregateOutputType | null
+    _avg: EvidenceItemAvgAggregateOutputType | null
+    _sum: EvidenceItemSumAggregateOutputType | null
+    _min: EvidenceItemMinAggregateOutputType | null
+    _max: EvidenceItemMaxAggregateOutputType | null
   }
 
-  export type EvidenceAvgAggregateOutputType = {
+  export type EvidenceItemAvgAggregateOutputType = {
     confidence: number | null
   }
 
-  export type EvidenceSumAggregateOutputType = {
+  export type EvidenceItemSumAggregateOutputType = {
     confidence: number | null
   }
 
-  export type EvidenceMinAggregateOutputType = {
+  export type EvidenceItemMinAggregateOutputType = {
     id: string | null
     diagnosis_id: string | null
     item_id: string | null
     extracted_answer: string | null
     correct: boolean | null
     confidence: number | null
-    quality: $Enums.evidence_quality | null
+    quality: $Enums.EvidenceQuality | null
     created_at: Date | null
   }
 
-  export type EvidenceMaxAggregateOutputType = {
+  export type EvidenceItemMaxAggregateOutputType = {
     id: string | null
     diagnosis_id: string | null
     item_id: string | null
     extracted_answer: string | null
     correct: boolean | null
     confidence: number | null
-    quality: $Enums.evidence_quality | null
+    quality: $Enums.EvidenceQuality | null
     created_at: Date | null
   }
 
-  export type EvidenceCountAggregateOutputType = {
+  export type EvidenceItemCountAggregateOutputType = {
     id: number
     diagnosis_id: number
     item_id: number
@@ -3460,15 +3467,15 @@ export namespace Prisma {
   }
 
 
-  export type EvidenceAvgAggregateInputType = {
+  export type EvidenceItemAvgAggregateInputType = {
     confidence?: true
   }
 
-  export type EvidenceSumAggregateInputType = {
+  export type EvidenceItemSumAggregateInputType = {
     confidence?: true
   }
 
-  export type EvidenceMinAggregateInputType = {
+  export type EvidenceItemMinAggregateInputType = {
     id?: true
     diagnosis_id?: true
     item_id?: true
@@ -3479,7 +3486,7 @@ export namespace Prisma {
     created_at?: true
   }
 
-  export type EvidenceMaxAggregateInputType = {
+  export type EvidenceItemMaxAggregateInputType = {
     id?: true
     diagnosis_id?: true
     item_id?: true
@@ -3490,7 +3497,7 @@ export namespace Prisma {
     created_at?: true
   }
 
-  export type EvidenceCountAggregateInputType = {
+  export type EvidenceItemCountAggregateInputType = {
     id?: true
     diagnosis_id?: true
     item_id?: true
@@ -3502,123 +3509,123 @@ export namespace Prisma {
     _all?: true
   }
 
-  export type EvidenceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which evidence to aggregate.
+     * Filter which EvidenceItem to aggregate.
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of evidences to fetch.
+     * Determine the order of EvidenceItems to fetch.
      */
-    orderBy?: evidenceOrderByWithRelationInput | evidenceOrderByWithRelationInput[]
+    orderBy?: EvidenceItemOrderByWithRelationInput | EvidenceItemOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: evidenceWhereUniqueInput
+    cursor?: EvidenceItemWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` evidences from the position of the cursor.
+     * Take `±n` EvidenceItems from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` evidences.
+     * Skip the first `n` EvidenceItems.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned evidences
+     * Count returned EvidenceItems
     **/
-    _count?: true | EvidenceCountAggregateInputType
+    _count?: true | EvidenceItemCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: EvidenceAvgAggregateInputType
+    _avg?: EvidenceItemAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: EvidenceSumAggregateInputType
+    _sum?: EvidenceItemSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: EvidenceMinAggregateInputType
+    _min?: EvidenceItemMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: EvidenceMaxAggregateInputType
+    _max?: EvidenceItemMaxAggregateInputType
   }
 
-  export type GetEvidenceAggregateType<T extends EvidenceAggregateArgs> = {
-        [P in keyof T & keyof AggregateEvidence]: P extends '_count' | 'count'
+  export type GetEvidenceItemAggregateType<T extends EvidenceItemAggregateArgs> = {
+        [P in keyof T & keyof AggregateEvidenceItem]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateEvidence[P]>
-      : GetScalarType<T[P], AggregateEvidence[P]>
+        : GetScalarType<T[P], AggregateEvidenceItem[P]>
+      : GetScalarType<T[P], AggregateEvidenceItem[P]>
   }
 
 
 
 
-  export type evidenceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: evidenceWhereInput
-    orderBy?: evidenceOrderByWithAggregationInput | evidenceOrderByWithAggregationInput[]
-    by: EvidenceScalarFieldEnum[] | EvidenceScalarFieldEnum
-    having?: evidenceScalarWhereWithAggregatesInput
+  export type EvidenceItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EvidenceItemWhereInput
+    orderBy?: EvidenceItemOrderByWithAggregationInput | EvidenceItemOrderByWithAggregationInput[]
+    by: EvidenceItemScalarFieldEnum[] | EvidenceItemScalarFieldEnum
+    having?: EvidenceItemScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: EvidenceCountAggregateInputType | true
-    _avg?: EvidenceAvgAggregateInputType
-    _sum?: EvidenceSumAggregateInputType
-    _min?: EvidenceMinAggregateInputType
-    _max?: EvidenceMaxAggregateInputType
+    _count?: EvidenceItemCountAggregateInputType | true
+    _avg?: EvidenceItemAvgAggregateInputType
+    _sum?: EvidenceItemSumAggregateInputType
+    _min?: EvidenceItemMinAggregateInputType
+    _max?: EvidenceItemMaxAggregateInputType
   }
 
-  export type EvidenceGroupByOutputType = {
+  export type EvidenceItemGroupByOutputType = {
     id: string
     diagnosis_id: string
     item_id: string
     extracted_answer: string | null
-    correct: boolean | null
+    correct: boolean
     confidence: number
-    quality: $Enums.evidence_quality
+    quality: $Enums.EvidenceQuality
     created_at: Date
-    _count: EvidenceCountAggregateOutputType | null
-    _avg: EvidenceAvgAggregateOutputType | null
-    _sum: EvidenceSumAggregateOutputType | null
-    _min: EvidenceMinAggregateOutputType | null
-    _max: EvidenceMaxAggregateOutputType | null
+    _count: EvidenceItemCountAggregateOutputType | null
+    _avg: EvidenceItemAvgAggregateOutputType | null
+    _sum: EvidenceItemSumAggregateOutputType | null
+    _min: EvidenceItemMinAggregateOutputType | null
+    _max: EvidenceItemMaxAggregateOutputType | null
   }
 
-  type GetEvidenceGroupByPayload<T extends evidenceGroupByArgs> = Prisma.PrismaPromise<
+  type GetEvidenceItemGroupByPayload<T extends EvidenceItemGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<EvidenceGroupByOutputType, T['by']> &
+      PickEnumerable<EvidenceItemGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof EvidenceGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof EvidenceItemGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], EvidenceGroupByOutputType[P]>
-            : GetScalarType<T[P], EvidenceGroupByOutputType[P]>
+              : GetScalarType<T[P], EvidenceItemGroupByOutputType[P]>
+            : GetScalarType<T[P], EvidenceItemGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type evidenceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type EvidenceItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     diagnosis_id?: boolean
     item_id?: boolean
@@ -3627,10 +3634,10 @@ export namespace Prisma {
     confidence?: boolean
     quality?: boolean
     created_at?: boolean
-    diagnosis?: boolean | diagnosisDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["evidence"]>
+    diagnosis?: boolean | DiagnosisDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["evidenceItem"]>
 
-  export type evidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type EvidenceItemSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     diagnosis_id?: boolean
     item_id?: boolean
@@ -3639,10 +3646,10 @@ export namespace Prisma {
     confidence?: boolean
     quality?: boolean
     created_at?: boolean
-    diagnosis?: boolean | diagnosisDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["evidence"]>
+    diagnosis?: boolean | DiagnosisDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["evidenceItem"]>
 
-  export type evidenceSelectScalar = {
+  export type EvidenceItemSelectScalar = {
     id?: boolean
     diagnosis_id?: boolean
     item_id?: boolean
@@ -3653,157 +3660,157 @@ export namespace Prisma {
     created_at?: boolean
   }
 
-  export type evidenceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    diagnosis?: boolean | diagnosisDefaultArgs<ExtArgs>
+  export type EvidenceItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    diagnosis?: boolean | DiagnosisDefaultArgs<ExtArgs>
   }
-  export type evidenceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    diagnosis?: boolean | diagnosisDefaultArgs<ExtArgs>
+  export type EvidenceItemIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    diagnosis?: boolean | DiagnosisDefaultArgs<ExtArgs>
   }
 
-  export type $evidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "evidence"
+  export type $EvidenceItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "EvidenceItem"
     objects: {
-      diagnosis: Prisma.$diagnosisPayload<ExtArgs>
+      diagnosis: Prisma.$DiagnosisPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       diagnosis_id: string
       item_id: string
       extracted_answer: string | null
-      correct: boolean | null
+      correct: boolean
       confidence: number
-      quality: $Enums.evidence_quality
+      quality: $Enums.EvidenceQuality
       created_at: Date
-    }, ExtArgs["result"]["evidence"]>
+    }, ExtArgs["result"]["evidenceItem"]>
     composites: {}
   }
 
-  type evidenceGetPayload<S extends boolean | null | undefined | evidenceDefaultArgs> = $Result.GetResult<Prisma.$evidencePayload, S>
+  type EvidenceItemGetPayload<S extends boolean | null | undefined | EvidenceItemDefaultArgs> = $Result.GetResult<Prisma.$EvidenceItemPayload, S>
 
-  type evidenceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<evidenceFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: EvidenceCountAggregateInputType | true
+  type EvidenceItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<EvidenceItemFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: EvidenceItemCountAggregateInputType | true
     }
 
-  export interface evidenceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['evidence'], meta: { name: 'evidence' } }
+  export interface EvidenceItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['EvidenceItem'], meta: { name: 'EvidenceItem' } }
     /**
-     * Find zero or one Evidence that matches the filter.
-     * @param {evidenceFindUniqueArgs} args - Arguments to find a Evidence
+     * Find zero or one EvidenceItem that matches the filter.
+     * @param {EvidenceItemFindUniqueArgs} args - Arguments to find a EvidenceItem
      * @example
-     * // Get one Evidence
-     * const evidence = await prisma.evidence.findUnique({
+     * // Get one EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends evidenceFindUniqueArgs>(args: SelectSubset<T, evidenceFindUniqueArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends EvidenceItemFindUniqueArgs>(args: SelectSubset<T, EvidenceItemFindUniqueArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one Evidence that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one EvidenceItem that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {evidenceFindUniqueOrThrowArgs} args - Arguments to find a Evidence
+     * @param {EvidenceItemFindUniqueOrThrowArgs} args - Arguments to find a EvidenceItem
      * @example
-     * // Get one Evidence
-     * const evidence = await prisma.evidence.findUniqueOrThrow({
+     * // Get one EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends evidenceFindUniqueOrThrowArgs>(args: SelectSubset<T, evidenceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends EvidenceItemFindUniqueOrThrowArgs>(args: SelectSubset<T, EvidenceItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
-     * Find the first Evidence that matches the filter.
+     * Find the first EvidenceItem that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceFindFirstArgs} args - Arguments to find a Evidence
+     * @param {EvidenceItemFindFirstArgs} args - Arguments to find a EvidenceItem
      * @example
-     * // Get one Evidence
-     * const evidence = await prisma.evidence.findFirst({
+     * // Get one EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends evidenceFindFirstArgs>(args?: SelectSubset<T, evidenceFindFirstArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends EvidenceItemFindFirstArgs>(args?: SelectSubset<T, EvidenceItemFindFirstArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
-     * Find the first Evidence that matches the filter or
+     * Find the first EvidenceItem that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceFindFirstOrThrowArgs} args - Arguments to find a Evidence
+     * @param {EvidenceItemFindFirstOrThrowArgs} args - Arguments to find a EvidenceItem
      * @example
-     * // Get one Evidence
-     * const evidence = await prisma.evidence.findFirstOrThrow({
+     * // Get one EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends evidenceFindFirstOrThrowArgs>(args?: SelectSubset<T, evidenceFindFirstOrThrowArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends EvidenceItemFindFirstOrThrowArgs>(args?: SelectSubset<T, EvidenceItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
-     * Find zero or more Evidences that matches the filter.
+     * Find zero or more EvidenceItems that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {EvidenceItemFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Evidences
-     * const evidences = await prisma.evidence.findMany()
+     * // Get all EvidenceItems
+     * const evidenceItems = await prisma.evidenceItem.findMany()
      * 
-     * // Get first 10 Evidences
-     * const evidences = await prisma.evidence.findMany({ take: 10 })
+     * // Get first 10 EvidenceItems
+     * const evidenceItems = await prisma.evidenceItem.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const evidenceWithIdOnly = await prisma.evidence.findMany({ select: { id: true } })
+     * const evidenceItemWithIdOnly = await prisma.evidenceItem.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends evidenceFindManyArgs>(args?: SelectSubset<T, evidenceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "findMany">>
+    findMany<T extends EvidenceItemFindManyArgs>(args?: SelectSubset<T, EvidenceItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "findMany">>
 
     /**
-     * Create a Evidence.
-     * @param {evidenceCreateArgs} args - Arguments to create a Evidence.
+     * Create a EvidenceItem.
+     * @param {EvidenceItemCreateArgs} args - Arguments to create a EvidenceItem.
      * @example
-     * // Create one Evidence
-     * const Evidence = await prisma.evidence.create({
+     * // Create one EvidenceItem
+     * const EvidenceItem = await prisma.evidenceItem.create({
      *   data: {
-     *     // ... data to create a Evidence
+     *     // ... data to create a EvidenceItem
      *   }
      * })
      * 
      */
-    create<T extends evidenceCreateArgs>(args: SelectSubset<T, evidenceCreateArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends EvidenceItemCreateArgs>(args: SelectSubset<T, EvidenceItemCreateArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
-     * Create many Evidences.
-     * @param {evidenceCreateManyArgs} args - Arguments to create many Evidences.
+     * Create many EvidenceItems.
+     * @param {EvidenceItemCreateManyArgs} args - Arguments to create many EvidenceItems.
      * @example
-     * // Create many Evidences
-     * const evidence = await prisma.evidence.createMany({
+     * // Create many EvidenceItems
+     * const evidenceItem = await prisma.evidenceItem.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends evidenceCreateManyArgs>(args?: SelectSubset<T, evidenceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends EvidenceItemCreateManyArgs>(args?: SelectSubset<T, EvidenceItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Evidences and returns the data saved in the database.
-     * @param {evidenceCreateManyAndReturnArgs} args - Arguments to create many Evidences.
+     * Create many EvidenceItems and returns the data saved in the database.
+     * @param {EvidenceItemCreateManyAndReturnArgs} args - Arguments to create many EvidenceItems.
      * @example
-     * // Create many Evidences
-     * const evidence = await prisma.evidence.createManyAndReturn({
+     * // Create many EvidenceItems
+     * const evidenceItem = await prisma.evidenceItem.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many Evidences and only return the `id`
-     * const evidenceWithIdOnly = await prisma.evidence.createManyAndReturn({ 
+     * // Create many EvidenceItems and only return the `id`
+     * const evidenceItemWithIdOnly = await prisma.evidenceItem.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -3813,28 +3820,28 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends evidenceCreateManyAndReturnArgs>(args?: SelectSubset<T, evidenceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "createManyAndReturn">>
+    createManyAndReturn<T extends EvidenceItemCreateManyAndReturnArgs>(args?: SelectSubset<T, EvidenceItemCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "createManyAndReturn">>
 
     /**
-     * Delete a Evidence.
-     * @param {evidenceDeleteArgs} args - Arguments to delete one Evidence.
+     * Delete a EvidenceItem.
+     * @param {EvidenceItemDeleteArgs} args - Arguments to delete one EvidenceItem.
      * @example
-     * // Delete one Evidence
-     * const Evidence = await prisma.evidence.delete({
+     * // Delete one EvidenceItem
+     * const EvidenceItem = await prisma.evidenceItem.delete({
      *   where: {
-     *     // ... filter to delete one Evidence
+     *     // ... filter to delete one EvidenceItem
      *   }
      * })
      * 
      */
-    delete<T extends evidenceDeleteArgs>(args: SelectSubset<T, evidenceDeleteArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends EvidenceItemDeleteArgs>(args: SelectSubset<T, EvidenceItemDeleteArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
-     * Update one Evidence.
-     * @param {evidenceUpdateArgs} args - Arguments to update one Evidence.
+     * Update one EvidenceItem.
+     * @param {EvidenceItemUpdateArgs} args - Arguments to update one EvidenceItem.
      * @example
-     * // Update one Evidence
-     * const evidence = await prisma.evidence.update({
+     * // Update one EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -3844,30 +3851,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends evidenceUpdateArgs>(args: SelectSubset<T, evidenceUpdateArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends EvidenceItemUpdateArgs>(args: SelectSubset<T, EvidenceItemUpdateArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
-     * Delete zero or more Evidences.
-     * @param {evidenceDeleteManyArgs} args - Arguments to filter Evidences to delete.
+     * Delete zero or more EvidenceItems.
+     * @param {EvidenceItemDeleteManyArgs} args - Arguments to filter EvidenceItems to delete.
      * @example
-     * // Delete a few Evidences
-     * const { count } = await prisma.evidence.deleteMany({
+     * // Delete a few EvidenceItems
+     * const { count } = await prisma.evidenceItem.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends evidenceDeleteManyArgs>(args?: SelectSubset<T, evidenceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends EvidenceItemDeleteManyArgs>(args?: SelectSubset<T, EvidenceItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Evidences.
+     * Update zero or more EvidenceItems.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {EvidenceItemUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Evidences
-     * const evidence = await prisma.evidence.updateMany({
+     * // Update many EvidenceItems
+     * const evidenceItem = await prisma.evidenceItem.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -3877,56 +3884,56 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends evidenceUpdateManyArgs>(args: SelectSubset<T, evidenceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends EvidenceItemUpdateManyArgs>(args: SelectSubset<T, EvidenceItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create or update one Evidence.
-     * @param {evidenceUpsertArgs} args - Arguments to update or create a Evidence.
+     * Create or update one EvidenceItem.
+     * @param {EvidenceItemUpsertArgs} args - Arguments to update or create a EvidenceItem.
      * @example
-     * // Update or create a Evidence
-     * const evidence = await prisma.evidence.upsert({
+     * // Update or create a EvidenceItem
+     * const evidenceItem = await prisma.evidenceItem.upsert({
      *   create: {
-     *     // ... data to create a Evidence
+     *     // ... data to create a EvidenceItem
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Evidence we want to update
+     *     // ... the filter for the EvidenceItem we want to update
      *   }
      * })
      */
-    upsert<T extends evidenceUpsertArgs>(args: SelectSubset<T, evidenceUpsertArgs<ExtArgs>>): Prisma__evidenceClient<$Result.GetResult<Prisma.$evidencePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends EvidenceItemUpsertArgs>(args: SelectSubset<T, EvidenceItemUpsertArgs<ExtArgs>>): Prisma__EvidenceItemClient<$Result.GetResult<Prisma.$EvidenceItemPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
 
     /**
-     * Count the number of Evidences.
+     * Count the number of EvidenceItems.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceCountArgs} args - Arguments to filter Evidences to count.
+     * @param {EvidenceItemCountArgs} args - Arguments to filter EvidenceItems to count.
      * @example
-     * // Count the number of Evidences
-     * const count = await prisma.evidence.count({
+     * // Count the number of EvidenceItems
+     * const count = await prisma.evidenceItem.count({
      *   where: {
-     *     // ... the filter for the Evidences we want to count
+     *     // ... the filter for the EvidenceItems we want to count
      *   }
      * })
     **/
-    count<T extends evidenceCountArgs>(
-      args?: Subset<T, evidenceCountArgs>,
+    count<T extends EvidenceItemCountArgs>(
+      args?: Subset<T, EvidenceItemCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], EvidenceCountAggregateOutputType>
+          : GetScalarType<T['select'], EvidenceItemCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Evidence.
+     * Allows you to perform aggregations operations on a EvidenceItem.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {EvidenceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {EvidenceItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -3946,13 +3953,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends EvidenceAggregateArgs>(args: Subset<T, EvidenceAggregateArgs>): Prisma.PrismaPromise<GetEvidenceAggregateType<T>>
+    aggregate<T extends EvidenceItemAggregateArgs>(args: Subset<T, EvidenceItemAggregateArgs>): Prisma.PrismaPromise<GetEvidenceItemAggregateType<T>>
 
     /**
-     * Group by Evidence.
+     * Group by EvidenceItem.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {evidenceGroupByArgs} args - Group by arguments.
+     * @param {EvidenceItemGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -3967,14 +3974,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends evidenceGroupByArgs,
+      T extends EvidenceItemGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: evidenceGroupByArgs['orderBy'] }
-        : { orderBy?: evidenceGroupByArgs['orderBy'] },
+        ? { orderBy: EvidenceItemGroupByArgs['orderBy'] }
+        : { orderBy?: EvidenceItemGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -4023,22 +4030,22 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, evidenceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetEvidenceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, EvidenceItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetEvidenceItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the evidence model
+   * Fields of the EvidenceItem model
    */
-  readonly fields: evidenceFieldRefs;
+  readonly fields: EvidenceItemFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for evidence.
+   * The delegate class that acts as a "Promise-like" for EvidenceItem.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__evidenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__EvidenceItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    diagnosis<T extends diagnosisDefaultArgs<ExtArgs> = {}>(args?: Subset<T, diagnosisDefaultArgs<ExtArgs>>): Prisma__diagnosisClient<$Result.GetResult<Prisma.$diagnosisPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    diagnosis<T extends DiagnosisDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DiagnosisDefaultArgs<ExtArgs>>): Prisma__DiagnosisClient<$Result.GetResult<Prisma.$DiagnosisPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4065,351 +4072,351 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the evidence model
+   * Fields of the EvidenceItem model
    */ 
-  interface evidenceFieldRefs {
-    readonly id: FieldRef<"evidence", 'String'>
-    readonly diagnosis_id: FieldRef<"evidence", 'String'>
-    readonly item_id: FieldRef<"evidence", 'String'>
-    readonly extracted_answer: FieldRef<"evidence", 'String'>
-    readonly correct: FieldRef<"evidence", 'Boolean'>
-    readonly confidence: FieldRef<"evidence", 'Float'>
-    readonly quality: FieldRef<"evidence", 'evidence_quality'>
-    readonly created_at: FieldRef<"evidence", 'DateTime'>
+  interface EvidenceItemFieldRefs {
+    readonly id: FieldRef<"EvidenceItem", 'String'>
+    readonly diagnosis_id: FieldRef<"EvidenceItem", 'String'>
+    readonly item_id: FieldRef<"EvidenceItem", 'String'>
+    readonly extracted_answer: FieldRef<"EvidenceItem", 'String'>
+    readonly correct: FieldRef<"EvidenceItem", 'Boolean'>
+    readonly confidence: FieldRef<"EvidenceItem", 'Float'>
+    readonly quality: FieldRef<"EvidenceItem", 'EvidenceQuality'>
+    readonly created_at: FieldRef<"EvidenceItem", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * evidence findUnique
+   * EvidenceItem findUnique
    */
-  export type evidenceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter, which evidence to fetch.
+     * Filter, which EvidenceItem to fetch.
      */
-    where: evidenceWhereUniqueInput
+    where: EvidenceItemWhereUniqueInput
   }
 
   /**
-   * evidence findUniqueOrThrow
+   * EvidenceItem findUniqueOrThrow
    */
-  export type evidenceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter, which evidence to fetch.
+     * Filter, which EvidenceItem to fetch.
      */
-    where: evidenceWhereUniqueInput
+    where: EvidenceItemWhereUniqueInput
   }
 
   /**
-   * evidence findFirst
+   * EvidenceItem findFirst
    */
-  export type evidenceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter, which evidence to fetch.
+     * Filter, which EvidenceItem to fetch.
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of evidences to fetch.
+     * Determine the order of EvidenceItems to fetch.
      */
-    orderBy?: evidenceOrderByWithRelationInput | evidenceOrderByWithRelationInput[]
+    orderBy?: EvidenceItemOrderByWithRelationInput | EvidenceItemOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for evidences.
+     * Sets the position for searching for EvidenceItems.
      */
-    cursor?: evidenceWhereUniqueInput
+    cursor?: EvidenceItemWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` evidences from the position of the cursor.
+     * Take `±n` EvidenceItems from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` evidences.
+     * Skip the first `n` EvidenceItems.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of evidences.
+     * Filter by unique combinations of EvidenceItems.
      */
-    distinct?: EvidenceScalarFieldEnum | EvidenceScalarFieldEnum[]
+    distinct?: EvidenceItemScalarFieldEnum | EvidenceItemScalarFieldEnum[]
   }
 
   /**
-   * evidence findFirstOrThrow
+   * EvidenceItem findFirstOrThrow
    */
-  export type evidenceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter, which evidence to fetch.
+     * Filter, which EvidenceItem to fetch.
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of evidences to fetch.
+     * Determine the order of EvidenceItems to fetch.
      */
-    orderBy?: evidenceOrderByWithRelationInput | evidenceOrderByWithRelationInput[]
+    orderBy?: EvidenceItemOrderByWithRelationInput | EvidenceItemOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for evidences.
+     * Sets the position for searching for EvidenceItems.
      */
-    cursor?: evidenceWhereUniqueInput
+    cursor?: EvidenceItemWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` evidences from the position of the cursor.
+     * Take `±n` EvidenceItems from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` evidences.
+     * Skip the first `n` EvidenceItems.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of evidences.
+     * Filter by unique combinations of EvidenceItems.
      */
-    distinct?: EvidenceScalarFieldEnum | EvidenceScalarFieldEnum[]
+    distinct?: EvidenceItemScalarFieldEnum | EvidenceItemScalarFieldEnum[]
   }
 
   /**
-   * evidence findMany
+   * EvidenceItem findMany
    */
-  export type evidenceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter, which evidences to fetch.
+     * Filter, which EvidenceItems to fetch.
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of evidences to fetch.
+     * Determine the order of EvidenceItems to fetch.
      */
-    orderBy?: evidenceOrderByWithRelationInput | evidenceOrderByWithRelationInput[]
+    orderBy?: EvidenceItemOrderByWithRelationInput | EvidenceItemOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing evidences.
+     * Sets the position for listing EvidenceItems.
      */
-    cursor?: evidenceWhereUniqueInput
+    cursor?: EvidenceItemWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` evidences from the position of the cursor.
+     * Take `±n` EvidenceItems from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` evidences.
+     * Skip the first `n` EvidenceItems.
      */
     skip?: number
-    distinct?: EvidenceScalarFieldEnum | EvidenceScalarFieldEnum[]
+    distinct?: EvidenceItemScalarFieldEnum | EvidenceItemScalarFieldEnum[]
   }
 
   /**
-   * evidence create
+   * EvidenceItem create
    */
-  export type evidenceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * The data needed to create a evidence.
+     * The data needed to create a EvidenceItem.
      */
-    data: XOR<evidenceCreateInput, evidenceUncheckedCreateInput>
+    data: XOR<EvidenceItemCreateInput, EvidenceItemUncheckedCreateInput>
   }
 
   /**
-   * evidence createMany
+   * EvidenceItem createMany
    */
-  export type evidenceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many evidences.
+     * The data used to create many EvidenceItems.
      */
-    data: evidenceCreateManyInput | evidenceCreateManyInput[]
+    data: EvidenceItemCreateManyInput | EvidenceItemCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * evidence createManyAndReturn
+   * EvidenceItem createManyAndReturn
    */
-  export type evidenceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelectCreateManyAndReturn<ExtArgs> | null
+    select?: EvidenceItemSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * The data used to create many evidences.
+     * The data used to create many EvidenceItems.
      */
-    data: evidenceCreateManyInput | evidenceCreateManyInput[]
+    data: EvidenceItemCreateManyInput | EvidenceItemCreateManyInput[]
     skipDuplicates?: boolean
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceIncludeCreateManyAndReturn<ExtArgs> | null
+    include?: EvidenceItemIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * evidence update
+   * EvidenceItem update
    */
-  export type evidenceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * The data needed to update a evidence.
+     * The data needed to update a EvidenceItem.
      */
-    data: XOR<evidenceUpdateInput, evidenceUncheckedUpdateInput>
+    data: XOR<EvidenceItemUpdateInput, EvidenceItemUncheckedUpdateInput>
     /**
-     * Choose, which evidence to update.
+     * Choose, which EvidenceItem to update.
      */
-    where: evidenceWhereUniqueInput
+    where: EvidenceItemWhereUniqueInput
   }
 
   /**
-   * evidence updateMany
+   * EvidenceItem updateMany
    */
-  export type evidenceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update evidences.
+     * The data used to update EvidenceItems.
      */
-    data: XOR<evidenceUpdateManyMutationInput, evidenceUncheckedUpdateManyInput>
+    data: XOR<EvidenceItemUpdateManyMutationInput, EvidenceItemUncheckedUpdateManyInput>
     /**
-     * Filter which evidences to update
+     * Filter which EvidenceItems to update
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
   }
 
   /**
-   * evidence upsert
+   * EvidenceItem upsert
    */
-  export type evidenceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * The filter to search for the evidence to update in case it exists.
+     * The filter to search for the EvidenceItem to update in case it exists.
      */
-    where: evidenceWhereUniqueInput
+    where: EvidenceItemWhereUniqueInput
     /**
-     * In case the evidence found by the `where` argument doesn't exist, create a new evidence with this data.
+     * In case the EvidenceItem found by the `where` argument doesn't exist, create a new EvidenceItem with this data.
      */
-    create: XOR<evidenceCreateInput, evidenceUncheckedCreateInput>
+    create: XOR<EvidenceItemCreateInput, EvidenceItemUncheckedCreateInput>
     /**
-     * In case the evidence was found with the provided `where` argument, update it with this data.
+     * In case the EvidenceItem was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<evidenceUpdateInput, evidenceUncheckedUpdateInput>
+    update: XOR<EvidenceItemUpdateInput, EvidenceItemUncheckedUpdateInput>
   }
 
   /**
-   * evidence delete
+   * EvidenceItem delete
    */
-  export type evidenceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
     /**
-     * Filter which evidence to delete.
+     * Filter which EvidenceItem to delete.
      */
-    where: evidenceWhereUniqueInput
+    where: EvidenceItemWhereUniqueInput
   }
 
   /**
-   * evidence deleteMany
+   * EvidenceItem deleteMany
    */
-  export type evidenceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which evidences to delete
+     * Filter which EvidenceItems to delete
      */
-    where?: evidenceWhereInput
+    where?: EvidenceItemWhereInput
   }
 
   /**
-   * evidence without action
+   * EvidenceItem without action
    */
-  export type evidenceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type EvidenceItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the evidence
+     * Select specific fields to fetch from the EvidenceItem
      */
-    select?: evidenceSelect<ExtArgs> | null
+    select?: EvidenceItemSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: evidenceInclude<ExtArgs> | null
+    include?: EvidenceItemInclude<ExtArgs> | null
   }
 
 
   /**
-   * Model intervention
+   * Model Intervention
    */
 
   export type AggregateIntervention = {
@@ -4433,7 +4440,7 @@ export namespace Prisma {
     student_id: string | null
     skill_id: string | null
     priority: number | null
-    status: $Enums.intervention_status | null
+    status: $Enums.InterventionStatus | null
     teacher_id: string | null
     notes: string | null
     created_at: Date | null
@@ -4445,7 +4452,7 @@ export namespace Prisma {
     student_id: string | null
     skill_id: string | null
     priority: number | null
-    status: $Enums.intervention_status | null
+    status: $Enums.InterventionStatus | null
     teacher_id: string | null
     notes: string | null
     created_at: Date | null
@@ -4513,37 +4520,37 @@ export namespace Prisma {
 
   export type InterventionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which intervention to aggregate.
+     * Filter which Intervention to aggregate.
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of interventions to fetch.
+     * Determine the order of Interventions to fetch.
      */
-    orderBy?: interventionOrderByWithRelationInput | interventionOrderByWithRelationInput[]
+    orderBy?: InterventionOrderByWithRelationInput | InterventionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: interventionWhereUniqueInput
+    cursor?: InterventionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` interventions from the position of the cursor.
+     * Take `±n` Interventions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` interventions.
+     * Skip the first `n` Interventions.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned interventions
+     * Count returned Interventions
     **/
     _count?: true | InterventionCountAggregateInputType
     /**
@@ -4583,11 +4590,11 @@ export namespace Prisma {
 
 
 
-  export type interventionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: interventionWhereInput
-    orderBy?: interventionOrderByWithAggregationInput | interventionOrderByWithAggregationInput[]
+  export type InterventionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InterventionWhereInput
+    orderBy?: InterventionOrderByWithAggregationInput | InterventionOrderByWithAggregationInput[]
     by: InterventionScalarFieldEnum[] | InterventionScalarFieldEnum
-    having?: interventionScalarWhereWithAggregatesInput
+    having?: InterventionScalarWhereWithAggregatesInput
     take?: number
     skip?: number
     _count?: InterventionCountAggregateInputType | true
@@ -4602,7 +4609,7 @@ export namespace Prisma {
     student_id: string
     skill_id: string
     priority: number
-    status: $Enums.intervention_status
+    status: $Enums.InterventionStatus
     teacher_id: string | null
     notes: string | null
     created_at: Date
@@ -4614,7 +4621,7 @@ export namespace Prisma {
     _max: InterventionMaxAggregateOutputType | null
   }
 
-  type GetInterventionGroupByPayload<T extends interventionGroupByArgs> = Prisma.PrismaPromise<
+  type GetInterventionGroupByPayload<T extends InterventionGroupByArgs> = Prisma.PrismaPromise<
     Array<
       PickEnumerable<InterventionGroupByOutputType, T['by']> &
         {
@@ -4628,7 +4635,7 @@ export namespace Prisma {
     >
 
 
-  export type interventionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type InterventionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -4638,12 +4645,12 @@ export namespace Prisma {
     notes?: boolean
     created_at?: boolean
     resolved_at?: boolean
-    skill?: boolean | skillDefaultArgs<ExtArgs>
-    notes_list?: boolean | intervention$notes_listArgs<ExtArgs>
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
+    notes_list?: boolean | Intervention$notes_listArgs<ExtArgs>
     _count?: boolean | InterventionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["intervention"]>
 
-  export type interventionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type InterventionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -4653,10 +4660,10 @@ export namespace Prisma {
     notes?: boolean
     created_at?: boolean
     resolved_at?: boolean
-    skill?: boolean | skillDefaultArgs<ExtArgs>
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["intervention"]>
 
-  export type interventionSelectScalar = {
+  export type InterventionSelectScalar = {
     id?: boolean
     student_id?: boolean
     skill_id?: boolean
@@ -4668,27 +4675,27 @@ export namespace Prisma {
     resolved_at?: boolean
   }
 
-  export type interventionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    skill?: boolean | skillDefaultArgs<ExtArgs>
-    notes_list?: boolean | intervention$notes_listArgs<ExtArgs>
+  export type InterventionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
+    notes_list?: boolean | Intervention$notes_listArgs<ExtArgs>
     _count?: boolean | InterventionCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type interventionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    skill?: boolean | skillDefaultArgs<ExtArgs>
+  export type InterventionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    skill?: boolean | SkillDefaultArgs<ExtArgs>
   }
 
-  export type $interventionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "intervention"
+  export type $InterventionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Intervention"
     objects: {
-      skill: Prisma.$skillPayload<ExtArgs>
-      notes_list: Prisma.$intervention_notePayload<ExtArgs>[]
+      skill: Prisma.$SkillPayload<ExtArgs>
+      notes_list: Prisma.$InterventionNotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       student_id: string
       skill_id: string
       priority: number
-      status: $Enums.intervention_status
+      status: $Enums.InterventionStatus
       teacher_id: string | null
       notes: string | null
       created_at: Date
@@ -4697,18 +4704,18 @@ export namespace Prisma {
     composites: {}
   }
 
-  type interventionGetPayload<S extends boolean | null | undefined | interventionDefaultArgs> = $Result.GetResult<Prisma.$interventionPayload, S>
+  type InterventionGetPayload<S extends boolean | null | undefined | InterventionDefaultArgs> = $Result.GetResult<Prisma.$InterventionPayload, S>
 
-  type interventionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<interventionFindManyArgs, 'select' | 'include' | 'distinct'> & {
+  type InterventionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<InterventionFindManyArgs, 'select' | 'include' | 'distinct'> & {
       select?: InterventionCountAggregateInputType | true
     }
 
-  export interface interventionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['intervention'], meta: { name: 'intervention' } }
+  export interface InterventionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Intervention'], meta: { name: 'Intervention' } }
     /**
      * Find zero or one Intervention that matches the filter.
-     * @param {interventionFindUniqueArgs} args - Arguments to find a Intervention
+     * @param {InterventionFindUniqueArgs} args - Arguments to find a Intervention
      * @example
      * // Get one Intervention
      * const intervention = await prisma.intervention.findUnique({
@@ -4717,12 +4724,12 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUnique<T extends interventionFindUniqueArgs>(args: SelectSubset<T, interventionFindUniqueArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends InterventionFindUniqueArgs>(args: SelectSubset<T, InterventionFindUniqueArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
      * Find one Intervention that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {interventionFindUniqueOrThrowArgs} args - Arguments to find a Intervention
+     * @param {InterventionFindUniqueOrThrowArgs} args - Arguments to find a Intervention
      * @example
      * // Get one Intervention
      * const intervention = await prisma.intervention.findUniqueOrThrow({
@@ -4731,13 +4738,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findUniqueOrThrow<T extends interventionFindUniqueOrThrowArgs>(args: SelectSubset<T, interventionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends InterventionFindUniqueOrThrowArgs>(args: SelectSubset<T, InterventionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
      * Find the first Intervention that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionFindFirstArgs} args - Arguments to find a Intervention
+     * @param {InterventionFindFirstArgs} args - Arguments to find a Intervention
      * @example
      * // Get one Intervention
      * const intervention = await prisma.intervention.findFirst({
@@ -4746,14 +4753,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirst<T extends interventionFindFirstArgs>(args?: SelectSubset<T, interventionFindFirstArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends InterventionFindFirstArgs>(args?: SelectSubset<T, InterventionFindFirstArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
      * Find the first Intervention that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionFindFirstOrThrowArgs} args - Arguments to find a Intervention
+     * @param {InterventionFindFirstOrThrowArgs} args - Arguments to find a Intervention
      * @example
      * // Get one Intervention
      * const intervention = await prisma.intervention.findFirstOrThrow({
@@ -4762,13 +4769,13 @@ export namespace Prisma {
      *   }
      * })
      */
-    findFirstOrThrow<T extends interventionFindFirstOrThrowArgs>(args?: SelectSubset<T, interventionFindFirstOrThrowArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends InterventionFindFirstOrThrowArgs>(args?: SelectSubset<T, InterventionFindFirstOrThrowArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
      * Find zero or more Interventions that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {InterventionFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all Interventions
      * const interventions = await prisma.intervention.findMany()
@@ -4780,11 +4787,11 @@ export namespace Prisma {
      * const interventionWithIdOnly = await prisma.intervention.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends interventionFindManyArgs>(args?: SelectSubset<T, interventionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findMany">>
+    findMany<T extends InterventionFindManyArgs>(args?: SelectSubset<T, InterventionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findMany">>
 
     /**
      * Create a Intervention.
-     * @param {interventionCreateArgs} args - Arguments to create a Intervention.
+     * @param {InterventionCreateArgs} args - Arguments to create a Intervention.
      * @example
      * // Create one Intervention
      * const Intervention = await prisma.intervention.create({
@@ -4794,11 +4801,11 @@ export namespace Prisma {
      * })
      * 
      */
-    create<T extends interventionCreateArgs>(args: SelectSubset<T, interventionCreateArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends InterventionCreateArgs>(args: SelectSubset<T, InterventionCreateArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
      * Create many Interventions.
-     * @param {interventionCreateManyArgs} args - Arguments to create many Interventions.
+     * @param {InterventionCreateManyArgs} args - Arguments to create many Interventions.
      * @example
      * // Create many Interventions
      * const intervention = await prisma.intervention.createMany({
@@ -4808,11 +4815,11 @@ export namespace Prisma {
      * })
      *     
      */
-    createMany<T extends interventionCreateManyArgs>(args?: SelectSubset<T, interventionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends InterventionCreateManyArgs>(args?: SelectSubset<T, InterventionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create many Interventions and returns the data saved in the database.
-     * @param {interventionCreateManyAndReturnArgs} args - Arguments to create many Interventions.
+     * @param {InterventionCreateManyAndReturnArgs} args - Arguments to create many Interventions.
      * @example
      * // Create many Interventions
      * const intervention = await prisma.intervention.createManyAndReturn({
@@ -4832,11 +4839,11 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends interventionCreateManyAndReturnArgs>(args?: SelectSubset<T, interventionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "createManyAndReturn">>
+    createManyAndReturn<T extends InterventionCreateManyAndReturnArgs>(args?: SelectSubset<T, InterventionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "createManyAndReturn">>
 
     /**
      * Delete a Intervention.
-     * @param {interventionDeleteArgs} args - Arguments to delete one Intervention.
+     * @param {InterventionDeleteArgs} args - Arguments to delete one Intervention.
      * @example
      * // Delete one Intervention
      * const Intervention = await prisma.intervention.delete({
@@ -4846,11 +4853,11 @@ export namespace Prisma {
      * })
      * 
      */
-    delete<T extends interventionDeleteArgs>(args: SelectSubset<T, interventionDeleteArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends InterventionDeleteArgs>(args: SelectSubset<T, InterventionDeleteArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
      * Update one Intervention.
-     * @param {interventionUpdateArgs} args - Arguments to update one Intervention.
+     * @param {InterventionUpdateArgs} args - Arguments to update one Intervention.
      * @example
      * // Update one Intervention
      * const intervention = await prisma.intervention.update({
@@ -4863,11 +4870,11 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends interventionUpdateArgs>(args: SelectSubset<T, interventionUpdateArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends InterventionUpdateArgs>(args: SelectSubset<T, InterventionUpdateArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
      * Delete zero or more Interventions.
-     * @param {interventionDeleteManyArgs} args - Arguments to filter Interventions to delete.
+     * @param {InterventionDeleteManyArgs} args - Arguments to filter Interventions to delete.
      * @example
      * // Delete a few Interventions
      * const { count } = await prisma.intervention.deleteMany({
@@ -4877,13 +4884,13 @@ export namespace Prisma {
      * })
      * 
      */
-    deleteMany<T extends interventionDeleteManyArgs>(args?: SelectSubset<T, interventionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends InterventionDeleteManyArgs>(args?: SelectSubset<T, InterventionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Update zero or more Interventions.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {InterventionUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many Interventions
      * const intervention = await prisma.intervention.updateMany({
@@ -4896,11 +4903,11 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends interventionUpdateManyArgs>(args: SelectSubset<T, interventionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends InterventionUpdateManyArgs>(args: SelectSubset<T, InterventionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
      * Create or update one Intervention.
-     * @param {interventionUpsertArgs} args - Arguments to update or create a Intervention.
+     * @param {InterventionUpsertArgs} args - Arguments to update or create a Intervention.
      * @example
      * // Update or create a Intervention
      * const intervention = await prisma.intervention.upsert({
@@ -4915,14 +4922,14 @@ export namespace Prisma {
      *   }
      * })
      */
-    upsert<T extends interventionUpsertArgs>(args: SelectSubset<T, interventionUpsertArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends InterventionUpsertArgs>(args: SelectSubset<T, InterventionUpsertArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
 
     /**
      * Count the number of Interventions.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionCountArgs} args - Arguments to filter Interventions to count.
+     * @param {InterventionCountArgs} args - Arguments to filter Interventions to count.
      * @example
      * // Count the number of Interventions
      * const count = await prisma.intervention.count({
@@ -4931,8 +4938,8 @@ export namespace Prisma {
      *   }
      * })
     **/
-    count<T extends interventionCountArgs>(
-      args?: Subset<T, interventionCountArgs>,
+    count<T extends InterventionCountArgs>(
+      args?: Subset<T, InterventionCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
@@ -4971,7 +4978,7 @@ export namespace Prisma {
      * Group by Intervention.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {interventionGroupByArgs} args - Group by arguments.
+     * @param {InterventionGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -4986,14 +4993,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends interventionGroupByArgs,
+      T extends InterventionGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: interventionGroupByArgs['orderBy'] }
-        : { orderBy?: interventionGroupByArgs['orderBy'] },
+        ? { orderBy: InterventionGroupByArgs['orderBy'] }
+        : { orderBy?: InterventionGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -5042,23 +5049,23 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, interventionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInterventionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, InterventionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInterventionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the intervention model
+   * Fields of the Intervention model
    */
-  readonly fields: interventionFieldRefs;
+  readonly fields: InterventionFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for intervention.
+   * The delegate class that acts as a "Promise-like" for Intervention.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__interventionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__InterventionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    skill<T extends skillDefaultArgs<ExtArgs> = {}>(args?: Subset<T, skillDefaultArgs<ExtArgs>>): Prisma__skillClient<$Result.GetResult<Prisma.$skillPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    notes_list<T extends intervention$notes_listArgs<ExtArgs> = {}>(args?: Subset<T, intervention$notes_listArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findMany"> | Null>
+    skill<T extends SkillDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SkillDefaultArgs<ExtArgs>>): Prisma__SkillClient<$Result.GetResult<Prisma.$SkillPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    notes_list<T extends Intervention$notes_listArgs<ExtArgs> = {}>(args?: Subset<T, Intervention$notes_listArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5085,381 +5092,381 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the intervention model
+   * Fields of the Intervention model
    */ 
-  interface interventionFieldRefs {
-    readonly id: FieldRef<"intervention", 'String'>
-    readonly student_id: FieldRef<"intervention", 'String'>
-    readonly skill_id: FieldRef<"intervention", 'String'>
-    readonly priority: FieldRef<"intervention", 'Int'>
-    readonly status: FieldRef<"intervention", 'intervention_status'>
-    readonly teacher_id: FieldRef<"intervention", 'String'>
-    readonly notes: FieldRef<"intervention", 'String'>
-    readonly created_at: FieldRef<"intervention", 'DateTime'>
-    readonly resolved_at: FieldRef<"intervention", 'DateTime'>
+  interface InterventionFieldRefs {
+    readonly id: FieldRef<"Intervention", 'String'>
+    readonly student_id: FieldRef<"Intervention", 'String'>
+    readonly skill_id: FieldRef<"Intervention", 'String'>
+    readonly priority: FieldRef<"Intervention", 'Int'>
+    readonly status: FieldRef<"Intervention", 'InterventionStatus'>
+    readonly teacher_id: FieldRef<"Intervention", 'String'>
+    readonly notes: FieldRef<"Intervention", 'String'>
+    readonly created_at: FieldRef<"Intervention", 'DateTime'>
+    readonly resolved_at: FieldRef<"Intervention", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * intervention findUnique
+   * Intervention findUnique
    */
-  export type interventionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter, which intervention to fetch.
+     * Filter, which Intervention to fetch.
      */
-    where: interventionWhereUniqueInput
+    where: InterventionWhereUniqueInput
   }
 
   /**
-   * intervention findUniqueOrThrow
+   * Intervention findUniqueOrThrow
    */
-  export type interventionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter, which intervention to fetch.
+     * Filter, which Intervention to fetch.
      */
-    where: interventionWhereUniqueInput
+    where: InterventionWhereUniqueInput
   }
 
   /**
-   * intervention findFirst
+   * Intervention findFirst
    */
-  export type interventionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter, which intervention to fetch.
+     * Filter, which Intervention to fetch.
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of interventions to fetch.
+     * Determine the order of Interventions to fetch.
      */
-    orderBy?: interventionOrderByWithRelationInput | interventionOrderByWithRelationInput[]
+    orderBy?: InterventionOrderByWithRelationInput | InterventionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for interventions.
+     * Sets the position for searching for Interventions.
      */
-    cursor?: interventionWhereUniqueInput
+    cursor?: InterventionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` interventions from the position of the cursor.
+     * Take `±n` Interventions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` interventions.
+     * Skip the first `n` Interventions.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of interventions.
+     * Filter by unique combinations of Interventions.
      */
     distinct?: InterventionScalarFieldEnum | InterventionScalarFieldEnum[]
   }
 
   /**
-   * intervention findFirstOrThrow
+   * Intervention findFirstOrThrow
    */
-  export type interventionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter, which intervention to fetch.
+     * Filter, which Intervention to fetch.
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of interventions to fetch.
+     * Determine the order of Interventions to fetch.
      */
-    orderBy?: interventionOrderByWithRelationInput | interventionOrderByWithRelationInput[]
+    orderBy?: InterventionOrderByWithRelationInput | InterventionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for interventions.
+     * Sets the position for searching for Interventions.
      */
-    cursor?: interventionWhereUniqueInput
+    cursor?: InterventionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` interventions from the position of the cursor.
+     * Take `±n` Interventions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` interventions.
+     * Skip the first `n` Interventions.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of interventions.
+     * Filter by unique combinations of Interventions.
      */
     distinct?: InterventionScalarFieldEnum | InterventionScalarFieldEnum[]
   }
 
   /**
-   * intervention findMany
+   * Intervention findMany
    */
-  export type interventionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter, which interventions to fetch.
+     * Filter, which Interventions to fetch.
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of interventions to fetch.
+     * Determine the order of Interventions to fetch.
      */
-    orderBy?: interventionOrderByWithRelationInput | interventionOrderByWithRelationInput[]
+    orderBy?: InterventionOrderByWithRelationInput | InterventionOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing interventions.
+     * Sets the position for listing Interventions.
      */
-    cursor?: interventionWhereUniqueInput
+    cursor?: InterventionWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` interventions from the position of the cursor.
+     * Take `±n` Interventions from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` interventions.
+     * Skip the first `n` Interventions.
      */
     skip?: number
     distinct?: InterventionScalarFieldEnum | InterventionScalarFieldEnum[]
   }
 
   /**
-   * intervention create
+   * Intervention create
    */
-  export type interventionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * The data needed to create a intervention.
+     * The data needed to create a Intervention.
      */
-    data: XOR<interventionCreateInput, interventionUncheckedCreateInput>
+    data: XOR<InterventionCreateInput, InterventionUncheckedCreateInput>
   }
 
   /**
-   * intervention createMany
+   * Intervention createMany
    */
-  export type interventionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many interventions.
+     * The data used to create many Interventions.
      */
-    data: interventionCreateManyInput | interventionCreateManyInput[]
+    data: InterventionCreateManyInput | InterventionCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * intervention createManyAndReturn
+   * Intervention createManyAndReturn
    */
-  export type interventionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelectCreateManyAndReturn<ExtArgs> | null
+    select?: InterventionSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * The data used to create many interventions.
+     * The data used to create many Interventions.
      */
-    data: interventionCreateManyInput | interventionCreateManyInput[]
+    data: InterventionCreateManyInput | InterventionCreateManyInput[]
     skipDuplicates?: boolean
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionIncludeCreateManyAndReturn<ExtArgs> | null
+    include?: InterventionIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * intervention update
+   * Intervention update
    */
-  export type interventionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * The data needed to update a intervention.
+     * The data needed to update a Intervention.
      */
-    data: XOR<interventionUpdateInput, interventionUncheckedUpdateInput>
+    data: XOR<InterventionUpdateInput, InterventionUncheckedUpdateInput>
     /**
-     * Choose, which intervention to update.
+     * Choose, which Intervention to update.
      */
-    where: interventionWhereUniqueInput
+    where: InterventionWhereUniqueInput
   }
 
   /**
-   * intervention updateMany
+   * Intervention updateMany
    */
-  export type interventionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update interventions.
+     * The data used to update Interventions.
      */
-    data: XOR<interventionUpdateManyMutationInput, interventionUncheckedUpdateManyInput>
+    data: XOR<InterventionUpdateManyMutationInput, InterventionUncheckedUpdateManyInput>
     /**
-     * Filter which interventions to update
+     * Filter which Interventions to update
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
   }
 
   /**
-   * intervention upsert
+   * Intervention upsert
    */
-  export type interventionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * The filter to search for the intervention to update in case it exists.
+     * The filter to search for the Intervention to update in case it exists.
      */
-    where: interventionWhereUniqueInput
+    where: InterventionWhereUniqueInput
     /**
-     * In case the intervention found by the `where` argument doesn't exist, create a new intervention with this data.
+     * In case the Intervention found by the `where` argument doesn't exist, create a new Intervention with this data.
      */
-    create: XOR<interventionCreateInput, interventionUncheckedCreateInput>
+    create: XOR<InterventionCreateInput, InterventionUncheckedCreateInput>
     /**
-     * In case the intervention was found with the provided `where` argument, update it with this data.
+     * In case the Intervention was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<interventionUpdateInput, interventionUncheckedUpdateInput>
+    update: XOR<InterventionUpdateInput, InterventionUncheckedUpdateInput>
   }
 
   /**
-   * intervention delete
+   * Intervention delete
    */
-  export type interventionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
     /**
-     * Filter which intervention to delete.
+     * Filter which Intervention to delete.
      */
-    where: interventionWhereUniqueInput
+    where: InterventionWhereUniqueInput
   }
 
   /**
-   * intervention deleteMany
+   * Intervention deleteMany
    */
-  export type interventionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which interventions to delete
+     * Filter which Interventions to delete
      */
-    where?: interventionWhereInput
+    where?: InterventionWhereInput
   }
 
   /**
-   * intervention.notes_list
+   * Intervention.notes_list
    */
-  export type intervention$notes_listArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type Intervention$notes_listArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
-    where?: intervention_noteWhereInput
-    orderBy?: intervention_noteOrderByWithRelationInput | intervention_noteOrderByWithRelationInput[]
-    cursor?: intervention_noteWhereUniqueInput
+    include?: InterventionNoteInclude<ExtArgs> | null
+    where?: InterventionNoteWhereInput
+    orderBy?: InterventionNoteOrderByWithRelationInput | InterventionNoteOrderByWithRelationInput[]
+    cursor?: InterventionNoteWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: Intervention_noteScalarFieldEnum | Intervention_noteScalarFieldEnum[]
+    distinct?: InterventionNoteScalarFieldEnum | InterventionNoteScalarFieldEnum[]
   }
 
   /**
-   * intervention without action
+   * Intervention without action
    */
-  export type interventionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention
+     * Select specific fields to fetch from the Intervention
      */
-    select?: interventionSelect<ExtArgs> | null
+    select?: InterventionSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: interventionInclude<ExtArgs> | null
+    include?: InterventionInclude<ExtArgs> | null
   }
 
 
   /**
-   * Model intervention_note
+   * Model InterventionNote
    */
 
-  export type AggregateIntervention_note = {
-    _count: Intervention_noteCountAggregateOutputType | null
-    _min: Intervention_noteMinAggregateOutputType | null
-    _max: Intervention_noteMaxAggregateOutputType | null
+  export type AggregateInterventionNote = {
+    _count: InterventionNoteCountAggregateOutputType | null
+    _min: InterventionNoteMinAggregateOutputType | null
+    _max: InterventionNoteMaxAggregateOutputType | null
   }
 
-  export type Intervention_noteMinAggregateOutputType = {
+  export type InterventionNoteMinAggregateOutputType = {
     id: string | null
     intervention_id: string | null
     teacher_id: string | null
@@ -5467,7 +5474,7 @@ export namespace Prisma {
     created_at: Date | null
   }
 
-  export type Intervention_noteMaxAggregateOutputType = {
+  export type InterventionNoteMaxAggregateOutputType = {
     id: string | null
     intervention_id: string | null
     teacher_id: string | null
@@ -5475,7 +5482,7 @@ export namespace Prisma {
     created_at: Date | null
   }
 
-  export type Intervention_noteCountAggregateOutputType = {
+  export type InterventionNoteCountAggregateOutputType = {
     id: number
     intervention_id: number
     teacher_id: number
@@ -5485,7 +5492,7 @@ export namespace Prisma {
   }
 
 
-  export type Intervention_noteMinAggregateInputType = {
+  export type InterventionNoteMinAggregateInputType = {
     id?: true
     intervention_id?: true
     teacher_id?: true
@@ -5493,7 +5500,7 @@ export namespace Prisma {
     created_at?: true
   }
 
-  export type Intervention_noteMaxAggregateInputType = {
+  export type InterventionNoteMaxAggregateInputType = {
     id?: true
     intervention_id?: true
     teacher_id?: true
@@ -5501,7 +5508,7 @@ export namespace Prisma {
     created_at?: true
   }
 
-  export type Intervention_noteCountAggregateInputType = {
+  export type InterventionNoteCountAggregateInputType = {
     id?: true
     intervention_id?: true
     teacher_id?: true
@@ -5510,122 +5517,122 @@ export namespace Prisma {
     _all?: true
   }
 
-  export type Intervention_noteAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which intervention_note to aggregate.
+     * Filter which InterventionNote to aggregate.
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of intervention_notes to fetch.
+     * Determine the order of InterventionNotes to fetch.
      */
-    orderBy?: intervention_noteOrderByWithRelationInput | intervention_noteOrderByWithRelationInput[]
+    orderBy?: InterventionNoteOrderByWithRelationInput | InterventionNoteOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: intervention_noteWhereUniqueInput
+    cursor?: InterventionNoteWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` intervention_notes from the position of the cursor.
+     * Take `±n` InterventionNotes from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` intervention_notes.
+     * Skip the first `n` InterventionNotes.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned intervention_notes
+     * Count returned InterventionNotes
     **/
-    _count?: true | Intervention_noteCountAggregateInputType
+    _count?: true | InterventionNoteCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: Intervention_noteMinAggregateInputType
+    _min?: InterventionNoteMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: Intervention_noteMaxAggregateInputType
+    _max?: InterventionNoteMaxAggregateInputType
   }
 
-  export type GetIntervention_noteAggregateType<T extends Intervention_noteAggregateArgs> = {
-        [P in keyof T & keyof AggregateIntervention_note]: P extends '_count' | 'count'
+  export type GetInterventionNoteAggregateType<T extends InterventionNoteAggregateArgs> = {
+        [P in keyof T & keyof AggregateInterventionNote]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateIntervention_note[P]>
-      : GetScalarType<T[P], AggregateIntervention_note[P]>
+        : GetScalarType<T[P], AggregateInterventionNote[P]>
+      : GetScalarType<T[P], AggregateInterventionNote[P]>
   }
 
 
 
 
-  export type intervention_noteGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: intervention_noteWhereInput
-    orderBy?: intervention_noteOrderByWithAggregationInput | intervention_noteOrderByWithAggregationInput[]
-    by: Intervention_noteScalarFieldEnum[] | Intervention_noteScalarFieldEnum
-    having?: intervention_noteScalarWhereWithAggregatesInput
+  export type InterventionNoteGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InterventionNoteWhereInput
+    orderBy?: InterventionNoteOrderByWithAggregationInput | InterventionNoteOrderByWithAggregationInput[]
+    by: InterventionNoteScalarFieldEnum[] | InterventionNoteScalarFieldEnum
+    having?: InterventionNoteScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: Intervention_noteCountAggregateInputType | true
-    _min?: Intervention_noteMinAggregateInputType
-    _max?: Intervention_noteMaxAggregateInputType
+    _count?: InterventionNoteCountAggregateInputType | true
+    _min?: InterventionNoteMinAggregateInputType
+    _max?: InterventionNoteMaxAggregateInputType
   }
 
-  export type Intervention_noteGroupByOutputType = {
+  export type InterventionNoteGroupByOutputType = {
     id: string
     intervention_id: string
     teacher_id: string
     content: string
     created_at: Date
-    _count: Intervention_noteCountAggregateOutputType | null
-    _min: Intervention_noteMinAggregateOutputType | null
-    _max: Intervention_noteMaxAggregateOutputType | null
+    _count: InterventionNoteCountAggregateOutputType | null
+    _min: InterventionNoteMinAggregateOutputType | null
+    _max: InterventionNoteMaxAggregateOutputType | null
   }
 
-  type GetIntervention_noteGroupByPayload<T extends intervention_noteGroupByArgs> = Prisma.PrismaPromise<
+  type GetInterventionNoteGroupByPayload<T extends InterventionNoteGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<Intervention_noteGroupByOutputType, T['by']> &
+      PickEnumerable<InterventionNoteGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof Intervention_noteGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof InterventionNoteGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], Intervention_noteGroupByOutputType[P]>
-            : GetScalarType<T[P], Intervention_noteGroupByOutputType[P]>
+              : GetScalarType<T[P], InterventionNoteGroupByOutputType[P]>
+            : GetScalarType<T[P], InterventionNoteGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type intervention_noteSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type InterventionNoteSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     intervention_id?: boolean
     teacher_id?: boolean
     content?: boolean
     created_at?: boolean
-    intervention?: boolean | interventionDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["intervention_note"]>
+    intervention?: boolean | InterventionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["interventionNote"]>
 
-  export type intervention_noteSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type InterventionNoteSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     intervention_id?: boolean
     teacher_id?: boolean
     content?: boolean
     created_at?: boolean
-    intervention?: boolean | interventionDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["intervention_note"]>
+    intervention?: boolean | InterventionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["interventionNote"]>
 
-  export type intervention_noteSelectScalar = {
+  export type InterventionNoteSelectScalar = {
     id?: boolean
     intervention_id?: boolean
     teacher_id?: boolean
@@ -5633,17 +5640,17 @@ export namespace Prisma {
     created_at?: boolean
   }
 
-  export type intervention_noteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    intervention?: boolean | interventionDefaultArgs<ExtArgs>
+  export type InterventionNoteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    intervention?: boolean | InterventionDefaultArgs<ExtArgs>
   }
-  export type intervention_noteIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    intervention?: boolean | interventionDefaultArgs<ExtArgs>
+  export type InterventionNoteIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    intervention?: boolean | InterventionDefaultArgs<ExtArgs>
   }
 
-  export type $intervention_notePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "intervention_note"
+  export type $InterventionNotePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "InterventionNote"
     objects: {
-      intervention: Prisma.$interventionPayload<ExtArgs>
+      intervention: Prisma.$InterventionPayload<ExtArgs>
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5651,136 +5658,136 @@ export namespace Prisma {
       teacher_id: string
       content: string
       created_at: Date
-    }, ExtArgs["result"]["intervention_note"]>
+    }, ExtArgs["result"]["interventionNote"]>
     composites: {}
   }
 
-  type intervention_noteGetPayload<S extends boolean | null | undefined | intervention_noteDefaultArgs> = $Result.GetResult<Prisma.$intervention_notePayload, S>
+  type InterventionNoteGetPayload<S extends boolean | null | undefined | InterventionNoteDefaultArgs> = $Result.GetResult<Prisma.$InterventionNotePayload, S>
 
-  type intervention_noteCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<intervention_noteFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: Intervention_noteCountAggregateInputType | true
+  type InterventionNoteCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<InterventionNoteFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: InterventionNoteCountAggregateInputType | true
     }
 
-  export interface intervention_noteDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['intervention_note'], meta: { name: 'intervention_note' } }
+  export interface InterventionNoteDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['InterventionNote'], meta: { name: 'InterventionNote' } }
     /**
-     * Find zero or one Intervention_note that matches the filter.
-     * @param {intervention_noteFindUniqueArgs} args - Arguments to find a Intervention_note
+     * Find zero or one InterventionNote that matches the filter.
+     * @param {InterventionNoteFindUniqueArgs} args - Arguments to find a InterventionNote
      * @example
-     * // Get one Intervention_note
-     * const intervention_note = await prisma.intervention_note.findUnique({
+     * // Get one InterventionNote
+     * const interventionNote = await prisma.interventionNote.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends intervention_noteFindUniqueArgs>(args: SelectSubset<T, intervention_noteFindUniqueArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends InterventionNoteFindUniqueArgs>(args: SelectSubset<T, InterventionNoteFindUniqueArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one Intervention_note that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one InterventionNote that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {intervention_noteFindUniqueOrThrowArgs} args - Arguments to find a Intervention_note
+     * @param {InterventionNoteFindUniqueOrThrowArgs} args - Arguments to find a InterventionNote
      * @example
-     * // Get one Intervention_note
-     * const intervention_note = await prisma.intervention_note.findUniqueOrThrow({
+     * // Get one InterventionNote
+     * const interventionNote = await prisma.interventionNote.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends intervention_noteFindUniqueOrThrowArgs>(args: SelectSubset<T, intervention_noteFindUniqueOrThrowArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends InterventionNoteFindUniqueOrThrowArgs>(args: SelectSubset<T, InterventionNoteFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
-     * Find the first Intervention_note that matches the filter.
+     * Find the first InterventionNote that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteFindFirstArgs} args - Arguments to find a Intervention_note
+     * @param {InterventionNoteFindFirstArgs} args - Arguments to find a InterventionNote
      * @example
-     * // Get one Intervention_note
-     * const intervention_note = await prisma.intervention_note.findFirst({
+     * // Get one InterventionNote
+     * const interventionNote = await prisma.interventionNote.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends intervention_noteFindFirstArgs>(args?: SelectSubset<T, intervention_noteFindFirstArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends InterventionNoteFindFirstArgs>(args?: SelectSubset<T, InterventionNoteFindFirstArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
-     * Find the first Intervention_note that matches the filter or
+     * Find the first InterventionNote that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteFindFirstOrThrowArgs} args - Arguments to find a Intervention_note
+     * @param {InterventionNoteFindFirstOrThrowArgs} args - Arguments to find a InterventionNote
      * @example
-     * // Get one Intervention_note
-     * const intervention_note = await prisma.intervention_note.findFirstOrThrow({
+     * // Get one InterventionNote
+     * const interventionNote = await prisma.interventionNote.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends intervention_noteFindFirstOrThrowArgs>(args?: SelectSubset<T, intervention_noteFindFirstOrThrowArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends InterventionNoteFindFirstOrThrowArgs>(args?: SelectSubset<T, InterventionNoteFindFirstOrThrowArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
-     * Find zero or more Intervention_notes that matches the filter.
+     * Find zero or more InterventionNotes that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {InterventionNoteFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Intervention_notes
-     * const intervention_notes = await prisma.intervention_note.findMany()
+     * // Get all InterventionNotes
+     * const interventionNotes = await prisma.interventionNote.findMany()
      * 
-     * // Get first 10 Intervention_notes
-     * const intervention_notes = await prisma.intervention_note.findMany({ take: 10 })
+     * // Get first 10 InterventionNotes
+     * const interventionNotes = await prisma.interventionNote.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const intervention_noteWithIdOnly = await prisma.intervention_note.findMany({ select: { id: true } })
+     * const interventionNoteWithIdOnly = await prisma.interventionNote.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends intervention_noteFindManyArgs>(args?: SelectSubset<T, intervention_noteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "findMany">>
+    findMany<T extends InterventionNoteFindManyArgs>(args?: SelectSubset<T, InterventionNoteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "findMany">>
 
     /**
-     * Create a Intervention_note.
-     * @param {intervention_noteCreateArgs} args - Arguments to create a Intervention_note.
+     * Create a InterventionNote.
+     * @param {InterventionNoteCreateArgs} args - Arguments to create a InterventionNote.
      * @example
-     * // Create one Intervention_note
-     * const Intervention_note = await prisma.intervention_note.create({
+     * // Create one InterventionNote
+     * const InterventionNote = await prisma.interventionNote.create({
      *   data: {
-     *     // ... data to create a Intervention_note
+     *     // ... data to create a InterventionNote
      *   }
      * })
      * 
      */
-    create<T extends intervention_noteCreateArgs>(args: SelectSubset<T, intervention_noteCreateArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends InterventionNoteCreateArgs>(args: SelectSubset<T, InterventionNoteCreateArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
-     * Create many Intervention_notes.
-     * @param {intervention_noteCreateManyArgs} args - Arguments to create many Intervention_notes.
+     * Create many InterventionNotes.
+     * @param {InterventionNoteCreateManyArgs} args - Arguments to create many InterventionNotes.
      * @example
-     * // Create many Intervention_notes
-     * const intervention_note = await prisma.intervention_note.createMany({
+     * // Create many InterventionNotes
+     * const interventionNote = await prisma.interventionNote.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends intervention_noteCreateManyArgs>(args?: SelectSubset<T, intervention_noteCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends InterventionNoteCreateManyArgs>(args?: SelectSubset<T, InterventionNoteCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Intervention_notes and returns the data saved in the database.
-     * @param {intervention_noteCreateManyAndReturnArgs} args - Arguments to create many Intervention_notes.
+     * Create many InterventionNotes and returns the data saved in the database.
+     * @param {InterventionNoteCreateManyAndReturnArgs} args - Arguments to create many InterventionNotes.
      * @example
-     * // Create many Intervention_notes
-     * const intervention_note = await prisma.intervention_note.createManyAndReturn({
+     * // Create many InterventionNotes
+     * const interventionNote = await prisma.interventionNote.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
-     * // Create many Intervention_notes and only return the `id`
-     * const intervention_noteWithIdOnly = await prisma.intervention_note.createManyAndReturn({ 
+     * // Create many InterventionNotes and only return the `id`
+     * const interventionNoteWithIdOnly = await prisma.interventionNote.createManyAndReturn({ 
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -5790,28 +5797,28 @@ export namespace Prisma {
      * Read more here: https://pris.ly/d/null-undefined
      * 
      */
-    createManyAndReturn<T extends intervention_noteCreateManyAndReturnArgs>(args?: SelectSubset<T, intervention_noteCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "createManyAndReturn">>
+    createManyAndReturn<T extends InterventionNoteCreateManyAndReturnArgs>(args?: SelectSubset<T, InterventionNoteCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "createManyAndReturn">>
 
     /**
-     * Delete a Intervention_note.
-     * @param {intervention_noteDeleteArgs} args - Arguments to delete one Intervention_note.
+     * Delete a InterventionNote.
+     * @param {InterventionNoteDeleteArgs} args - Arguments to delete one InterventionNote.
      * @example
-     * // Delete one Intervention_note
-     * const Intervention_note = await prisma.intervention_note.delete({
+     * // Delete one InterventionNote
+     * const InterventionNote = await prisma.interventionNote.delete({
      *   where: {
-     *     // ... filter to delete one Intervention_note
+     *     // ... filter to delete one InterventionNote
      *   }
      * })
      * 
      */
-    delete<T extends intervention_noteDeleteArgs>(args: SelectSubset<T, intervention_noteDeleteArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends InterventionNoteDeleteArgs>(args: SelectSubset<T, InterventionNoteDeleteArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
-     * Update one Intervention_note.
-     * @param {intervention_noteUpdateArgs} args - Arguments to update one Intervention_note.
+     * Update one InterventionNote.
+     * @param {InterventionNoteUpdateArgs} args - Arguments to update one InterventionNote.
      * @example
-     * // Update one Intervention_note
-     * const intervention_note = await prisma.intervention_note.update({
+     * // Update one InterventionNote
+     * const interventionNote = await prisma.interventionNote.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -5821,30 +5828,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends intervention_noteUpdateArgs>(args: SelectSubset<T, intervention_noteUpdateArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends InterventionNoteUpdateArgs>(args: SelectSubset<T, InterventionNoteUpdateArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
-     * Delete zero or more Intervention_notes.
-     * @param {intervention_noteDeleteManyArgs} args - Arguments to filter Intervention_notes to delete.
+     * Delete zero or more InterventionNotes.
+     * @param {InterventionNoteDeleteManyArgs} args - Arguments to filter InterventionNotes to delete.
      * @example
-     * // Delete a few Intervention_notes
-     * const { count } = await prisma.intervention_note.deleteMany({
+     * // Delete a few InterventionNotes
+     * const { count } = await prisma.interventionNote.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends intervention_noteDeleteManyArgs>(args?: SelectSubset<T, intervention_noteDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends InterventionNoteDeleteManyArgs>(args?: SelectSubset<T, InterventionNoteDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Intervention_notes.
+     * Update zero or more InterventionNotes.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {InterventionNoteUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Intervention_notes
-     * const intervention_note = await prisma.intervention_note.updateMany({
+     * // Update many InterventionNotes
+     * const interventionNote = await prisma.interventionNote.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -5854,56 +5861,56 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends intervention_noteUpdateManyArgs>(args: SelectSubset<T, intervention_noteUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends InterventionNoteUpdateManyArgs>(args: SelectSubset<T, InterventionNoteUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create or update one Intervention_note.
-     * @param {intervention_noteUpsertArgs} args - Arguments to update or create a Intervention_note.
+     * Create or update one InterventionNote.
+     * @param {InterventionNoteUpsertArgs} args - Arguments to update or create a InterventionNote.
      * @example
-     * // Update or create a Intervention_note
-     * const intervention_note = await prisma.intervention_note.upsert({
+     * // Update or create a InterventionNote
+     * const interventionNote = await prisma.interventionNote.upsert({
      *   create: {
-     *     // ... data to create a Intervention_note
+     *     // ... data to create a InterventionNote
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Intervention_note we want to update
+     *     // ... the filter for the InterventionNote we want to update
      *   }
      * })
      */
-    upsert<T extends intervention_noteUpsertArgs>(args: SelectSubset<T, intervention_noteUpsertArgs<ExtArgs>>): Prisma__intervention_noteClient<$Result.GetResult<Prisma.$intervention_notePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends InterventionNoteUpsertArgs>(args: SelectSubset<T, InterventionNoteUpsertArgs<ExtArgs>>): Prisma__InterventionNoteClient<$Result.GetResult<Prisma.$InterventionNotePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
 
     /**
-     * Count the number of Intervention_notes.
+     * Count the number of InterventionNotes.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteCountArgs} args - Arguments to filter Intervention_notes to count.
+     * @param {InterventionNoteCountArgs} args - Arguments to filter InterventionNotes to count.
      * @example
-     * // Count the number of Intervention_notes
-     * const count = await prisma.intervention_note.count({
+     * // Count the number of InterventionNotes
+     * const count = await prisma.interventionNote.count({
      *   where: {
-     *     // ... the filter for the Intervention_notes we want to count
+     *     // ... the filter for the InterventionNotes we want to count
      *   }
      * })
     **/
-    count<T extends intervention_noteCountArgs>(
-      args?: Subset<T, intervention_noteCountArgs>,
+    count<T extends InterventionNoteCountArgs>(
+      args?: Subset<T, InterventionNoteCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], Intervention_noteCountAggregateOutputType>
+          : GetScalarType<T['select'], InterventionNoteCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Intervention_note.
+     * Allows you to perform aggregations operations on a InterventionNote.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {Intervention_noteAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {InterventionNoteAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -5923,13 +5930,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends Intervention_noteAggregateArgs>(args: Subset<T, Intervention_noteAggregateArgs>): Prisma.PrismaPromise<GetIntervention_noteAggregateType<T>>
+    aggregate<T extends InterventionNoteAggregateArgs>(args: Subset<T, InterventionNoteAggregateArgs>): Prisma.PrismaPromise<GetInterventionNoteAggregateType<T>>
 
     /**
-     * Group by Intervention_note.
+     * Group by InterventionNote.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {intervention_noteGroupByArgs} args - Group by arguments.
+     * @param {InterventionNoteGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -5944,14 +5951,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends intervention_noteGroupByArgs,
+      T extends InterventionNoteGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: intervention_noteGroupByArgs['orderBy'] }
-        : { orderBy?: intervention_noteGroupByArgs['orderBy'] },
+        ? { orderBy: InterventionNoteGroupByArgs['orderBy'] }
+        : { orderBy?: InterventionNoteGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -6000,22 +6007,22 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, intervention_noteGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetIntervention_noteGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, InterventionNoteGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInterventionNoteGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the intervention_note model
+   * Fields of the InterventionNote model
    */
-  readonly fields: intervention_noteFieldRefs;
+  readonly fields: InterventionNoteFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for intervention_note.
+   * The delegate class that acts as a "Promise-like" for InterventionNote.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__intervention_noteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__InterventionNoteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    intervention<T extends interventionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, interventionDefaultArgs<ExtArgs>>): Prisma__interventionClient<$Result.GetResult<Prisma.$interventionPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    intervention<T extends InterventionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InterventionDefaultArgs<ExtArgs>>): Prisma__InterventionClient<$Result.GetResult<Prisma.$InterventionPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6042,343 +6049,343 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the intervention_note model
+   * Fields of the InterventionNote model
    */ 
-  interface intervention_noteFieldRefs {
-    readonly id: FieldRef<"intervention_note", 'String'>
-    readonly intervention_id: FieldRef<"intervention_note", 'String'>
-    readonly teacher_id: FieldRef<"intervention_note", 'String'>
-    readonly content: FieldRef<"intervention_note", 'String'>
-    readonly created_at: FieldRef<"intervention_note", 'DateTime'>
+  interface InterventionNoteFieldRefs {
+    readonly id: FieldRef<"InterventionNote", 'String'>
+    readonly intervention_id: FieldRef<"InterventionNote", 'String'>
+    readonly teacher_id: FieldRef<"InterventionNote", 'String'>
+    readonly content: FieldRef<"InterventionNote", 'String'>
+    readonly created_at: FieldRef<"InterventionNote", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * intervention_note findUnique
+   * InterventionNote findUnique
    */
-  export type intervention_noteFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter, which intervention_note to fetch.
+     * Filter, which InterventionNote to fetch.
      */
-    where: intervention_noteWhereUniqueInput
+    where: InterventionNoteWhereUniqueInput
   }
 
   /**
-   * intervention_note findUniqueOrThrow
+   * InterventionNote findUniqueOrThrow
    */
-  export type intervention_noteFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter, which intervention_note to fetch.
+     * Filter, which InterventionNote to fetch.
      */
-    where: intervention_noteWhereUniqueInput
+    where: InterventionNoteWhereUniqueInput
   }
 
   /**
-   * intervention_note findFirst
+   * InterventionNote findFirst
    */
-  export type intervention_noteFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter, which intervention_note to fetch.
+     * Filter, which InterventionNote to fetch.
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of intervention_notes to fetch.
+     * Determine the order of InterventionNotes to fetch.
      */
-    orderBy?: intervention_noteOrderByWithRelationInput | intervention_noteOrderByWithRelationInput[]
+    orderBy?: InterventionNoteOrderByWithRelationInput | InterventionNoteOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for intervention_notes.
+     * Sets the position for searching for InterventionNotes.
      */
-    cursor?: intervention_noteWhereUniqueInput
+    cursor?: InterventionNoteWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` intervention_notes from the position of the cursor.
+     * Take `±n` InterventionNotes from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` intervention_notes.
+     * Skip the first `n` InterventionNotes.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of intervention_notes.
+     * Filter by unique combinations of InterventionNotes.
      */
-    distinct?: Intervention_noteScalarFieldEnum | Intervention_noteScalarFieldEnum[]
+    distinct?: InterventionNoteScalarFieldEnum | InterventionNoteScalarFieldEnum[]
   }
 
   /**
-   * intervention_note findFirstOrThrow
+   * InterventionNote findFirstOrThrow
    */
-  export type intervention_noteFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter, which intervention_note to fetch.
+     * Filter, which InterventionNote to fetch.
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of intervention_notes to fetch.
+     * Determine the order of InterventionNotes to fetch.
      */
-    orderBy?: intervention_noteOrderByWithRelationInput | intervention_noteOrderByWithRelationInput[]
+    orderBy?: InterventionNoteOrderByWithRelationInput | InterventionNoteOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for intervention_notes.
+     * Sets the position for searching for InterventionNotes.
      */
-    cursor?: intervention_noteWhereUniqueInput
+    cursor?: InterventionNoteWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` intervention_notes from the position of the cursor.
+     * Take `±n` InterventionNotes from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` intervention_notes.
+     * Skip the first `n` InterventionNotes.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of intervention_notes.
+     * Filter by unique combinations of InterventionNotes.
      */
-    distinct?: Intervention_noteScalarFieldEnum | Intervention_noteScalarFieldEnum[]
+    distinct?: InterventionNoteScalarFieldEnum | InterventionNoteScalarFieldEnum[]
   }
 
   /**
-   * intervention_note findMany
+   * InterventionNote findMany
    */
-  export type intervention_noteFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter, which intervention_notes to fetch.
+     * Filter, which InterventionNotes to fetch.
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of intervention_notes to fetch.
+     * Determine the order of InterventionNotes to fetch.
      */
-    orderBy?: intervention_noteOrderByWithRelationInput | intervention_noteOrderByWithRelationInput[]
+    orderBy?: InterventionNoteOrderByWithRelationInput | InterventionNoteOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing intervention_notes.
+     * Sets the position for listing InterventionNotes.
      */
-    cursor?: intervention_noteWhereUniqueInput
+    cursor?: InterventionNoteWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` intervention_notes from the position of the cursor.
+     * Take `±n` InterventionNotes from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` intervention_notes.
+     * Skip the first `n` InterventionNotes.
      */
     skip?: number
-    distinct?: Intervention_noteScalarFieldEnum | Intervention_noteScalarFieldEnum[]
+    distinct?: InterventionNoteScalarFieldEnum | InterventionNoteScalarFieldEnum[]
   }
 
   /**
-   * intervention_note create
+   * InterventionNote create
    */
-  export type intervention_noteCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * The data needed to create a intervention_note.
+     * The data needed to create a InterventionNote.
      */
-    data: XOR<intervention_noteCreateInput, intervention_noteUncheckedCreateInput>
+    data: XOR<InterventionNoteCreateInput, InterventionNoteUncheckedCreateInput>
   }
 
   /**
-   * intervention_note createMany
+   * InterventionNote createMany
    */
-  export type intervention_noteCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many intervention_notes.
+     * The data used to create many InterventionNotes.
      */
-    data: intervention_noteCreateManyInput | intervention_noteCreateManyInput[]
+    data: InterventionNoteCreateManyInput | InterventionNoteCreateManyInput[]
     skipDuplicates?: boolean
   }
 
   /**
-   * intervention_note createManyAndReturn
+   * InterventionNote createManyAndReturn
    */
-  export type intervention_noteCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelectCreateManyAndReturn<ExtArgs> | null
+    select?: InterventionNoteSelectCreateManyAndReturn<ExtArgs> | null
     /**
-     * The data used to create many intervention_notes.
+     * The data used to create many InterventionNotes.
      */
-    data: intervention_noteCreateManyInput | intervention_noteCreateManyInput[]
+    data: InterventionNoteCreateManyInput | InterventionNoteCreateManyInput[]
     skipDuplicates?: boolean
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteIncludeCreateManyAndReturn<ExtArgs> | null
+    include?: InterventionNoteIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
-   * intervention_note update
+   * InterventionNote update
    */
-  export type intervention_noteUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * The data needed to update a intervention_note.
+     * The data needed to update a InterventionNote.
      */
-    data: XOR<intervention_noteUpdateInput, intervention_noteUncheckedUpdateInput>
+    data: XOR<InterventionNoteUpdateInput, InterventionNoteUncheckedUpdateInput>
     /**
-     * Choose, which intervention_note to update.
+     * Choose, which InterventionNote to update.
      */
-    where: intervention_noteWhereUniqueInput
+    where: InterventionNoteWhereUniqueInput
   }
 
   /**
-   * intervention_note updateMany
+   * InterventionNote updateMany
    */
-  export type intervention_noteUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update intervention_notes.
+     * The data used to update InterventionNotes.
      */
-    data: XOR<intervention_noteUpdateManyMutationInput, intervention_noteUncheckedUpdateManyInput>
+    data: XOR<InterventionNoteUpdateManyMutationInput, InterventionNoteUncheckedUpdateManyInput>
     /**
-     * Filter which intervention_notes to update
+     * Filter which InterventionNotes to update
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
   }
 
   /**
-   * intervention_note upsert
+   * InterventionNote upsert
    */
-  export type intervention_noteUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * The filter to search for the intervention_note to update in case it exists.
+     * The filter to search for the InterventionNote to update in case it exists.
      */
-    where: intervention_noteWhereUniqueInput
+    where: InterventionNoteWhereUniqueInput
     /**
-     * In case the intervention_note found by the `where` argument doesn't exist, create a new intervention_note with this data.
+     * In case the InterventionNote found by the `where` argument doesn't exist, create a new InterventionNote with this data.
      */
-    create: XOR<intervention_noteCreateInput, intervention_noteUncheckedCreateInput>
+    create: XOR<InterventionNoteCreateInput, InterventionNoteUncheckedCreateInput>
     /**
-     * In case the intervention_note was found with the provided `where` argument, update it with this data.
+     * In case the InterventionNote was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<intervention_noteUpdateInput, intervention_noteUncheckedUpdateInput>
+    update: XOR<InterventionNoteUpdateInput, InterventionNoteUncheckedUpdateInput>
   }
 
   /**
-   * intervention_note delete
+   * InterventionNote delete
    */
-  export type intervention_noteDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
     /**
-     * Filter which intervention_note to delete.
+     * Filter which InterventionNote to delete.
      */
-    where: intervention_noteWhereUniqueInput
+    where: InterventionNoteWhereUniqueInput
   }
 
   /**
-   * intervention_note deleteMany
+   * InterventionNote deleteMany
    */
-  export type intervention_noteDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which intervention_notes to delete
+     * Filter which InterventionNotes to delete
      */
-    where?: intervention_noteWhereInput
+    where?: InterventionNoteWhereInput
   }
 
   /**
-   * intervention_note without action
+   * InterventionNote without action
    */
-  export type intervention_noteDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type InterventionNoteDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the intervention_note
+     * Select specific fields to fetch from the InterventionNote
      */
-    select?: intervention_noteSelect<ExtArgs> | null
+    select?: InterventionNoteSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: intervention_noteInclude<ExtArgs> | null
+    include?: InterventionNoteInclude<ExtArgs> | null
   }
 
 
@@ -6424,7 +6431,7 @@ export namespace Prisma {
   export type DiagnosisScalarFieldEnum = (typeof DiagnosisScalarFieldEnum)[keyof typeof DiagnosisScalarFieldEnum]
 
 
-  export const EvidenceScalarFieldEnum: {
+  export const EvidenceItemScalarFieldEnum: {
     id: 'id',
     diagnosis_id: 'diagnosis_id',
     item_id: 'item_id',
@@ -6435,7 +6442,7 @@ export namespace Prisma {
     created_at: 'created_at'
   };
 
-  export type EvidenceScalarFieldEnum = (typeof EvidenceScalarFieldEnum)[keyof typeof EvidenceScalarFieldEnum]
+  export type EvidenceItemScalarFieldEnum = (typeof EvidenceItemScalarFieldEnum)[keyof typeof EvidenceItemScalarFieldEnum]
 
 
   export const InterventionScalarFieldEnum: {
@@ -6453,7 +6460,7 @@ export namespace Prisma {
   export type InterventionScalarFieldEnum = (typeof InterventionScalarFieldEnum)[keyof typeof InterventionScalarFieldEnum]
 
 
-  export const Intervention_noteScalarFieldEnum: {
+  export const InterventionNoteScalarFieldEnum: {
     id: 'id',
     intervention_id: 'intervention_id',
     teacher_id: 'teacher_id',
@@ -6461,7 +6468,7 @@ export namespace Prisma {
     created_at: 'created_at'
   };
 
-  export type Intervention_noteScalarFieldEnum = (typeof Intervention_noteScalarFieldEnum)[keyof typeof Intervention_noteScalarFieldEnum]
+  export type InterventionNoteScalarFieldEnum = (typeof InterventionNoteScalarFieldEnum)[keyof typeof InterventionNoteScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -6550,16 +6557,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'diagnosis_status'
+   * Reference to a field of type 'DiagnosisStatus'
    */
-  export type Enumdiagnosis_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'diagnosis_status'>
+  export type EnumDiagnosisStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiagnosisStatus'>
     
 
 
   /**
-   * Reference to a field of type 'diagnosis_status[]'
+   * Reference to a field of type 'DiagnosisStatus[]'
    */
-  export type ListEnumdiagnosis_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'diagnosis_status[]'>
+  export type ListEnumDiagnosisStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DiagnosisStatus[]'>
     
 
 
@@ -6571,53 +6578,53 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'evidence_quality'
+   * Reference to a field of type 'EvidenceQuality'
    */
-  export type Enumevidence_qualityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'evidence_quality'>
+  export type EnumEvidenceQualityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EvidenceQuality'>
     
 
 
   /**
-   * Reference to a field of type 'evidence_quality[]'
+   * Reference to a field of type 'EvidenceQuality[]'
    */
-  export type ListEnumevidence_qualityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'evidence_quality[]'>
+  export type ListEnumEvidenceQualityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EvidenceQuality[]'>
     
 
 
   /**
-   * Reference to a field of type 'intervention_status'
+   * Reference to a field of type 'InterventionStatus'
    */
-  export type Enumintervention_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'intervention_status'>
+  export type EnumInterventionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InterventionStatus'>
     
 
 
   /**
-   * Reference to a field of type 'intervention_status[]'
+   * Reference to a field of type 'InterventionStatus[]'
    */
-  export type ListEnumintervention_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'intervention_status[]'>
+  export type ListEnumInterventionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InterventionStatus[]'>
     
   /**
    * Deep Input Types
    */
 
 
-  export type skillWhereInput = {
-    AND?: skillWhereInput | skillWhereInput[]
-    OR?: skillWhereInput[]
-    NOT?: skillWhereInput | skillWhereInput[]
-    id?: StringFilter<"skill"> | string
-    code?: StringFilter<"skill"> | string
-    name?: StringFilter<"skill"> | string
-    difficulty?: IntFilter<"skill"> | number
-    description?: StringNullableFilter<"skill"> | string | null
-    prereq_skills?: StringNullableListFilter<"skill">
-    created_at?: DateTimeFilter<"skill"> | Date | string
-    updated_at?: DateTimeFilter<"skill"> | Date | string
+  export type SkillWhereInput = {
+    AND?: SkillWhereInput | SkillWhereInput[]
+    OR?: SkillWhereInput[]
+    NOT?: SkillWhereInput | SkillWhereInput[]
+    id?: StringFilter<"Skill"> | string
+    code?: StringFilter<"Skill"> | string
+    name?: StringFilter<"Skill"> | string
+    difficulty?: IntFilter<"Skill"> | number
+    description?: StringNullableFilter<"Skill"> | string | null
+    prereq_skills?: StringNullableListFilter<"Skill">
+    created_at?: DateTimeFilter<"Skill"> | Date | string
+    updated_at?: DateTimeFilter<"Skill"> | Date | string
     diagnoses?: DiagnosisListRelationFilter
     interventions?: InterventionListRelationFilter
   }
 
-  export type skillOrderByWithRelationInput = {
+  export type SkillOrderByWithRelationInput = {
     id?: SortOrder
     code?: SortOrder
     name?: SortOrder
@@ -6626,27 +6633,27 @@ export namespace Prisma {
     prereq_skills?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
-    diagnoses?: diagnosisOrderByRelationAggregateInput
-    interventions?: interventionOrderByRelationAggregateInput
+    diagnoses?: DiagnosisOrderByRelationAggregateInput
+    interventions?: InterventionOrderByRelationAggregateInput
   }
 
-  export type skillWhereUniqueInput = Prisma.AtLeast<{
+  export type SkillWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     code?: string
-    AND?: skillWhereInput | skillWhereInput[]
-    OR?: skillWhereInput[]
-    NOT?: skillWhereInput | skillWhereInput[]
-    name?: StringFilter<"skill"> | string
-    difficulty?: IntFilter<"skill"> | number
-    description?: StringNullableFilter<"skill"> | string | null
-    prereq_skills?: StringNullableListFilter<"skill">
-    created_at?: DateTimeFilter<"skill"> | Date | string
-    updated_at?: DateTimeFilter<"skill"> | Date | string
+    AND?: SkillWhereInput | SkillWhereInput[]
+    OR?: SkillWhereInput[]
+    NOT?: SkillWhereInput | SkillWhereInput[]
+    name?: StringFilter<"Skill"> | string
+    difficulty?: IntFilter<"Skill"> | number
+    description?: StringNullableFilter<"Skill"> | string | null
+    prereq_skills?: StringNullableListFilter<"Skill">
+    created_at?: DateTimeFilter<"Skill"> | Date | string
+    updated_at?: DateTimeFilter<"Skill"> | Date | string
     diagnoses?: DiagnosisListRelationFilter
     interventions?: InterventionListRelationFilter
   }, "id" | "code">
 
-  export type skillOrderByWithAggregationInput = {
+  export type SkillOrderByWithAggregationInput = {
     id?: SortOrder
     code?: SortOrder
     name?: SortOrder
@@ -6655,44 +6662,44 @@ export namespace Prisma {
     prereq_skills?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
-    _count?: skillCountOrderByAggregateInput
-    _avg?: skillAvgOrderByAggregateInput
-    _max?: skillMaxOrderByAggregateInput
-    _min?: skillMinOrderByAggregateInput
-    _sum?: skillSumOrderByAggregateInput
+    _count?: SkillCountOrderByAggregateInput
+    _avg?: SkillAvgOrderByAggregateInput
+    _max?: SkillMaxOrderByAggregateInput
+    _min?: SkillMinOrderByAggregateInput
+    _sum?: SkillSumOrderByAggregateInput
   }
 
-  export type skillScalarWhereWithAggregatesInput = {
-    AND?: skillScalarWhereWithAggregatesInput | skillScalarWhereWithAggregatesInput[]
-    OR?: skillScalarWhereWithAggregatesInput[]
-    NOT?: skillScalarWhereWithAggregatesInput | skillScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"skill"> | string
-    code?: StringWithAggregatesFilter<"skill"> | string
-    name?: StringWithAggregatesFilter<"skill"> | string
-    difficulty?: IntWithAggregatesFilter<"skill"> | number
-    description?: StringNullableWithAggregatesFilter<"skill"> | string | null
-    prereq_skills?: StringNullableListFilter<"skill">
-    created_at?: DateTimeWithAggregatesFilter<"skill"> | Date | string
-    updated_at?: DateTimeWithAggregatesFilter<"skill"> | Date | string
+  export type SkillScalarWhereWithAggregatesInput = {
+    AND?: SkillScalarWhereWithAggregatesInput | SkillScalarWhereWithAggregatesInput[]
+    OR?: SkillScalarWhereWithAggregatesInput[]
+    NOT?: SkillScalarWhereWithAggregatesInput | SkillScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Skill"> | string
+    code?: StringWithAggregatesFilter<"Skill"> | string
+    name?: StringWithAggregatesFilter<"Skill"> | string
+    difficulty?: IntWithAggregatesFilter<"Skill"> | number
+    description?: StringNullableWithAggregatesFilter<"Skill"> | string | null
+    prereq_skills?: StringNullableListFilter<"Skill">
+    created_at?: DateTimeWithAggregatesFilter<"Skill"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"Skill"> | Date | string
   }
 
-  export type diagnosisWhereInput = {
-    AND?: diagnosisWhereInput | diagnosisWhereInput[]
-    OR?: diagnosisWhereInput[]
-    NOT?: diagnosisWhereInput | diagnosisWhereInput[]
-    id?: StringFilter<"diagnosis"> | string
-    student_id?: StringFilter<"diagnosis"> | string
-    skill_id?: StringFilter<"diagnosis"> | string
-    p_known?: FloatFilter<"diagnosis"> | number
-    confidence?: FloatFilter<"diagnosis"> | number
-    status?: Enumdiagnosis_statusFilter<"diagnosis"> | $Enums.diagnosis_status
-    created_at?: DateTimeFilter<"diagnosis"> | Date | string
-    updated_at?: DateTimeFilter<"diagnosis"> | Date | string
-    skill?: XOR<SkillRelationFilter, skillWhereInput>
-    evidence?: EvidenceListRelationFilter
+  export type DiagnosisWhereInput = {
+    AND?: DiagnosisWhereInput | DiagnosisWhereInput[]
+    OR?: DiagnosisWhereInput[]
+    NOT?: DiagnosisWhereInput | DiagnosisWhereInput[]
+    id?: StringFilter<"Diagnosis"> | string
+    student_id?: StringFilter<"Diagnosis"> | string
+    skill_id?: StringFilter<"Diagnosis"> | string
+    p_known?: FloatFilter<"Diagnosis"> | number
+    confidence?: FloatFilter<"Diagnosis"> | number
+    status?: EnumDiagnosisStatusFilter<"Diagnosis"> | $Enums.DiagnosisStatus
+    created_at?: DateTimeFilter<"Diagnosis"> | Date | string
+    updated_at?: DateTimeFilter<"Diagnosis"> | Date | string
+    skill?: XOR<SkillRelationFilter, SkillWhereInput>
+    evidence?: EvidenceItemListRelationFilter
   }
 
-  export type diagnosisOrderByWithRelationInput = {
+  export type DiagnosisOrderByWithRelationInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -6701,27 +6708,28 @@ export namespace Prisma {
     status?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
-    skill?: skillOrderByWithRelationInput
-    evidence?: evidenceOrderByRelationAggregateInput
+    skill?: SkillOrderByWithRelationInput
+    evidence?: EvidenceItemOrderByRelationAggregateInput
   }
 
-  export type diagnosisWhereUniqueInput = Prisma.AtLeast<{
+  export type DiagnosisWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    AND?: diagnosisWhereInput | diagnosisWhereInput[]
-    OR?: diagnosisWhereInput[]
-    NOT?: diagnosisWhereInput | diagnosisWhereInput[]
-    student_id?: StringFilter<"diagnosis"> | string
-    skill_id?: StringFilter<"diagnosis"> | string
-    p_known?: FloatFilter<"diagnosis"> | number
-    confidence?: FloatFilter<"diagnosis"> | number
-    status?: Enumdiagnosis_statusFilter<"diagnosis"> | $Enums.diagnosis_status
-    created_at?: DateTimeFilter<"diagnosis"> | Date | string
-    updated_at?: DateTimeFilter<"diagnosis"> | Date | string
-    skill?: XOR<SkillRelationFilter, skillWhereInput>
-    evidence?: EvidenceListRelationFilter
-  }, "id">
+    student_id_skill_id?: DiagnosisStudent_idSkill_idCompoundUniqueInput
+    AND?: DiagnosisWhereInput | DiagnosisWhereInput[]
+    OR?: DiagnosisWhereInput[]
+    NOT?: DiagnosisWhereInput | DiagnosisWhereInput[]
+    student_id?: StringFilter<"Diagnosis"> | string
+    skill_id?: StringFilter<"Diagnosis"> | string
+    p_known?: FloatFilter<"Diagnosis"> | number
+    confidence?: FloatFilter<"Diagnosis"> | number
+    status?: EnumDiagnosisStatusFilter<"Diagnosis"> | $Enums.DiagnosisStatus
+    created_at?: DateTimeFilter<"Diagnosis"> | Date | string
+    updated_at?: DateTimeFilter<"Diagnosis"> | Date | string
+    skill?: XOR<SkillRelationFilter, SkillWhereInput>
+    evidence?: EvidenceItemListRelationFilter
+  }, "id" | "student_id_skill_id">
 
-  export type diagnosisOrderByWithAggregationInput = {
+  export type DiagnosisOrderByWithAggregationInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -6730,117 +6738,117 @@ export namespace Prisma {
     status?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
-    _count?: diagnosisCountOrderByAggregateInput
-    _avg?: diagnosisAvgOrderByAggregateInput
-    _max?: diagnosisMaxOrderByAggregateInput
-    _min?: diagnosisMinOrderByAggregateInput
-    _sum?: diagnosisSumOrderByAggregateInput
+    _count?: DiagnosisCountOrderByAggregateInput
+    _avg?: DiagnosisAvgOrderByAggregateInput
+    _max?: DiagnosisMaxOrderByAggregateInput
+    _min?: DiagnosisMinOrderByAggregateInput
+    _sum?: DiagnosisSumOrderByAggregateInput
   }
 
-  export type diagnosisScalarWhereWithAggregatesInput = {
-    AND?: diagnosisScalarWhereWithAggregatesInput | diagnosisScalarWhereWithAggregatesInput[]
-    OR?: diagnosisScalarWhereWithAggregatesInput[]
-    NOT?: diagnosisScalarWhereWithAggregatesInput | diagnosisScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"diagnosis"> | string
-    student_id?: StringWithAggregatesFilter<"diagnosis"> | string
-    skill_id?: StringWithAggregatesFilter<"diagnosis"> | string
-    p_known?: FloatWithAggregatesFilter<"diagnosis"> | number
-    confidence?: FloatWithAggregatesFilter<"diagnosis"> | number
-    status?: Enumdiagnosis_statusWithAggregatesFilter<"diagnosis"> | $Enums.diagnosis_status
-    created_at?: DateTimeWithAggregatesFilter<"diagnosis"> | Date | string
-    updated_at?: DateTimeWithAggregatesFilter<"diagnosis"> | Date | string
+  export type DiagnosisScalarWhereWithAggregatesInput = {
+    AND?: DiagnosisScalarWhereWithAggregatesInput | DiagnosisScalarWhereWithAggregatesInput[]
+    OR?: DiagnosisScalarWhereWithAggregatesInput[]
+    NOT?: DiagnosisScalarWhereWithAggregatesInput | DiagnosisScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Diagnosis"> | string
+    student_id?: StringWithAggregatesFilter<"Diagnosis"> | string
+    skill_id?: StringWithAggregatesFilter<"Diagnosis"> | string
+    p_known?: FloatWithAggregatesFilter<"Diagnosis"> | number
+    confidence?: FloatWithAggregatesFilter<"Diagnosis"> | number
+    status?: EnumDiagnosisStatusWithAggregatesFilter<"Diagnosis"> | $Enums.DiagnosisStatus
+    created_at?: DateTimeWithAggregatesFilter<"Diagnosis"> | Date | string
+    updated_at?: DateTimeWithAggregatesFilter<"Diagnosis"> | Date | string
   }
 
-  export type evidenceWhereInput = {
-    AND?: evidenceWhereInput | evidenceWhereInput[]
-    OR?: evidenceWhereInput[]
-    NOT?: evidenceWhereInput | evidenceWhereInput[]
-    id?: StringFilter<"evidence"> | string
-    diagnosis_id?: StringFilter<"evidence"> | string
-    item_id?: StringFilter<"evidence"> | string
-    extracted_answer?: StringNullableFilter<"evidence"> | string | null
-    correct?: BoolNullableFilter<"evidence"> | boolean | null
-    confidence?: FloatFilter<"evidence"> | number
-    quality?: Enumevidence_qualityFilter<"evidence"> | $Enums.evidence_quality
-    created_at?: DateTimeFilter<"evidence"> | Date | string
-    diagnosis?: XOR<DiagnosisRelationFilter, diagnosisWhereInput>
+  export type EvidenceItemWhereInput = {
+    AND?: EvidenceItemWhereInput | EvidenceItemWhereInput[]
+    OR?: EvidenceItemWhereInput[]
+    NOT?: EvidenceItemWhereInput | EvidenceItemWhereInput[]
+    id?: StringFilter<"EvidenceItem"> | string
+    diagnosis_id?: StringFilter<"EvidenceItem"> | string
+    item_id?: StringFilter<"EvidenceItem"> | string
+    extracted_answer?: StringNullableFilter<"EvidenceItem"> | string | null
+    correct?: BoolFilter<"EvidenceItem"> | boolean
+    confidence?: FloatFilter<"EvidenceItem"> | number
+    quality?: EnumEvidenceQualityFilter<"EvidenceItem"> | $Enums.EvidenceQuality
+    created_at?: DateTimeFilter<"EvidenceItem"> | Date | string
+    diagnosis?: XOR<DiagnosisRelationFilter, DiagnosisWhereInput>
   }
 
-  export type evidenceOrderByWithRelationInput = {
+  export type EvidenceItemOrderByWithRelationInput = {
     id?: SortOrder
     diagnosis_id?: SortOrder
     item_id?: SortOrder
     extracted_answer?: SortOrderInput | SortOrder
-    correct?: SortOrderInput | SortOrder
+    correct?: SortOrder
     confidence?: SortOrder
     quality?: SortOrder
     created_at?: SortOrder
-    diagnosis?: diagnosisOrderByWithRelationInput
+    diagnosis?: DiagnosisOrderByWithRelationInput
   }
 
-  export type evidenceWhereUniqueInput = Prisma.AtLeast<{
+  export type EvidenceItemWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    AND?: evidenceWhereInput | evidenceWhereInput[]
-    OR?: evidenceWhereInput[]
-    NOT?: evidenceWhereInput | evidenceWhereInput[]
-    diagnosis_id?: StringFilter<"evidence"> | string
-    item_id?: StringFilter<"evidence"> | string
-    extracted_answer?: StringNullableFilter<"evidence"> | string | null
-    correct?: BoolNullableFilter<"evidence"> | boolean | null
-    confidence?: FloatFilter<"evidence"> | number
-    quality?: Enumevidence_qualityFilter<"evidence"> | $Enums.evidence_quality
-    created_at?: DateTimeFilter<"evidence"> | Date | string
-    diagnosis?: XOR<DiagnosisRelationFilter, diagnosisWhereInput>
+    AND?: EvidenceItemWhereInput | EvidenceItemWhereInput[]
+    OR?: EvidenceItemWhereInput[]
+    NOT?: EvidenceItemWhereInput | EvidenceItemWhereInput[]
+    diagnosis_id?: StringFilter<"EvidenceItem"> | string
+    item_id?: StringFilter<"EvidenceItem"> | string
+    extracted_answer?: StringNullableFilter<"EvidenceItem"> | string | null
+    correct?: BoolFilter<"EvidenceItem"> | boolean
+    confidence?: FloatFilter<"EvidenceItem"> | number
+    quality?: EnumEvidenceQualityFilter<"EvidenceItem"> | $Enums.EvidenceQuality
+    created_at?: DateTimeFilter<"EvidenceItem"> | Date | string
+    diagnosis?: XOR<DiagnosisRelationFilter, DiagnosisWhereInput>
   }, "id">
 
-  export type evidenceOrderByWithAggregationInput = {
+  export type EvidenceItemOrderByWithAggregationInput = {
     id?: SortOrder
     diagnosis_id?: SortOrder
     item_id?: SortOrder
     extracted_answer?: SortOrderInput | SortOrder
-    correct?: SortOrderInput | SortOrder
+    correct?: SortOrder
     confidence?: SortOrder
     quality?: SortOrder
     created_at?: SortOrder
-    _count?: evidenceCountOrderByAggregateInput
-    _avg?: evidenceAvgOrderByAggregateInput
-    _max?: evidenceMaxOrderByAggregateInput
-    _min?: evidenceMinOrderByAggregateInput
-    _sum?: evidenceSumOrderByAggregateInput
+    _count?: EvidenceItemCountOrderByAggregateInput
+    _avg?: EvidenceItemAvgOrderByAggregateInput
+    _max?: EvidenceItemMaxOrderByAggregateInput
+    _min?: EvidenceItemMinOrderByAggregateInput
+    _sum?: EvidenceItemSumOrderByAggregateInput
   }
 
-  export type evidenceScalarWhereWithAggregatesInput = {
-    AND?: evidenceScalarWhereWithAggregatesInput | evidenceScalarWhereWithAggregatesInput[]
-    OR?: evidenceScalarWhereWithAggregatesInput[]
-    NOT?: evidenceScalarWhereWithAggregatesInput | evidenceScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"evidence"> | string
-    diagnosis_id?: StringWithAggregatesFilter<"evidence"> | string
-    item_id?: StringWithAggregatesFilter<"evidence"> | string
-    extracted_answer?: StringNullableWithAggregatesFilter<"evidence"> | string | null
-    correct?: BoolNullableWithAggregatesFilter<"evidence"> | boolean | null
-    confidence?: FloatWithAggregatesFilter<"evidence"> | number
-    quality?: Enumevidence_qualityWithAggregatesFilter<"evidence"> | $Enums.evidence_quality
-    created_at?: DateTimeWithAggregatesFilter<"evidence"> | Date | string
+  export type EvidenceItemScalarWhereWithAggregatesInput = {
+    AND?: EvidenceItemScalarWhereWithAggregatesInput | EvidenceItemScalarWhereWithAggregatesInput[]
+    OR?: EvidenceItemScalarWhereWithAggregatesInput[]
+    NOT?: EvidenceItemScalarWhereWithAggregatesInput | EvidenceItemScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"EvidenceItem"> | string
+    diagnosis_id?: StringWithAggregatesFilter<"EvidenceItem"> | string
+    item_id?: StringWithAggregatesFilter<"EvidenceItem"> | string
+    extracted_answer?: StringNullableWithAggregatesFilter<"EvidenceItem"> | string | null
+    correct?: BoolWithAggregatesFilter<"EvidenceItem"> | boolean
+    confidence?: FloatWithAggregatesFilter<"EvidenceItem"> | number
+    quality?: EnumEvidenceQualityWithAggregatesFilter<"EvidenceItem"> | $Enums.EvidenceQuality
+    created_at?: DateTimeWithAggregatesFilter<"EvidenceItem"> | Date | string
   }
 
-  export type interventionWhereInput = {
-    AND?: interventionWhereInput | interventionWhereInput[]
-    OR?: interventionWhereInput[]
-    NOT?: interventionWhereInput | interventionWhereInput[]
-    id?: StringFilter<"intervention"> | string
-    student_id?: StringFilter<"intervention"> | string
-    skill_id?: StringFilter<"intervention"> | string
-    priority?: IntFilter<"intervention"> | number
-    status?: Enumintervention_statusFilter<"intervention"> | $Enums.intervention_status
-    teacher_id?: StringNullableFilter<"intervention"> | string | null
-    notes?: StringNullableFilter<"intervention"> | string | null
-    created_at?: DateTimeFilter<"intervention"> | Date | string
-    resolved_at?: DateTimeNullableFilter<"intervention"> | Date | string | null
-    skill?: XOR<SkillRelationFilter, skillWhereInput>
-    notes_list?: Intervention_noteListRelationFilter
+  export type InterventionWhereInput = {
+    AND?: InterventionWhereInput | InterventionWhereInput[]
+    OR?: InterventionWhereInput[]
+    NOT?: InterventionWhereInput | InterventionWhereInput[]
+    id?: StringFilter<"Intervention"> | string
+    student_id?: StringFilter<"Intervention"> | string
+    skill_id?: StringFilter<"Intervention"> | string
+    priority?: IntFilter<"Intervention"> | number
+    status?: EnumInterventionStatusFilter<"Intervention"> | $Enums.InterventionStatus
+    teacher_id?: StringNullableFilter<"Intervention"> | string | null
+    notes?: StringNullableFilter<"Intervention"> | string | null
+    created_at?: DateTimeFilter<"Intervention"> | Date | string
+    resolved_at?: DateTimeNullableFilter<"Intervention"> | Date | string | null
+    skill?: XOR<SkillRelationFilter, SkillWhereInput>
+    notes_list?: InterventionNoteListRelationFilter
   }
 
-  export type interventionOrderByWithRelationInput = {
+  export type InterventionOrderByWithRelationInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -6850,28 +6858,28 @@ export namespace Prisma {
     notes?: SortOrderInput | SortOrder
     created_at?: SortOrder
     resolved_at?: SortOrderInput | SortOrder
-    skill?: skillOrderByWithRelationInput
-    notes_list?: intervention_noteOrderByRelationAggregateInput
+    skill?: SkillOrderByWithRelationInput
+    notes_list?: InterventionNoteOrderByRelationAggregateInput
   }
 
-  export type interventionWhereUniqueInput = Prisma.AtLeast<{
+  export type InterventionWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    AND?: interventionWhereInput | interventionWhereInput[]
-    OR?: interventionWhereInput[]
-    NOT?: interventionWhereInput | interventionWhereInput[]
-    student_id?: StringFilter<"intervention"> | string
-    skill_id?: StringFilter<"intervention"> | string
-    priority?: IntFilter<"intervention"> | number
-    status?: Enumintervention_statusFilter<"intervention"> | $Enums.intervention_status
-    teacher_id?: StringNullableFilter<"intervention"> | string | null
-    notes?: StringNullableFilter<"intervention"> | string | null
-    created_at?: DateTimeFilter<"intervention"> | Date | string
-    resolved_at?: DateTimeNullableFilter<"intervention"> | Date | string | null
-    skill?: XOR<SkillRelationFilter, skillWhereInput>
-    notes_list?: Intervention_noteListRelationFilter
+    AND?: InterventionWhereInput | InterventionWhereInput[]
+    OR?: InterventionWhereInput[]
+    NOT?: InterventionWhereInput | InterventionWhereInput[]
+    student_id?: StringFilter<"Intervention"> | string
+    skill_id?: StringFilter<"Intervention"> | string
+    priority?: IntFilter<"Intervention"> | number
+    status?: EnumInterventionStatusFilter<"Intervention"> | $Enums.InterventionStatus
+    teacher_id?: StringNullableFilter<"Intervention"> | string | null
+    notes?: StringNullableFilter<"Intervention"> | string | null
+    created_at?: DateTimeFilter<"Intervention"> | Date | string
+    resolved_at?: DateTimeNullableFilter<"Intervention"> | Date | string | null
+    skill?: XOR<SkillRelationFilter, SkillWhereInput>
+    notes_list?: InterventionNoteListRelationFilter
   }, "id">
 
-  export type interventionOrderByWithAggregationInput = {
+  export type InterventionOrderByWithAggregationInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -6881,420 +6889,420 @@ export namespace Prisma {
     notes?: SortOrderInput | SortOrder
     created_at?: SortOrder
     resolved_at?: SortOrderInput | SortOrder
-    _count?: interventionCountOrderByAggregateInput
-    _avg?: interventionAvgOrderByAggregateInput
-    _max?: interventionMaxOrderByAggregateInput
-    _min?: interventionMinOrderByAggregateInput
-    _sum?: interventionSumOrderByAggregateInput
+    _count?: InterventionCountOrderByAggregateInput
+    _avg?: InterventionAvgOrderByAggregateInput
+    _max?: InterventionMaxOrderByAggregateInput
+    _min?: InterventionMinOrderByAggregateInput
+    _sum?: InterventionSumOrderByAggregateInput
   }
 
-  export type interventionScalarWhereWithAggregatesInput = {
-    AND?: interventionScalarWhereWithAggregatesInput | interventionScalarWhereWithAggregatesInput[]
-    OR?: interventionScalarWhereWithAggregatesInput[]
-    NOT?: interventionScalarWhereWithAggregatesInput | interventionScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"intervention"> | string
-    student_id?: StringWithAggregatesFilter<"intervention"> | string
-    skill_id?: StringWithAggregatesFilter<"intervention"> | string
-    priority?: IntWithAggregatesFilter<"intervention"> | number
-    status?: Enumintervention_statusWithAggregatesFilter<"intervention"> | $Enums.intervention_status
-    teacher_id?: StringNullableWithAggregatesFilter<"intervention"> | string | null
-    notes?: StringNullableWithAggregatesFilter<"intervention"> | string | null
-    created_at?: DateTimeWithAggregatesFilter<"intervention"> | Date | string
-    resolved_at?: DateTimeNullableWithAggregatesFilter<"intervention"> | Date | string | null
+  export type InterventionScalarWhereWithAggregatesInput = {
+    AND?: InterventionScalarWhereWithAggregatesInput | InterventionScalarWhereWithAggregatesInput[]
+    OR?: InterventionScalarWhereWithAggregatesInput[]
+    NOT?: InterventionScalarWhereWithAggregatesInput | InterventionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Intervention"> | string
+    student_id?: StringWithAggregatesFilter<"Intervention"> | string
+    skill_id?: StringWithAggregatesFilter<"Intervention"> | string
+    priority?: IntWithAggregatesFilter<"Intervention"> | number
+    status?: EnumInterventionStatusWithAggregatesFilter<"Intervention"> | $Enums.InterventionStatus
+    teacher_id?: StringNullableWithAggregatesFilter<"Intervention"> | string | null
+    notes?: StringNullableWithAggregatesFilter<"Intervention"> | string | null
+    created_at?: DateTimeWithAggregatesFilter<"Intervention"> | Date | string
+    resolved_at?: DateTimeNullableWithAggregatesFilter<"Intervention"> | Date | string | null
   }
 
-  export type intervention_noteWhereInput = {
-    AND?: intervention_noteWhereInput | intervention_noteWhereInput[]
-    OR?: intervention_noteWhereInput[]
-    NOT?: intervention_noteWhereInput | intervention_noteWhereInput[]
-    id?: StringFilter<"intervention_note"> | string
-    intervention_id?: StringFilter<"intervention_note"> | string
-    teacher_id?: StringFilter<"intervention_note"> | string
-    content?: StringFilter<"intervention_note"> | string
-    created_at?: DateTimeFilter<"intervention_note"> | Date | string
-    intervention?: XOR<InterventionRelationFilter, interventionWhereInput>
+  export type InterventionNoteWhereInput = {
+    AND?: InterventionNoteWhereInput | InterventionNoteWhereInput[]
+    OR?: InterventionNoteWhereInput[]
+    NOT?: InterventionNoteWhereInput | InterventionNoteWhereInput[]
+    id?: StringFilter<"InterventionNote"> | string
+    intervention_id?: StringFilter<"InterventionNote"> | string
+    teacher_id?: StringFilter<"InterventionNote"> | string
+    content?: StringFilter<"InterventionNote"> | string
+    created_at?: DateTimeFilter<"InterventionNote"> | Date | string
+    intervention?: XOR<InterventionRelationFilter, InterventionWhereInput>
   }
 
-  export type intervention_noteOrderByWithRelationInput = {
+  export type InterventionNoteOrderByWithRelationInput = {
     id?: SortOrder
     intervention_id?: SortOrder
     teacher_id?: SortOrder
     content?: SortOrder
     created_at?: SortOrder
-    intervention?: interventionOrderByWithRelationInput
+    intervention?: InterventionOrderByWithRelationInput
   }
 
-  export type intervention_noteWhereUniqueInput = Prisma.AtLeast<{
+  export type InterventionNoteWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    AND?: intervention_noteWhereInput | intervention_noteWhereInput[]
-    OR?: intervention_noteWhereInput[]
-    NOT?: intervention_noteWhereInput | intervention_noteWhereInput[]
-    intervention_id?: StringFilter<"intervention_note"> | string
-    teacher_id?: StringFilter<"intervention_note"> | string
-    content?: StringFilter<"intervention_note"> | string
-    created_at?: DateTimeFilter<"intervention_note"> | Date | string
-    intervention?: XOR<InterventionRelationFilter, interventionWhereInput>
+    AND?: InterventionNoteWhereInput | InterventionNoteWhereInput[]
+    OR?: InterventionNoteWhereInput[]
+    NOT?: InterventionNoteWhereInput | InterventionNoteWhereInput[]
+    intervention_id?: StringFilter<"InterventionNote"> | string
+    teacher_id?: StringFilter<"InterventionNote"> | string
+    content?: StringFilter<"InterventionNote"> | string
+    created_at?: DateTimeFilter<"InterventionNote"> | Date | string
+    intervention?: XOR<InterventionRelationFilter, InterventionWhereInput>
   }, "id">
 
-  export type intervention_noteOrderByWithAggregationInput = {
+  export type InterventionNoteOrderByWithAggregationInput = {
     id?: SortOrder
     intervention_id?: SortOrder
     teacher_id?: SortOrder
     content?: SortOrder
     created_at?: SortOrder
-    _count?: intervention_noteCountOrderByAggregateInput
-    _max?: intervention_noteMaxOrderByAggregateInput
-    _min?: intervention_noteMinOrderByAggregateInput
+    _count?: InterventionNoteCountOrderByAggregateInput
+    _max?: InterventionNoteMaxOrderByAggregateInput
+    _min?: InterventionNoteMinOrderByAggregateInput
   }
 
-  export type intervention_noteScalarWhereWithAggregatesInput = {
-    AND?: intervention_noteScalarWhereWithAggregatesInput | intervention_noteScalarWhereWithAggregatesInput[]
-    OR?: intervention_noteScalarWhereWithAggregatesInput[]
-    NOT?: intervention_noteScalarWhereWithAggregatesInput | intervention_noteScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"intervention_note"> | string
-    intervention_id?: StringWithAggregatesFilter<"intervention_note"> | string
-    teacher_id?: StringWithAggregatesFilter<"intervention_note"> | string
-    content?: StringWithAggregatesFilter<"intervention_note"> | string
-    created_at?: DateTimeWithAggregatesFilter<"intervention_note"> | Date | string
+  export type InterventionNoteScalarWhereWithAggregatesInput = {
+    AND?: InterventionNoteScalarWhereWithAggregatesInput | InterventionNoteScalarWhereWithAggregatesInput[]
+    OR?: InterventionNoteScalarWhereWithAggregatesInput[]
+    NOT?: InterventionNoteScalarWhereWithAggregatesInput | InterventionNoteScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"InterventionNote"> | string
+    intervention_id?: StringWithAggregatesFilter<"InterventionNote"> | string
+    teacher_id?: StringWithAggregatesFilter<"InterventionNote"> | string
+    content?: StringWithAggregatesFilter<"InterventionNote"> | string
+    created_at?: DateTimeWithAggregatesFilter<"InterventionNote"> | Date | string
   }
 
-  export type skillCreateInput = {
+  export type SkillCreateInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    diagnoses?: diagnosisCreateNestedManyWithoutSkillInput
-    interventions?: interventionCreateNestedManyWithoutSkillInput
+    diagnoses?: DiagnosisCreateNestedManyWithoutSkillInput
+    interventions?: InterventionCreateNestedManyWithoutSkillInput
   }
 
-  export type skillUncheckedCreateInput = {
+  export type SkillUncheckedCreateInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    diagnoses?: diagnosisUncheckedCreateNestedManyWithoutSkillInput
-    interventions?: interventionUncheckedCreateNestedManyWithoutSkillInput
+    diagnoses?: DiagnosisUncheckedCreateNestedManyWithoutSkillInput
+    interventions?: InterventionUncheckedCreateNestedManyWithoutSkillInput
   }
 
-  export type skillUpdateInput = {
+  export type SkillUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    diagnoses?: diagnosisUpdateManyWithoutSkillNestedInput
-    interventions?: interventionUpdateManyWithoutSkillNestedInput
+    diagnoses?: DiagnosisUpdateManyWithoutSkillNestedInput
+    interventions?: InterventionUpdateManyWithoutSkillNestedInput
   }
 
-  export type skillUncheckedUpdateInput = {
+  export type SkillUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    diagnoses?: diagnosisUncheckedUpdateManyWithoutSkillNestedInput
-    interventions?: interventionUncheckedUpdateManyWithoutSkillNestedInput
+    diagnoses?: DiagnosisUncheckedUpdateManyWithoutSkillNestedInput
+    interventions?: InterventionUncheckedUpdateManyWithoutSkillNestedInput
   }
 
-  export type skillCreateManyInput = {
+  export type SkillCreateManyInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
   }
 
-  export type skillUpdateManyMutationInput = {
+  export type SkillUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type skillUncheckedUpdateManyInput = {
+  export type SkillUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type diagnosisCreateInput = {
+  export type DiagnosisCreateInput = {
     id?: string
     student_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
-    skill: skillCreateNestedOneWithoutDiagnosesInput
-    evidence?: evidenceCreateNestedManyWithoutDiagnosisInput
+    skill: SkillCreateNestedOneWithoutDiagnosesInput
+    evidence?: EvidenceItemCreateNestedManyWithoutDiagnosisInput
   }
 
-  export type diagnosisUncheckedCreateInput = {
-    id?: string
-    student_id: string
-    skill_id: string
-    p_known?: number
-    confidence?: number
-    status?: $Enums.diagnosis_status
-    created_at?: Date | string
-    updated_at?: Date | string
-    evidence?: evidenceUncheckedCreateNestedManyWithoutDiagnosisInput
-  }
-
-  export type diagnosisUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
-    p_known?: FloatFieldUpdateOperationsInput | number
-    confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
-    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    skill?: skillUpdateOneRequiredWithoutDiagnosesNestedInput
-    evidence?: evidenceUpdateManyWithoutDiagnosisNestedInput
-  }
-
-  export type diagnosisUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
-    skill_id?: StringFieldUpdateOperationsInput | string
-    p_known?: FloatFieldUpdateOperationsInput | number
-    confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
-    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    evidence?: evidenceUncheckedUpdateManyWithoutDiagnosisNestedInput
-  }
-
-  export type diagnosisCreateManyInput = {
+  export type DiagnosisUncheckedCreateInput = {
     id?: string
     student_id: string
     skill_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
+    evidence?: EvidenceItemUncheckedCreateNestedManyWithoutDiagnosisInput
   }
 
-  export type diagnosisUpdateManyMutationInput = {
+  export type DiagnosisUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    skill?: SkillUpdateOneRequiredWithoutDiagnosesNestedInput
+    evidence?: EvidenceItemUpdateManyWithoutDiagnosisNestedInput
   }
 
-  export type diagnosisUncheckedUpdateManyInput = {
+  export type DiagnosisUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     skill_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    evidence?: EvidenceItemUncheckedUpdateManyWithoutDiagnosisNestedInput
+  }
+
+  export type DiagnosisCreateManyInput = {
+    id?: string
+    student_id: string
+    skill_id: string
+    p_known?: number
+    confidence?: number
+    status?: $Enums.DiagnosisStatus
+    created_at?: Date | string
+    updated_at?: Date | string
+  }
+
+  export type DiagnosisUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    student_id?: StringFieldUpdateOperationsInput | string
+    p_known?: FloatFieldUpdateOperationsInput | number
+    confidence?: FloatFieldUpdateOperationsInput | number
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type evidenceCreateInput = {
+  export type DiagnosisUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    student_id?: StringFieldUpdateOperationsInput | string
+    skill_id?: StringFieldUpdateOperationsInput | string
+    p_known?: FloatFieldUpdateOperationsInput | number
+    confidence?: FloatFieldUpdateOperationsInput | number
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EvidenceItemCreateInput = {
     id?: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
-    diagnosis: diagnosisCreateNestedOneWithoutEvidenceInput
+    diagnosis: DiagnosisCreateNestedOneWithoutEvidenceInput
   }
 
-  export type evidenceUncheckedCreateInput = {
+  export type EvidenceItemUncheckedCreateInput = {
     id?: string
     diagnosis_id: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
   }
 
-  export type evidenceUpdateInput = {
+  export type EvidenceItemUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    diagnosis?: diagnosisUpdateOneRequiredWithoutEvidenceNestedInput
+    diagnosis?: DiagnosisUpdateOneRequiredWithoutEvidenceNestedInput
   }
 
-  export type evidenceUncheckedUpdateInput = {
+  export type EvidenceItemUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     diagnosis_id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type evidenceCreateManyInput = {
+  export type EvidenceItemCreateManyInput = {
     id?: string
     diagnosis_id: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
   }
 
-  export type evidenceUpdateManyMutationInput = {
+  export type EvidenceItemUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type evidenceUncheckedUpdateManyInput = {
+  export type EvidenceItemUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     diagnosis_id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type interventionCreateInput = {
+  export type InterventionCreateInput = {
     id?: string
     student_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
-    skill: skillCreateNestedOneWithoutInterventionsInput
-    notes_list?: intervention_noteCreateNestedManyWithoutInterventionInput
+    skill: SkillCreateNestedOneWithoutInterventionsInput
+    notes_list?: InterventionNoteCreateNestedManyWithoutInterventionInput
   }
 
-  export type interventionUncheckedCreateInput = {
-    id?: string
-    student_id: string
-    skill_id: string
-    priority?: number
-    status?: $Enums.intervention_status
-    teacher_id?: string | null
-    notes?: string | null
-    created_at?: Date | string
-    resolved_at?: Date | string | null
-    notes_list?: intervention_noteUncheckedCreateNestedManyWithoutInterventionInput
-  }
-
-  export type interventionUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
-    priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
-    teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    skill?: skillUpdateOneRequiredWithoutInterventionsNestedInput
-    notes_list?: intervention_noteUpdateManyWithoutInterventionNestedInput
-  }
-
-  export type interventionUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
-    student_id?: StringFieldUpdateOperationsInput | string
-    skill_id?: StringFieldUpdateOperationsInput | string
-    priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
-    teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    notes_list?: intervention_noteUncheckedUpdateManyWithoutInterventionNestedInput
-  }
-
-  export type interventionCreateManyInput = {
+  export type InterventionUncheckedCreateInput = {
     id?: string
     student_id: string
     skill_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
+    teacher_id?: string | null
+    notes?: string | null
+    created_at?: Date | string
+    resolved_at?: Date | string | null
+    notes_list?: InterventionNoteUncheckedCreateNestedManyWithoutInterventionInput
+  }
+
+  export type InterventionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    student_id?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
+    teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    skill?: SkillUpdateOneRequiredWithoutInterventionsNestedInput
+    notes_list?: InterventionNoteUpdateManyWithoutInterventionNestedInput
+  }
+
+  export type InterventionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    student_id?: StringFieldUpdateOperationsInput | string
+    skill_id?: StringFieldUpdateOperationsInput | string
+    priority?: IntFieldUpdateOperationsInput | number
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
+    teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    created_at?: DateTimeFieldUpdateOperationsInput | Date | string
+    resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes_list?: InterventionNoteUncheckedUpdateManyWithoutInterventionNestedInput
+  }
+
+  export type InterventionCreateManyInput = {
+    id?: string
+    student_id: string
+    skill_id: string
+    priority?: number
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
   }
 
-  export type interventionUpdateManyMutationInput = {
+  export type InterventionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type interventionUncheckedUpdateManyInput = {
+  export type InterventionUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     skill_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type intervention_noteCreateInput = {
+  export type InterventionNoteCreateInput = {
     id?: string
     teacher_id: string
     content: string
     created_at?: Date | string
-    intervention: interventionCreateNestedOneWithoutNotes_listInput
+    intervention: InterventionCreateNestedOneWithoutNotes_listInput
   }
 
-  export type intervention_noteUncheckedCreateInput = {
+  export type InterventionNoteUncheckedCreateInput = {
     id?: string
     intervention_id: string
     teacher_id: string
@@ -7302,15 +7310,15 @@ export namespace Prisma {
     created_at?: Date | string
   }
 
-  export type intervention_noteUpdateInput = {
+  export type InterventionNoteUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    intervention?: interventionUpdateOneRequiredWithoutNotes_listNestedInput
+    intervention?: InterventionUpdateOneRequiredWithoutNotes_listNestedInput
   }
 
-  export type intervention_noteUncheckedUpdateInput = {
+  export type InterventionNoteUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     intervention_id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
@@ -7318,7 +7326,7 @@ export namespace Prisma {
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type intervention_noteCreateManyInput = {
+  export type InterventionNoteCreateManyInput = {
     id?: string
     intervention_id: string
     teacher_id: string
@@ -7326,14 +7334,14 @@ export namespace Prisma {
     created_at?: Date | string
   }
 
-  export type intervention_noteUpdateManyMutationInput = {
+  export type InterventionNoteUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type intervention_noteUncheckedUpdateManyInput = {
+  export type InterventionNoteUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     intervention_id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
@@ -7402,15 +7410,15 @@ export namespace Prisma {
   }
 
   export type DiagnosisListRelationFilter = {
-    every?: diagnosisWhereInput
-    some?: diagnosisWhereInput
-    none?: diagnosisWhereInput
+    every?: DiagnosisWhereInput
+    some?: DiagnosisWhereInput
+    none?: DiagnosisWhereInput
   }
 
   export type InterventionListRelationFilter = {
-    every?: interventionWhereInput
-    some?: interventionWhereInput
-    none?: interventionWhereInput
+    every?: InterventionWhereInput
+    some?: InterventionWhereInput
+    none?: InterventionWhereInput
   }
 
   export type SortOrderInput = {
@@ -7418,15 +7426,15 @@ export namespace Prisma {
     nulls?: NullsOrder
   }
 
-  export type diagnosisOrderByRelationAggregateInput = {
+  export type DiagnosisOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
-  export type interventionOrderByRelationAggregateInput = {
+  export type InterventionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
-  export type skillCountOrderByAggregateInput = {
+  export type SkillCountOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
     name?: SortOrder
@@ -7437,11 +7445,11 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type skillAvgOrderByAggregateInput = {
+  export type SkillAvgOrderByAggregateInput = {
     difficulty?: SortOrder
   }
 
-  export type skillMaxOrderByAggregateInput = {
+  export type SkillMaxOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
     name?: SortOrder
@@ -7451,7 +7459,7 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type skillMinOrderByAggregateInput = {
+  export type SkillMinOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
     name?: SortOrder
@@ -7461,7 +7469,7 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type skillSumOrderByAggregateInput = {
+  export type SkillSumOrderByAggregateInput = {
     difficulty?: SortOrder
   }
 
@@ -7542,29 +7550,34 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type Enumdiagnosis_statusFilter<$PrismaModel = never> = {
-    equals?: $Enums.diagnosis_status | Enumdiagnosis_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumdiagnosis_statusFilter<$PrismaModel> | $Enums.diagnosis_status
+  export type EnumDiagnosisStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiagnosisStatus | EnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiagnosisStatusFilter<$PrismaModel> | $Enums.DiagnosisStatus
   }
 
   export type SkillRelationFilter = {
-    is?: skillWhereInput
-    isNot?: skillWhereInput
+    is?: SkillWhereInput
+    isNot?: SkillWhereInput
   }
 
-  export type EvidenceListRelationFilter = {
-    every?: evidenceWhereInput
-    some?: evidenceWhereInput
-    none?: evidenceWhereInput
+  export type EvidenceItemListRelationFilter = {
+    every?: EvidenceItemWhereInput
+    some?: EvidenceItemWhereInput
+    none?: EvidenceItemWhereInput
   }
 
-  export type evidenceOrderByRelationAggregateInput = {
+  export type EvidenceItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
-  export type diagnosisCountOrderByAggregateInput = {
+  export type DiagnosisStudent_idSkill_idCompoundUniqueInput = {
+    student_id: string
+    skill_id: string
+  }
+
+  export type DiagnosisCountOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7575,12 +7588,12 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type diagnosisAvgOrderByAggregateInput = {
+  export type DiagnosisAvgOrderByAggregateInput = {
     p_known?: SortOrder
     confidence?: SortOrder
   }
 
-  export type diagnosisMaxOrderByAggregateInput = {
+  export type DiagnosisMaxOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7591,7 +7604,7 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type diagnosisMinOrderByAggregateInput = {
+  export type DiagnosisMinOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7602,7 +7615,7 @@ export namespace Prisma {
     updated_at?: SortOrder
   }
 
-  export type diagnosisSumOrderByAggregateInput = {
+  export type DiagnosisSumOrderByAggregateInput = {
     p_known?: SortOrder
     confidence?: SortOrder
   }
@@ -7623,34 +7636,34 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
-  export type Enumdiagnosis_statusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.diagnosis_status | Enumdiagnosis_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumdiagnosis_statusWithAggregatesFilter<$PrismaModel> | $Enums.diagnosis_status
+  export type EnumDiagnosisStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiagnosisStatus | EnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiagnosisStatusWithAggregatesFilter<$PrismaModel> | $Enums.DiagnosisStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumdiagnosis_statusFilter<$PrismaModel>
-    _max?: NestedEnumdiagnosis_statusFilter<$PrismaModel>
+    _min?: NestedEnumDiagnosisStatusFilter<$PrismaModel>
+    _max?: NestedEnumDiagnosisStatusFilter<$PrismaModel>
   }
 
-  export type BoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type Enumevidence_qualityFilter<$PrismaModel = never> = {
-    equals?: $Enums.evidence_quality | Enumevidence_qualityFieldRefInput<$PrismaModel>
-    in?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    not?: NestedEnumevidence_qualityFilter<$PrismaModel> | $Enums.evidence_quality
+  export type EnumEvidenceQualityFilter<$PrismaModel = never> = {
+    equals?: $Enums.EvidenceQuality | EnumEvidenceQualityFieldRefInput<$PrismaModel>
+    in?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    notIn?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    not?: NestedEnumEvidenceQualityFilter<$PrismaModel> | $Enums.EvidenceQuality
   }
 
   export type DiagnosisRelationFilter = {
-    is?: diagnosisWhereInput
-    isNot?: diagnosisWhereInput
+    is?: DiagnosisWhereInput
+    isNot?: DiagnosisWhereInput
   }
 
-  export type evidenceCountOrderByAggregateInput = {
+  export type EvidenceItemCountOrderByAggregateInput = {
     id?: SortOrder
     diagnosis_id?: SortOrder
     item_id?: SortOrder
@@ -7661,11 +7674,11 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type evidenceAvgOrderByAggregateInput = {
+  export type EvidenceItemAvgOrderByAggregateInput = {
     confidence?: SortOrder
   }
 
-  export type evidenceMaxOrderByAggregateInput = {
+  export type EvidenceItemMaxOrderByAggregateInput = {
     id?: SortOrder
     diagnosis_id?: SortOrder
     item_id?: SortOrder
@@ -7676,7 +7689,7 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type evidenceMinOrderByAggregateInput = {
+  export type EvidenceItemMinOrderByAggregateInput = {
     id?: SortOrder
     diagnosis_id?: SortOrder
     item_id?: SortOrder
@@ -7687,33 +7700,33 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type evidenceSumOrderByAggregateInput = {
+  export type EvidenceItemSumOrderByAggregateInput = {
     confidence?: SortOrder
   }
 
-  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
-  }
-
-  export type Enumevidence_qualityWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.evidence_quality | Enumevidence_qualityFieldRefInput<$PrismaModel>
-    in?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    not?: NestedEnumevidence_qualityWithAggregatesFilter<$PrismaModel> | $Enums.evidence_quality
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumevidence_qualityFilter<$PrismaModel>
-    _max?: NestedEnumevidence_qualityFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type Enumintervention_statusFilter<$PrismaModel = never> = {
-    equals?: $Enums.intervention_status | Enumintervention_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumintervention_statusFilter<$PrismaModel> | $Enums.intervention_status
+  export type EnumEvidenceQualityWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EvidenceQuality | EnumEvidenceQualityFieldRefInput<$PrismaModel>
+    in?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    notIn?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    not?: NestedEnumEvidenceQualityWithAggregatesFilter<$PrismaModel> | $Enums.EvidenceQuality
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEvidenceQualityFilter<$PrismaModel>
+    _max?: NestedEnumEvidenceQualityFilter<$PrismaModel>
+  }
+
+  export type EnumInterventionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.InterventionStatus | EnumInterventionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInterventionStatusFilter<$PrismaModel> | $Enums.InterventionStatus
   }
 
   export type DateTimeNullableFilter<$PrismaModel = never> = {
@@ -7727,17 +7740,17 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
-  export type Intervention_noteListRelationFilter = {
-    every?: intervention_noteWhereInput
-    some?: intervention_noteWhereInput
-    none?: intervention_noteWhereInput
+  export type InterventionNoteListRelationFilter = {
+    every?: InterventionNoteWhereInput
+    some?: InterventionNoteWhereInput
+    none?: InterventionNoteWhereInput
   }
 
-  export type intervention_noteOrderByRelationAggregateInput = {
+  export type InterventionNoteOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
-  export type interventionCountOrderByAggregateInput = {
+  export type InterventionCountOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7749,11 +7762,11 @@ export namespace Prisma {
     resolved_at?: SortOrder
   }
 
-  export type interventionAvgOrderByAggregateInput = {
+  export type InterventionAvgOrderByAggregateInput = {
     priority?: SortOrder
   }
 
-  export type interventionMaxOrderByAggregateInput = {
+  export type InterventionMaxOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7765,7 +7778,7 @@ export namespace Prisma {
     resolved_at?: SortOrder
   }
 
-  export type interventionMinOrderByAggregateInput = {
+  export type InterventionMinOrderByAggregateInput = {
     id?: SortOrder
     student_id?: SortOrder
     skill_id?: SortOrder
@@ -7777,18 +7790,18 @@ export namespace Prisma {
     resolved_at?: SortOrder
   }
 
-  export type interventionSumOrderByAggregateInput = {
+  export type InterventionSumOrderByAggregateInput = {
     priority?: SortOrder
   }
 
-  export type Enumintervention_statusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.intervention_status | Enumintervention_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumintervention_statusWithAggregatesFilter<$PrismaModel> | $Enums.intervention_status
+  export type EnumInterventionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.InterventionStatus | EnumInterventionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInterventionStatusWithAggregatesFilter<$PrismaModel> | $Enums.InterventionStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumintervention_statusFilter<$PrismaModel>
-    _max?: NestedEnumintervention_statusFilter<$PrismaModel>
+    _min?: NestedEnumInterventionStatusFilter<$PrismaModel>
+    _max?: NestedEnumInterventionStatusFilter<$PrismaModel>
   }
 
   export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -7806,11 +7819,11 @@ export namespace Prisma {
   }
 
   export type InterventionRelationFilter = {
-    is?: interventionWhereInput
-    isNot?: interventionWhereInput
+    is?: InterventionWhereInput
+    isNot?: InterventionWhereInput
   }
 
-  export type intervention_noteCountOrderByAggregateInput = {
+  export type InterventionNoteCountOrderByAggregateInput = {
     id?: SortOrder
     intervention_id?: SortOrder
     teacher_id?: SortOrder
@@ -7818,7 +7831,7 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type intervention_noteMaxOrderByAggregateInput = {
+  export type InterventionNoteMaxOrderByAggregateInput = {
     id?: SortOrder
     intervention_id?: SortOrder
     teacher_id?: SortOrder
@@ -7826,7 +7839,7 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type intervention_noteMinOrderByAggregateInput = {
+  export type InterventionNoteMinOrderByAggregateInput = {
     id?: SortOrder
     intervention_id?: SortOrder
     teacher_id?: SortOrder
@@ -7834,36 +7847,36 @@ export namespace Prisma {
     created_at?: SortOrder
   }
 
-  export type skillCreateprereq_skillsInput = {
+  export type SkillCreateprereq_skillsInput = {
     set: string[]
   }
 
-  export type diagnosisCreateNestedManyWithoutSkillInput = {
-    create?: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput> | diagnosisCreateWithoutSkillInput[] | diagnosisUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: diagnosisCreateOrConnectWithoutSkillInput | diagnosisCreateOrConnectWithoutSkillInput[]
-    createMany?: diagnosisCreateManySkillInputEnvelope
-    connect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
+  export type DiagnosisCreateNestedManyWithoutSkillInput = {
+    create?: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput> | DiagnosisCreateWithoutSkillInput[] | DiagnosisUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutSkillInput | DiagnosisCreateOrConnectWithoutSkillInput[]
+    createMany?: DiagnosisCreateManySkillInputEnvelope
+    connect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
   }
 
-  export type interventionCreateNestedManyWithoutSkillInput = {
-    create?: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput> | interventionCreateWithoutSkillInput[] | interventionUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: interventionCreateOrConnectWithoutSkillInput | interventionCreateOrConnectWithoutSkillInput[]
-    createMany?: interventionCreateManySkillInputEnvelope
-    connect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
+  export type InterventionCreateNestedManyWithoutSkillInput = {
+    create?: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput> | InterventionCreateWithoutSkillInput[] | InterventionUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: InterventionCreateOrConnectWithoutSkillInput | InterventionCreateOrConnectWithoutSkillInput[]
+    createMany?: InterventionCreateManySkillInputEnvelope
+    connect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
   }
 
-  export type diagnosisUncheckedCreateNestedManyWithoutSkillInput = {
-    create?: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput> | diagnosisCreateWithoutSkillInput[] | diagnosisUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: diagnosisCreateOrConnectWithoutSkillInput | diagnosisCreateOrConnectWithoutSkillInput[]
-    createMany?: diagnosisCreateManySkillInputEnvelope
-    connect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
+  export type DiagnosisUncheckedCreateNestedManyWithoutSkillInput = {
+    create?: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput> | DiagnosisCreateWithoutSkillInput[] | DiagnosisUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutSkillInput | DiagnosisCreateOrConnectWithoutSkillInput[]
+    createMany?: DiagnosisCreateManySkillInputEnvelope
+    connect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
   }
 
-  export type interventionUncheckedCreateNestedManyWithoutSkillInput = {
-    create?: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput> | interventionCreateWithoutSkillInput[] | interventionUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: interventionCreateOrConnectWithoutSkillInput | interventionCreateOrConnectWithoutSkillInput[]
-    createMany?: interventionCreateManySkillInputEnvelope
-    connect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
+  export type InterventionUncheckedCreateNestedManyWithoutSkillInput = {
+    create?: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput> | InterventionCreateWithoutSkillInput[] | InterventionUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: InterventionCreateOrConnectWithoutSkillInput | InterventionCreateOrConnectWithoutSkillInput[]
+    createMany?: InterventionCreateManySkillInputEnvelope
+    connect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -7882,7 +7895,7 @@ export namespace Prisma {
     set?: string | null
   }
 
-  export type skillUpdateprereq_skillsInput = {
+  export type SkillUpdateprereq_skillsInput = {
     set?: string[]
     push?: string | string[]
   }
@@ -7891,80 +7904,80 @@ export namespace Prisma {
     set?: Date | string
   }
 
-  export type diagnosisUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput> | diagnosisCreateWithoutSkillInput[] | diagnosisUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: diagnosisCreateOrConnectWithoutSkillInput | diagnosisCreateOrConnectWithoutSkillInput[]
-    upsert?: diagnosisUpsertWithWhereUniqueWithoutSkillInput | diagnosisUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: diagnosisCreateManySkillInputEnvelope
-    set?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    disconnect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    delete?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    connect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    update?: diagnosisUpdateWithWhereUniqueWithoutSkillInput | diagnosisUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: diagnosisUpdateManyWithWhereWithoutSkillInput | diagnosisUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: diagnosisScalarWhereInput | diagnosisScalarWhereInput[]
+  export type DiagnosisUpdateManyWithoutSkillNestedInput = {
+    create?: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput> | DiagnosisCreateWithoutSkillInput[] | DiagnosisUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutSkillInput | DiagnosisCreateOrConnectWithoutSkillInput[]
+    upsert?: DiagnosisUpsertWithWhereUniqueWithoutSkillInput | DiagnosisUpsertWithWhereUniqueWithoutSkillInput[]
+    createMany?: DiagnosisCreateManySkillInputEnvelope
+    set?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    disconnect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    delete?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    connect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    update?: DiagnosisUpdateWithWhereUniqueWithoutSkillInput | DiagnosisUpdateWithWhereUniqueWithoutSkillInput[]
+    updateMany?: DiagnosisUpdateManyWithWhereWithoutSkillInput | DiagnosisUpdateManyWithWhereWithoutSkillInput[]
+    deleteMany?: DiagnosisScalarWhereInput | DiagnosisScalarWhereInput[]
   }
 
-  export type interventionUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput> | interventionCreateWithoutSkillInput[] | interventionUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: interventionCreateOrConnectWithoutSkillInput | interventionCreateOrConnectWithoutSkillInput[]
-    upsert?: interventionUpsertWithWhereUniqueWithoutSkillInput | interventionUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: interventionCreateManySkillInputEnvelope
-    set?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    disconnect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    delete?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    connect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    update?: interventionUpdateWithWhereUniqueWithoutSkillInput | interventionUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: interventionUpdateManyWithWhereWithoutSkillInput | interventionUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: interventionScalarWhereInput | interventionScalarWhereInput[]
+  export type InterventionUpdateManyWithoutSkillNestedInput = {
+    create?: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput> | InterventionCreateWithoutSkillInput[] | InterventionUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: InterventionCreateOrConnectWithoutSkillInput | InterventionCreateOrConnectWithoutSkillInput[]
+    upsert?: InterventionUpsertWithWhereUniqueWithoutSkillInput | InterventionUpsertWithWhereUniqueWithoutSkillInput[]
+    createMany?: InterventionCreateManySkillInputEnvelope
+    set?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    disconnect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    delete?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    connect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    update?: InterventionUpdateWithWhereUniqueWithoutSkillInput | InterventionUpdateWithWhereUniqueWithoutSkillInput[]
+    updateMany?: InterventionUpdateManyWithWhereWithoutSkillInput | InterventionUpdateManyWithWhereWithoutSkillInput[]
+    deleteMany?: InterventionScalarWhereInput | InterventionScalarWhereInput[]
   }
 
-  export type diagnosisUncheckedUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput> | diagnosisCreateWithoutSkillInput[] | diagnosisUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: diagnosisCreateOrConnectWithoutSkillInput | diagnosisCreateOrConnectWithoutSkillInput[]
-    upsert?: diagnosisUpsertWithWhereUniqueWithoutSkillInput | diagnosisUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: diagnosisCreateManySkillInputEnvelope
-    set?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    disconnect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    delete?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    connect?: diagnosisWhereUniqueInput | diagnosisWhereUniqueInput[]
-    update?: diagnosisUpdateWithWhereUniqueWithoutSkillInput | diagnosisUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: diagnosisUpdateManyWithWhereWithoutSkillInput | diagnosisUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: diagnosisScalarWhereInput | diagnosisScalarWhereInput[]
+  export type DiagnosisUncheckedUpdateManyWithoutSkillNestedInput = {
+    create?: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput> | DiagnosisCreateWithoutSkillInput[] | DiagnosisUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutSkillInput | DiagnosisCreateOrConnectWithoutSkillInput[]
+    upsert?: DiagnosisUpsertWithWhereUniqueWithoutSkillInput | DiagnosisUpsertWithWhereUniqueWithoutSkillInput[]
+    createMany?: DiagnosisCreateManySkillInputEnvelope
+    set?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    disconnect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    delete?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    connect?: DiagnosisWhereUniqueInput | DiagnosisWhereUniqueInput[]
+    update?: DiagnosisUpdateWithWhereUniqueWithoutSkillInput | DiagnosisUpdateWithWhereUniqueWithoutSkillInput[]
+    updateMany?: DiagnosisUpdateManyWithWhereWithoutSkillInput | DiagnosisUpdateManyWithWhereWithoutSkillInput[]
+    deleteMany?: DiagnosisScalarWhereInput | DiagnosisScalarWhereInput[]
   }
 
-  export type interventionUncheckedUpdateManyWithoutSkillNestedInput = {
-    create?: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput> | interventionCreateWithoutSkillInput[] | interventionUncheckedCreateWithoutSkillInput[]
-    connectOrCreate?: interventionCreateOrConnectWithoutSkillInput | interventionCreateOrConnectWithoutSkillInput[]
-    upsert?: interventionUpsertWithWhereUniqueWithoutSkillInput | interventionUpsertWithWhereUniqueWithoutSkillInput[]
-    createMany?: interventionCreateManySkillInputEnvelope
-    set?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    disconnect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    delete?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    connect?: interventionWhereUniqueInput | interventionWhereUniqueInput[]
-    update?: interventionUpdateWithWhereUniqueWithoutSkillInput | interventionUpdateWithWhereUniqueWithoutSkillInput[]
-    updateMany?: interventionUpdateManyWithWhereWithoutSkillInput | interventionUpdateManyWithWhereWithoutSkillInput[]
-    deleteMany?: interventionScalarWhereInput | interventionScalarWhereInput[]
+  export type InterventionUncheckedUpdateManyWithoutSkillNestedInput = {
+    create?: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput> | InterventionCreateWithoutSkillInput[] | InterventionUncheckedCreateWithoutSkillInput[]
+    connectOrCreate?: InterventionCreateOrConnectWithoutSkillInput | InterventionCreateOrConnectWithoutSkillInput[]
+    upsert?: InterventionUpsertWithWhereUniqueWithoutSkillInput | InterventionUpsertWithWhereUniqueWithoutSkillInput[]
+    createMany?: InterventionCreateManySkillInputEnvelope
+    set?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    disconnect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    delete?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    connect?: InterventionWhereUniqueInput | InterventionWhereUniqueInput[]
+    update?: InterventionUpdateWithWhereUniqueWithoutSkillInput | InterventionUpdateWithWhereUniqueWithoutSkillInput[]
+    updateMany?: InterventionUpdateManyWithWhereWithoutSkillInput | InterventionUpdateManyWithWhereWithoutSkillInput[]
+    deleteMany?: InterventionScalarWhereInput | InterventionScalarWhereInput[]
   }
 
-  export type skillCreateNestedOneWithoutDiagnosesInput = {
-    create?: XOR<skillCreateWithoutDiagnosesInput, skillUncheckedCreateWithoutDiagnosesInput>
-    connectOrCreate?: skillCreateOrConnectWithoutDiagnosesInput
-    connect?: skillWhereUniqueInput
+  export type SkillCreateNestedOneWithoutDiagnosesInput = {
+    create?: XOR<SkillCreateWithoutDiagnosesInput, SkillUncheckedCreateWithoutDiagnosesInput>
+    connectOrCreate?: SkillCreateOrConnectWithoutDiagnosesInput
+    connect?: SkillWhereUniqueInput
   }
 
-  export type evidenceCreateNestedManyWithoutDiagnosisInput = {
-    create?: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput> | evidenceCreateWithoutDiagnosisInput[] | evidenceUncheckedCreateWithoutDiagnosisInput[]
-    connectOrCreate?: evidenceCreateOrConnectWithoutDiagnosisInput | evidenceCreateOrConnectWithoutDiagnosisInput[]
-    createMany?: evidenceCreateManyDiagnosisInputEnvelope
-    connect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
+  export type EvidenceItemCreateNestedManyWithoutDiagnosisInput = {
+    create?: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput> | EvidenceItemCreateWithoutDiagnosisInput[] | EvidenceItemUncheckedCreateWithoutDiagnosisInput[]
+    connectOrCreate?: EvidenceItemCreateOrConnectWithoutDiagnosisInput | EvidenceItemCreateOrConnectWithoutDiagnosisInput[]
+    createMany?: EvidenceItemCreateManyDiagnosisInputEnvelope
+    connect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
   }
 
-  export type evidenceUncheckedCreateNestedManyWithoutDiagnosisInput = {
-    create?: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput> | evidenceCreateWithoutDiagnosisInput[] | evidenceUncheckedCreateWithoutDiagnosisInput[]
-    connectOrCreate?: evidenceCreateOrConnectWithoutDiagnosisInput | evidenceCreateOrConnectWithoutDiagnosisInput[]
-    createMany?: evidenceCreateManyDiagnosisInputEnvelope
-    connect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
+  export type EvidenceItemUncheckedCreateNestedManyWithoutDiagnosisInput = {
+    create?: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput> | EvidenceItemCreateWithoutDiagnosisInput[] | EvidenceItemUncheckedCreateWithoutDiagnosisInput[]
+    connectOrCreate?: EvidenceItemCreateOrConnectWithoutDiagnosisInput | EvidenceItemCreateOrConnectWithoutDiagnosisInput[]
+    createMany?: EvidenceItemCreateManyDiagnosisInputEnvelope
+    connect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
   }
 
   export type FloatFieldUpdateOperationsInput = {
@@ -7975,144 +7988,144 @@ export namespace Prisma {
     divide?: number
   }
 
-  export type Enumdiagnosis_statusFieldUpdateOperationsInput = {
-    set?: $Enums.diagnosis_status
+  export type EnumDiagnosisStatusFieldUpdateOperationsInput = {
+    set?: $Enums.DiagnosisStatus
   }
 
-  export type skillUpdateOneRequiredWithoutDiagnosesNestedInput = {
-    create?: XOR<skillCreateWithoutDiagnosesInput, skillUncheckedCreateWithoutDiagnosesInput>
-    connectOrCreate?: skillCreateOrConnectWithoutDiagnosesInput
-    upsert?: skillUpsertWithoutDiagnosesInput
-    connect?: skillWhereUniqueInput
-    update?: XOR<XOR<skillUpdateToOneWithWhereWithoutDiagnosesInput, skillUpdateWithoutDiagnosesInput>, skillUncheckedUpdateWithoutDiagnosesInput>
+  export type SkillUpdateOneRequiredWithoutDiagnosesNestedInput = {
+    create?: XOR<SkillCreateWithoutDiagnosesInput, SkillUncheckedCreateWithoutDiagnosesInput>
+    connectOrCreate?: SkillCreateOrConnectWithoutDiagnosesInput
+    upsert?: SkillUpsertWithoutDiagnosesInput
+    connect?: SkillWhereUniqueInput
+    update?: XOR<XOR<SkillUpdateToOneWithWhereWithoutDiagnosesInput, SkillUpdateWithoutDiagnosesInput>, SkillUncheckedUpdateWithoutDiagnosesInput>
   }
 
-  export type evidenceUpdateManyWithoutDiagnosisNestedInput = {
-    create?: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput> | evidenceCreateWithoutDiagnosisInput[] | evidenceUncheckedCreateWithoutDiagnosisInput[]
-    connectOrCreate?: evidenceCreateOrConnectWithoutDiagnosisInput | evidenceCreateOrConnectWithoutDiagnosisInput[]
-    upsert?: evidenceUpsertWithWhereUniqueWithoutDiagnosisInput | evidenceUpsertWithWhereUniqueWithoutDiagnosisInput[]
-    createMany?: evidenceCreateManyDiagnosisInputEnvelope
-    set?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    disconnect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    delete?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    connect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    update?: evidenceUpdateWithWhereUniqueWithoutDiagnosisInput | evidenceUpdateWithWhereUniqueWithoutDiagnosisInput[]
-    updateMany?: evidenceUpdateManyWithWhereWithoutDiagnosisInput | evidenceUpdateManyWithWhereWithoutDiagnosisInput[]
-    deleteMany?: evidenceScalarWhereInput | evidenceScalarWhereInput[]
+  export type EvidenceItemUpdateManyWithoutDiagnosisNestedInput = {
+    create?: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput> | EvidenceItemCreateWithoutDiagnosisInput[] | EvidenceItemUncheckedCreateWithoutDiagnosisInput[]
+    connectOrCreate?: EvidenceItemCreateOrConnectWithoutDiagnosisInput | EvidenceItemCreateOrConnectWithoutDiagnosisInput[]
+    upsert?: EvidenceItemUpsertWithWhereUniqueWithoutDiagnosisInput | EvidenceItemUpsertWithWhereUniqueWithoutDiagnosisInput[]
+    createMany?: EvidenceItemCreateManyDiagnosisInputEnvelope
+    set?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    disconnect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    delete?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    connect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    update?: EvidenceItemUpdateWithWhereUniqueWithoutDiagnosisInput | EvidenceItemUpdateWithWhereUniqueWithoutDiagnosisInput[]
+    updateMany?: EvidenceItemUpdateManyWithWhereWithoutDiagnosisInput | EvidenceItemUpdateManyWithWhereWithoutDiagnosisInput[]
+    deleteMany?: EvidenceItemScalarWhereInput | EvidenceItemScalarWhereInput[]
   }
 
-  export type evidenceUncheckedUpdateManyWithoutDiagnosisNestedInput = {
-    create?: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput> | evidenceCreateWithoutDiagnosisInput[] | evidenceUncheckedCreateWithoutDiagnosisInput[]
-    connectOrCreate?: evidenceCreateOrConnectWithoutDiagnosisInput | evidenceCreateOrConnectWithoutDiagnosisInput[]
-    upsert?: evidenceUpsertWithWhereUniqueWithoutDiagnosisInput | evidenceUpsertWithWhereUniqueWithoutDiagnosisInput[]
-    createMany?: evidenceCreateManyDiagnosisInputEnvelope
-    set?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    disconnect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    delete?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    connect?: evidenceWhereUniqueInput | evidenceWhereUniqueInput[]
-    update?: evidenceUpdateWithWhereUniqueWithoutDiagnosisInput | evidenceUpdateWithWhereUniqueWithoutDiagnosisInput[]
-    updateMany?: evidenceUpdateManyWithWhereWithoutDiagnosisInput | evidenceUpdateManyWithWhereWithoutDiagnosisInput[]
-    deleteMany?: evidenceScalarWhereInput | evidenceScalarWhereInput[]
+  export type EvidenceItemUncheckedUpdateManyWithoutDiagnosisNestedInput = {
+    create?: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput> | EvidenceItemCreateWithoutDiagnosisInput[] | EvidenceItemUncheckedCreateWithoutDiagnosisInput[]
+    connectOrCreate?: EvidenceItemCreateOrConnectWithoutDiagnosisInput | EvidenceItemCreateOrConnectWithoutDiagnosisInput[]
+    upsert?: EvidenceItemUpsertWithWhereUniqueWithoutDiagnosisInput | EvidenceItemUpsertWithWhereUniqueWithoutDiagnosisInput[]
+    createMany?: EvidenceItemCreateManyDiagnosisInputEnvelope
+    set?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    disconnect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    delete?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    connect?: EvidenceItemWhereUniqueInput | EvidenceItemWhereUniqueInput[]
+    update?: EvidenceItemUpdateWithWhereUniqueWithoutDiagnosisInput | EvidenceItemUpdateWithWhereUniqueWithoutDiagnosisInput[]
+    updateMany?: EvidenceItemUpdateManyWithWhereWithoutDiagnosisInput | EvidenceItemUpdateManyWithWhereWithoutDiagnosisInput[]
+    deleteMany?: EvidenceItemScalarWhereInput | EvidenceItemScalarWhereInput[]
   }
 
-  export type diagnosisCreateNestedOneWithoutEvidenceInput = {
-    create?: XOR<diagnosisCreateWithoutEvidenceInput, diagnosisUncheckedCreateWithoutEvidenceInput>
-    connectOrCreate?: diagnosisCreateOrConnectWithoutEvidenceInput
-    connect?: diagnosisWhereUniqueInput
+  export type DiagnosisCreateNestedOneWithoutEvidenceInput = {
+    create?: XOR<DiagnosisCreateWithoutEvidenceInput, DiagnosisUncheckedCreateWithoutEvidenceInput>
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutEvidenceInput
+    connect?: DiagnosisWhereUniqueInput
   }
 
-  export type NullableBoolFieldUpdateOperationsInput = {
-    set?: boolean | null
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
-  export type Enumevidence_qualityFieldUpdateOperationsInput = {
-    set?: $Enums.evidence_quality
+  export type EnumEvidenceQualityFieldUpdateOperationsInput = {
+    set?: $Enums.EvidenceQuality
   }
 
-  export type diagnosisUpdateOneRequiredWithoutEvidenceNestedInput = {
-    create?: XOR<diagnosisCreateWithoutEvidenceInput, diagnosisUncheckedCreateWithoutEvidenceInput>
-    connectOrCreate?: diagnosisCreateOrConnectWithoutEvidenceInput
-    upsert?: diagnosisUpsertWithoutEvidenceInput
-    connect?: diagnosisWhereUniqueInput
-    update?: XOR<XOR<diagnosisUpdateToOneWithWhereWithoutEvidenceInput, diagnosisUpdateWithoutEvidenceInput>, diagnosisUncheckedUpdateWithoutEvidenceInput>
+  export type DiagnosisUpdateOneRequiredWithoutEvidenceNestedInput = {
+    create?: XOR<DiagnosisCreateWithoutEvidenceInput, DiagnosisUncheckedCreateWithoutEvidenceInput>
+    connectOrCreate?: DiagnosisCreateOrConnectWithoutEvidenceInput
+    upsert?: DiagnosisUpsertWithoutEvidenceInput
+    connect?: DiagnosisWhereUniqueInput
+    update?: XOR<XOR<DiagnosisUpdateToOneWithWhereWithoutEvidenceInput, DiagnosisUpdateWithoutEvidenceInput>, DiagnosisUncheckedUpdateWithoutEvidenceInput>
   }
 
-  export type skillCreateNestedOneWithoutInterventionsInput = {
-    create?: XOR<skillCreateWithoutInterventionsInput, skillUncheckedCreateWithoutInterventionsInput>
-    connectOrCreate?: skillCreateOrConnectWithoutInterventionsInput
-    connect?: skillWhereUniqueInput
+  export type SkillCreateNestedOneWithoutInterventionsInput = {
+    create?: XOR<SkillCreateWithoutInterventionsInput, SkillUncheckedCreateWithoutInterventionsInput>
+    connectOrCreate?: SkillCreateOrConnectWithoutInterventionsInput
+    connect?: SkillWhereUniqueInput
   }
 
-  export type intervention_noteCreateNestedManyWithoutInterventionInput = {
-    create?: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput> | intervention_noteCreateWithoutInterventionInput[] | intervention_noteUncheckedCreateWithoutInterventionInput[]
-    connectOrCreate?: intervention_noteCreateOrConnectWithoutInterventionInput | intervention_noteCreateOrConnectWithoutInterventionInput[]
-    createMany?: intervention_noteCreateManyInterventionInputEnvelope
-    connect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
+  export type InterventionNoteCreateNestedManyWithoutInterventionInput = {
+    create?: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput> | InterventionNoteCreateWithoutInterventionInput[] | InterventionNoteUncheckedCreateWithoutInterventionInput[]
+    connectOrCreate?: InterventionNoteCreateOrConnectWithoutInterventionInput | InterventionNoteCreateOrConnectWithoutInterventionInput[]
+    createMany?: InterventionNoteCreateManyInterventionInputEnvelope
+    connect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
   }
 
-  export type intervention_noteUncheckedCreateNestedManyWithoutInterventionInput = {
-    create?: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput> | intervention_noteCreateWithoutInterventionInput[] | intervention_noteUncheckedCreateWithoutInterventionInput[]
-    connectOrCreate?: intervention_noteCreateOrConnectWithoutInterventionInput | intervention_noteCreateOrConnectWithoutInterventionInput[]
-    createMany?: intervention_noteCreateManyInterventionInputEnvelope
-    connect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
+  export type InterventionNoteUncheckedCreateNestedManyWithoutInterventionInput = {
+    create?: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput> | InterventionNoteCreateWithoutInterventionInput[] | InterventionNoteUncheckedCreateWithoutInterventionInput[]
+    connectOrCreate?: InterventionNoteCreateOrConnectWithoutInterventionInput | InterventionNoteCreateOrConnectWithoutInterventionInput[]
+    createMany?: InterventionNoteCreateManyInterventionInputEnvelope
+    connect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
   }
 
-  export type Enumintervention_statusFieldUpdateOperationsInput = {
-    set?: $Enums.intervention_status
+  export type EnumInterventionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.InterventionStatus
   }
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
   }
 
-  export type skillUpdateOneRequiredWithoutInterventionsNestedInput = {
-    create?: XOR<skillCreateWithoutInterventionsInput, skillUncheckedCreateWithoutInterventionsInput>
-    connectOrCreate?: skillCreateOrConnectWithoutInterventionsInput
-    upsert?: skillUpsertWithoutInterventionsInput
-    connect?: skillWhereUniqueInput
-    update?: XOR<XOR<skillUpdateToOneWithWhereWithoutInterventionsInput, skillUpdateWithoutInterventionsInput>, skillUncheckedUpdateWithoutInterventionsInput>
+  export type SkillUpdateOneRequiredWithoutInterventionsNestedInput = {
+    create?: XOR<SkillCreateWithoutInterventionsInput, SkillUncheckedCreateWithoutInterventionsInput>
+    connectOrCreate?: SkillCreateOrConnectWithoutInterventionsInput
+    upsert?: SkillUpsertWithoutInterventionsInput
+    connect?: SkillWhereUniqueInput
+    update?: XOR<XOR<SkillUpdateToOneWithWhereWithoutInterventionsInput, SkillUpdateWithoutInterventionsInput>, SkillUncheckedUpdateWithoutInterventionsInput>
   }
 
-  export type intervention_noteUpdateManyWithoutInterventionNestedInput = {
-    create?: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput> | intervention_noteCreateWithoutInterventionInput[] | intervention_noteUncheckedCreateWithoutInterventionInput[]
-    connectOrCreate?: intervention_noteCreateOrConnectWithoutInterventionInput | intervention_noteCreateOrConnectWithoutInterventionInput[]
-    upsert?: intervention_noteUpsertWithWhereUniqueWithoutInterventionInput | intervention_noteUpsertWithWhereUniqueWithoutInterventionInput[]
-    createMany?: intervention_noteCreateManyInterventionInputEnvelope
-    set?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    disconnect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    delete?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    connect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    update?: intervention_noteUpdateWithWhereUniqueWithoutInterventionInput | intervention_noteUpdateWithWhereUniqueWithoutInterventionInput[]
-    updateMany?: intervention_noteUpdateManyWithWhereWithoutInterventionInput | intervention_noteUpdateManyWithWhereWithoutInterventionInput[]
-    deleteMany?: intervention_noteScalarWhereInput | intervention_noteScalarWhereInput[]
+  export type InterventionNoteUpdateManyWithoutInterventionNestedInput = {
+    create?: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput> | InterventionNoteCreateWithoutInterventionInput[] | InterventionNoteUncheckedCreateWithoutInterventionInput[]
+    connectOrCreate?: InterventionNoteCreateOrConnectWithoutInterventionInput | InterventionNoteCreateOrConnectWithoutInterventionInput[]
+    upsert?: InterventionNoteUpsertWithWhereUniqueWithoutInterventionInput | InterventionNoteUpsertWithWhereUniqueWithoutInterventionInput[]
+    createMany?: InterventionNoteCreateManyInterventionInputEnvelope
+    set?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    disconnect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    delete?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    connect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    update?: InterventionNoteUpdateWithWhereUniqueWithoutInterventionInput | InterventionNoteUpdateWithWhereUniqueWithoutInterventionInput[]
+    updateMany?: InterventionNoteUpdateManyWithWhereWithoutInterventionInput | InterventionNoteUpdateManyWithWhereWithoutInterventionInput[]
+    deleteMany?: InterventionNoteScalarWhereInput | InterventionNoteScalarWhereInput[]
   }
 
-  export type intervention_noteUncheckedUpdateManyWithoutInterventionNestedInput = {
-    create?: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput> | intervention_noteCreateWithoutInterventionInput[] | intervention_noteUncheckedCreateWithoutInterventionInput[]
-    connectOrCreate?: intervention_noteCreateOrConnectWithoutInterventionInput | intervention_noteCreateOrConnectWithoutInterventionInput[]
-    upsert?: intervention_noteUpsertWithWhereUniqueWithoutInterventionInput | intervention_noteUpsertWithWhereUniqueWithoutInterventionInput[]
-    createMany?: intervention_noteCreateManyInterventionInputEnvelope
-    set?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    disconnect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    delete?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    connect?: intervention_noteWhereUniqueInput | intervention_noteWhereUniqueInput[]
-    update?: intervention_noteUpdateWithWhereUniqueWithoutInterventionInput | intervention_noteUpdateWithWhereUniqueWithoutInterventionInput[]
-    updateMany?: intervention_noteUpdateManyWithWhereWithoutInterventionInput | intervention_noteUpdateManyWithWhereWithoutInterventionInput[]
-    deleteMany?: intervention_noteScalarWhereInput | intervention_noteScalarWhereInput[]
+  export type InterventionNoteUncheckedUpdateManyWithoutInterventionNestedInput = {
+    create?: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput> | InterventionNoteCreateWithoutInterventionInput[] | InterventionNoteUncheckedCreateWithoutInterventionInput[]
+    connectOrCreate?: InterventionNoteCreateOrConnectWithoutInterventionInput | InterventionNoteCreateOrConnectWithoutInterventionInput[]
+    upsert?: InterventionNoteUpsertWithWhereUniqueWithoutInterventionInput | InterventionNoteUpsertWithWhereUniqueWithoutInterventionInput[]
+    createMany?: InterventionNoteCreateManyInterventionInputEnvelope
+    set?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    disconnect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    delete?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    connect?: InterventionNoteWhereUniqueInput | InterventionNoteWhereUniqueInput[]
+    update?: InterventionNoteUpdateWithWhereUniqueWithoutInterventionInput | InterventionNoteUpdateWithWhereUniqueWithoutInterventionInput[]
+    updateMany?: InterventionNoteUpdateManyWithWhereWithoutInterventionInput | InterventionNoteUpdateManyWithWhereWithoutInterventionInput[]
+    deleteMany?: InterventionNoteScalarWhereInput | InterventionNoteScalarWhereInput[]
   }
 
-  export type interventionCreateNestedOneWithoutNotes_listInput = {
-    create?: XOR<interventionCreateWithoutNotes_listInput, interventionUncheckedCreateWithoutNotes_listInput>
-    connectOrCreate?: interventionCreateOrConnectWithoutNotes_listInput
-    connect?: interventionWhereUniqueInput
+  export type InterventionCreateNestedOneWithoutNotes_listInput = {
+    create?: XOR<InterventionCreateWithoutNotes_listInput, InterventionUncheckedCreateWithoutNotes_listInput>
+    connectOrCreate?: InterventionCreateOrConnectWithoutNotes_listInput
+    connect?: InterventionWhereUniqueInput
   }
 
-  export type interventionUpdateOneRequiredWithoutNotes_listNestedInput = {
-    create?: XOR<interventionCreateWithoutNotes_listInput, interventionUncheckedCreateWithoutNotes_listInput>
-    connectOrCreate?: interventionCreateOrConnectWithoutNotes_listInput
-    upsert?: interventionUpsertWithoutNotes_listInput
-    connect?: interventionWhereUniqueInput
-    update?: XOR<XOR<interventionUpdateToOneWithWhereWithoutNotes_listInput, interventionUpdateWithoutNotes_listInput>, interventionUncheckedUpdateWithoutNotes_listInput>
+  export type InterventionUpdateOneRequiredWithoutNotes_listNestedInput = {
+    create?: XOR<InterventionCreateWithoutNotes_listInput, InterventionUncheckedCreateWithoutNotes_listInput>
+    connectOrCreate?: InterventionCreateOrConnectWithoutNotes_listInput
+    upsert?: InterventionUpsertWithoutNotes_listInput
+    connect?: InterventionWhereUniqueInput
+    update?: XOR<XOR<InterventionUpdateToOneWithWhereWithoutNotes_listInput, InterventionUpdateWithoutNotes_listInput>, InterventionUncheckedUpdateWithoutNotes_listInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -8251,11 +8264,11 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedEnumdiagnosis_statusFilter<$PrismaModel = never> = {
-    equals?: $Enums.diagnosis_status | Enumdiagnosis_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumdiagnosis_statusFilter<$PrismaModel> | $Enums.diagnosis_status
+  export type NestedEnumDiagnosisStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiagnosisStatus | EnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiagnosisStatusFilter<$PrismaModel> | $Enums.DiagnosisStatus
   }
 
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -8274,51 +8287,51 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
-  export type NestedEnumdiagnosis_statusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.diagnosis_status | Enumdiagnosis_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.diagnosis_status[] | ListEnumdiagnosis_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumdiagnosis_statusWithAggregatesFilter<$PrismaModel> | $Enums.diagnosis_status
+  export type NestedEnumDiagnosisStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DiagnosisStatus | EnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.DiagnosisStatus[] | ListEnumDiagnosisStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumDiagnosisStatusWithAggregatesFilter<$PrismaModel> | $Enums.DiagnosisStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumdiagnosis_statusFilter<$PrismaModel>
-    _max?: NestedEnumdiagnosis_statusFilter<$PrismaModel>
+    _min?: NestedEnumDiagnosisStatusFilter<$PrismaModel>
+    _max?: NestedEnumDiagnosisStatusFilter<$PrismaModel>
   }
 
-  export type NestedBoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type NestedEnumevidence_qualityFilter<$PrismaModel = never> = {
-    equals?: $Enums.evidence_quality | Enumevidence_qualityFieldRefInput<$PrismaModel>
-    in?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    not?: NestedEnumevidence_qualityFilter<$PrismaModel> | $Enums.evidence_quality
+  export type NestedEnumEvidenceQualityFilter<$PrismaModel = never> = {
+    equals?: $Enums.EvidenceQuality | EnumEvidenceQualityFieldRefInput<$PrismaModel>
+    in?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    notIn?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    not?: NestedEnumEvidenceQualityFilter<$PrismaModel> | $Enums.EvidenceQuality
   }
 
-  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
-  }
-
-  export type NestedEnumevidence_qualityWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.evidence_quality | Enumevidence_qualityFieldRefInput<$PrismaModel>
-    in?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    notIn?: $Enums.evidence_quality[] | ListEnumevidence_qualityFieldRefInput<$PrismaModel>
-    not?: NestedEnumevidence_qualityWithAggregatesFilter<$PrismaModel> | $Enums.evidence_quality
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumevidence_qualityFilter<$PrismaModel>
-    _max?: NestedEnumevidence_qualityFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type NestedEnumintervention_statusFilter<$PrismaModel = never> = {
-    equals?: $Enums.intervention_status | Enumintervention_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumintervention_statusFilter<$PrismaModel> | $Enums.intervention_status
+  export type NestedEnumEvidenceQualityWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EvidenceQuality | EnumEvidenceQualityFieldRefInput<$PrismaModel>
+    in?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    notIn?: $Enums.EvidenceQuality[] | ListEnumEvidenceQualityFieldRefInput<$PrismaModel>
+    not?: NestedEnumEvidenceQualityWithAggregatesFilter<$PrismaModel> | $Enums.EvidenceQuality
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEvidenceQualityFilter<$PrismaModel>
+    _max?: NestedEnumEvidenceQualityFilter<$PrismaModel>
+  }
+
+  export type NestedEnumInterventionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.InterventionStatus | EnumInterventionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInterventionStatusFilter<$PrismaModel> | $Enums.InterventionStatus
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -8332,14 +8345,14 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
-  export type NestedEnumintervention_statusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.intervention_status | Enumintervention_statusFieldRefInput<$PrismaModel>
-    in?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.intervention_status[] | ListEnumintervention_statusFieldRefInput<$PrismaModel>
-    not?: NestedEnumintervention_statusWithAggregatesFilter<$PrismaModel> | $Enums.intervention_status
+  export type NestedEnumInterventionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.InterventionStatus | EnumInterventionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.InterventionStatus[] | ListEnumInterventionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumInterventionStatusWithAggregatesFilter<$PrismaModel> | $Enums.InterventionStatus
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumintervention_statusFilter<$PrismaModel>
-    _max?: NestedEnumintervention_statusFilter<$PrismaModel>
+    _min?: NestedEnumInterventionStatusFilter<$PrismaModel>
+    _max?: NestedEnumInterventionStatusFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -8356,646 +8369,646 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type diagnosisCreateWithoutSkillInput = {
+  export type DiagnosisCreateWithoutSkillInput = {
     id?: string
     student_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
-    evidence?: evidenceCreateNestedManyWithoutDiagnosisInput
+    evidence?: EvidenceItemCreateNestedManyWithoutDiagnosisInput
   }
 
-  export type diagnosisUncheckedCreateWithoutSkillInput = {
+  export type DiagnosisUncheckedCreateWithoutSkillInput = {
     id?: string
     student_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
-    evidence?: evidenceUncheckedCreateNestedManyWithoutDiagnosisInput
+    evidence?: EvidenceItemUncheckedCreateNestedManyWithoutDiagnosisInput
   }
 
-  export type diagnosisCreateOrConnectWithoutSkillInput = {
-    where: diagnosisWhereUniqueInput
-    create: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput>
+  export type DiagnosisCreateOrConnectWithoutSkillInput = {
+    where: DiagnosisWhereUniqueInput
+    create: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput>
   }
 
-  export type diagnosisCreateManySkillInputEnvelope = {
-    data: diagnosisCreateManySkillInput | diagnosisCreateManySkillInput[]
+  export type DiagnosisCreateManySkillInputEnvelope = {
+    data: DiagnosisCreateManySkillInput | DiagnosisCreateManySkillInput[]
     skipDuplicates?: boolean
   }
 
-  export type interventionCreateWithoutSkillInput = {
+  export type InterventionCreateWithoutSkillInput = {
     id?: string
     student_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
-    notes_list?: intervention_noteCreateNestedManyWithoutInterventionInput
+    notes_list?: InterventionNoteCreateNestedManyWithoutInterventionInput
   }
 
-  export type interventionUncheckedCreateWithoutSkillInput = {
+  export type InterventionUncheckedCreateWithoutSkillInput = {
     id?: string
     student_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
-    notes_list?: intervention_noteUncheckedCreateNestedManyWithoutInterventionInput
+    notes_list?: InterventionNoteUncheckedCreateNestedManyWithoutInterventionInput
   }
 
-  export type interventionCreateOrConnectWithoutSkillInput = {
-    where: interventionWhereUniqueInput
-    create: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput>
+  export type InterventionCreateOrConnectWithoutSkillInput = {
+    where: InterventionWhereUniqueInput
+    create: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput>
   }
 
-  export type interventionCreateManySkillInputEnvelope = {
-    data: interventionCreateManySkillInput | interventionCreateManySkillInput[]
+  export type InterventionCreateManySkillInputEnvelope = {
+    data: InterventionCreateManySkillInput | InterventionCreateManySkillInput[]
     skipDuplicates?: boolean
   }
 
-  export type diagnosisUpsertWithWhereUniqueWithoutSkillInput = {
-    where: diagnosisWhereUniqueInput
-    update: XOR<diagnosisUpdateWithoutSkillInput, diagnosisUncheckedUpdateWithoutSkillInput>
-    create: XOR<diagnosisCreateWithoutSkillInput, diagnosisUncheckedCreateWithoutSkillInput>
+  export type DiagnosisUpsertWithWhereUniqueWithoutSkillInput = {
+    where: DiagnosisWhereUniqueInput
+    update: XOR<DiagnosisUpdateWithoutSkillInput, DiagnosisUncheckedUpdateWithoutSkillInput>
+    create: XOR<DiagnosisCreateWithoutSkillInput, DiagnosisUncheckedCreateWithoutSkillInput>
   }
 
-  export type diagnosisUpdateWithWhereUniqueWithoutSkillInput = {
-    where: diagnosisWhereUniqueInput
-    data: XOR<diagnosisUpdateWithoutSkillInput, diagnosisUncheckedUpdateWithoutSkillInput>
+  export type DiagnosisUpdateWithWhereUniqueWithoutSkillInput = {
+    where: DiagnosisWhereUniqueInput
+    data: XOR<DiagnosisUpdateWithoutSkillInput, DiagnosisUncheckedUpdateWithoutSkillInput>
   }
 
-  export type diagnosisUpdateManyWithWhereWithoutSkillInput = {
-    where: diagnosisScalarWhereInput
-    data: XOR<diagnosisUpdateManyMutationInput, diagnosisUncheckedUpdateManyWithoutSkillInput>
+  export type DiagnosisUpdateManyWithWhereWithoutSkillInput = {
+    where: DiagnosisScalarWhereInput
+    data: XOR<DiagnosisUpdateManyMutationInput, DiagnosisUncheckedUpdateManyWithoutSkillInput>
   }
 
-  export type diagnosisScalarWhereInput = {
-    AND?: diagnosisScalarWhereInput | diagnosisScalarWhereInput[]
-    OR?: diagnosisScalarWhereInput[]
-    NOT?: diagnosisScalarWhereInput | diagnosisScalarWhereInput[]
-    id?: StringFilter<"diagnosis"> | string
-    student_id?: StringFilter<"diagnosis"> | string
-    skill_id?: StringFilter<"diagnosis"> | string
-    p_known?: FloatFilter<"diagnosis"> | number
-    confidence?: FloatFilter<"diagnosis"> | number
-    status?: Enumdiagnosis_statusFilter<"diagnosis"> | $Enums.diagnosis_status
-    created_at?: DateTimeFilter<"diagnosis"> | Date | string
-    updated_at?: DateTimeFilter<"diagnosis"> | Date | string
+  export type DiagnosisScalarWhereInput = {
+    AND?: DiagnosisScalarWhereInput | DiagnosisScalarWhereInput[]
+    OR?: DiagnosisScalarWhereInput[]
+    NOT?: DiagnosisScalarWhereInput | DiagnosisScalarWhereInput[]
+    id?: StringFilter<"Diagnosis"> | string
+    student_id?: StringFilter<"Diagnosis"> | string
+    skill_id?: StringFilter<"Diagnosis"> | string
+    p_known?: FloatFilter<"Diagnosis"> | number
+    confidence?: FloatFilter<"Diagnosis"> | number
+    status?: EnumDiagnosisStatusFilter<"Diagnosis"> | $Enums.DiagnosisStatus
+    created_at?: DateTimeFilter<"Diagnosis"> | Date | string
+    updated_at?: DateTimeFilter<"Diagnosis"> | Date | string
   }
 
-  export type interventionUpsertWithWhereUniqueWithoutSkillInput = {
-    where: interventionWhereUniqueInput
-    update: XOR<interventionUpdateWithoutSkillInput, interventionUncheckedUpdateWithoutSkillInput>
-    create: XOR<interventionCreateWithoutSkillInput, interventionUncheckedCreateWithoutSkillInput>
+  export type InterventionUpsertWithWhereUniqueWithoutSkillInput = {
+    where: InterventionWhereUniqueInput
+    update: XOR<InterventionUpdateWithoutSkillInput, InterventionUncheckedUpdateWithoutSkillInput>
+    create: XOR<InterventionCreateWithoutSkillInput, InterventionUncheckedCreateWithoutSkillInput>
   }
 
-  export type interventionUpdateWithWhereUniqueWithoutSkillInput = {
-    where: interventionWhereUniqueInput
-    data: XOR<interventionUpdateWithoutSkillInput, interventionUncheckedUpdateWithoutSkillInput>
+  export type InterventionUpdateWithWhereUniqueWithoutSkillInput = {
+    where: InterventionWhereUniqueInput
+    data: XOR<InterventionUpdateWithoutSkillInput, InterventionUncheckedUpdateWithoutSkillInput>
   }
 
-  export type interventionUpdateManyWithWhereWithoutSkillInput = {
-    where: interventionScalarWhereInput
-    data: XOR<interventionUpdateManyMutationInput, interventionUncheckedUpdateManyWithoutSkillInput>
+  export type InterventionUpdateManyWithWhereWithoutSkillInput = {
+    where: InterventionScalarWhereInput
+    data: XOR<InterventionUpdateManyMutationInput, InterventionUncheckedUpdateManyWithoutSkillInput>
   }
 
-  export type interventionScalarWhereInput = {
-    AND?: interventionScalarWhereInput | interventionScalarWhereInput[]
-    OR?: interventionScalarWhereInput[]
-    NOT?: interventionScalarWhereInput | interventionScalarWhereInput[]
-    id?: StringFilter<"intervention"> | string
-    student_id?: StringFilter<"intervention"> | string
-    skill_id?: StringFilter<"intervention"> | string
-    priority?: IntFilter<"intervention"> | number
-    status?: Enumintervention_statusFilter<"intervention"> | $Enums.intervention_status
-    teacher_id?: StringNullableFilter<"intervention"> | string | null
-    notes?: StringNullableFilter<"intervention"> | string | null
-    created_at?: DateTimeFilter<"intervention"> | Date | string
-    resolved_at?: DateTimeNullableFilter<"intervention"> | Date | string | null
+  export type InterventionScalarWhereInput = {
+    AND?: InterventionScalarWhereInput | InterventionScalarWhereInput[]
+    OR?: InterventionScalarWhereInput[]
+    NOT?: InterventionScalarWhereInput | InterventionScalarWhereInput[]
+    id?: StringFilter<"Intervention"> | string
+    student_id?: StringFilter<"Intervention"> | string
+    skill_id?: StringFilter<"Intervention"> | string
+    priority?: IntFilter<"Intervention"> | number
+    status?: EnumInterventionStatusFilter<"Intervention"> | $Enums.InterventionStatus
+    teacher_id?: StringNullableFilter<"Intervention"> | string | null
+    notes?: StringNullableFilter<"Intervention"> | string | null
+    created_at?: DateTimeFilter<"Intervention"> | Date | string
+    resolved_at?: DateTimeNullableFilter<"Intervention"> | Date | string | null
   }
 
-  export type skillCreateWithoutDiagnosesInput = {
+  export type SkillCreateWithoutDiagnosesInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    interventions?: interventionCreateNestedManyWithoutSkillInput
+    interventions?: InterventionCreateNestedManyWithoutSkillInput
   }
 
-  export type skillUncheckedCreateWithoutDiagnosesInput = {
+  export type SkillUncheckedCreateWithoutDiagnosesInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    interventions?: interventionUncheckedCreateNestedManyWithoutSkillInput
+    interventions?: InterventionUncheckedCreateNestedManyWithoutSkillInput
   }
 
-  export type skillCreateOrConnectWithoutDiagnosesInput = {
-    where: skillWhereUniqueInput
-    create: XOR<skillCreateWithoutDiagnosesInput, skillUncheckedCreateWithoutDiagnosesInput>
+  export type SkillCreateOrConnectWithoutDiagnosesInput = {
+    where: SkillWhereUniqueInput
+    create: XOR<SkillCreateWithoutDiagnosesInput, SkillUncheckedCreateWithoutDiagnosesInput>
   }
 
-  export type evidenceCreateWithoutDiagnosisInput = {
+  export type EvidenceItemCreateWithoutDiagnosisInput = {
     id?: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
   }
 
-  export type evidenceUncheckedCreateWithoutDiagnosisInput = {
+  export type EvidenceItemUncheckedCreateWithoutDiagnosisInput = {
     id?: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
   }
 
-  export type evidenceCreateOrConnectWithoutDiagnosisInput = {
-    where: evidenceWhereUniqueInput
-    create: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput>
+  export type EvidenceItemCreateOrConnectWithoutDiagnosisInput = {
+    where: EvidenceItemWhereUniqueInput
+    create: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput>
   }
 
-  export type evidenceCreateManyDiagnosisInputEnvelope = {
-    data: evidenceCreateManyDiagnosisInput | evidenceCreateManyDiagnosisInput[]
+  export type EvidenceItemCreateManyDiagnosisInputEnvelope = {
+    data: EvidenceItemCreateManyDiagnosisInput | EvidenceItemCreateManyDiagnosisInput[]
     skipDuplicates?: boolean
   }
 
-  export type skillUpsertWithoutDiagnosesInput = {
-    update: XOR<skillUpdateWithoutDiagnosesInput, skillUncheckedUpdateWithoutDiagnosesInput>
-    create: XOR<skillCreateWithoutDiagnosesInput, skillUncheckedCreateWithoutDiagnosesInput>
-    where?: skillWhereInput
+  export type SkillUpsertWithoutDiagnosesInput = {
+    update: XOR<SkillUpdateWithoutDiagnosesInput, SkillUncheckedUpdateWithoutDiagnosesInput>
+    create: XOR<SkillCreateWithoutDiagnosesInput, SkillUncheckedCreateWithoutDiagnosesInput>
+    where?: SkillWhereInput
   }
 
-  export type skillUpdateToOneWithWhereWithoutDiagnosesInput = {
-    where?: skillWhereInput
-    data: XOR<skillUpdateWithoutDiagnosesInput, skillUncheckedUpdateWithoutDiagnosesInput>
+  export type SkillUpdateToOneWithWhereWithoutDiagnosesInput = {
+    where?: SkillWhereInput
+    data: XOR<SkillUpdateWithoutDiagnosesInput, SkillUncheckedUpdateWithoutDiagnosesInput>
   }
 
-  export type skillUpdateWithoutDiagnosesInput = {
+  export type SkillUpdateWithoutDiagnosesInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    interventions?: interventionUpdateManyWithoutSkillNestedInput
+    interventions?: InterventionUpdateManyWithoutSkillNestedInput
   }
 
-  export type skillUncheckedUpdateWithoutDiagnosesInput = {
+  export type SkillUncheckedUpdateWithoutDiagnosesInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    interventions?: interventionUncheckedUpdateManyWithoutSkillNestedInput
+    interventions?: InterventionUncheckedUpdateManyWithoutSkillNestedInput
   }
 
-  export type evidenceUpsertWithWhereUniqueWithoutDiagnosisInput = {
-    where: evidenceWhereUniqueInput
-    update: XOR<evidenceUpdateWithoutDiagnosisInput, evidenceUncheckedUpdateWithoutDiagnosisInput>
-    create: XOR<evidenceCreateWithoutDiagnosisInput, evidenceUncheckedCreateWithoutDiagnosisInput>
+  export type EvidenceItemUpsertWithWhereUniqueWithoutDiagnosisInput = {
+    where: EvidenceItemWhereUniqueInput
+    update: XOR<EvidenceItemUpdateWithoutDiagnosisInput, EvidenceItemUncheckedUpdateWithoutDiagnosisInput>
+    create: XOR<EvidenceItemCreateWithoutDiagnosisInput, EvidenceItemUncheckedCreateWithoutDiagnosisInput>
   }
 
-  export type evidenceUpdateWithWhereUniqueWithoutDiagnosisInput = {
-    where: evidenceWhereUniqueInput
-    data: XOR<evidenceUpdateWithoutDiagnosisInput, evidenceUncheckedUpdateWithoutDiagnosisInput>
+  export type EvidenceItemUpdateWithWhereUniqueWithoutDiagnosisInput = {
+    where: EvidenceItemWhereUniqueInput
+    data: XOR<EvidenceItemUpdateWithoutDiagnosisInput, EvidenceItemUncheckedUpdateWithoutDiagnosisInput>
   }
 
-  export type evidenceUpdateManyWithWhereWithoutDiagnosisInput = {
-    where: evidenceScalarWhereInput
-    data: XOR<evidenceUpdateManyMutationInput, evidenceUncheckedUpdateManyWithoutDiagnosisInput>
+  export type EvidenceItemUpdateManyWithWhereWithoutDiagnosisInput = {
+    where: EvidenceItemScalarWhereInput
+    data: XOR<EvidenceItemUpdateManyMutationInput, EvidenceItemUncheckedUpdateManyWithoutDiagnosisInput>
   }
 
-  export type evidenceScalarWhereInput = {
-    AND?: evidenceScalarWhereInput | evidenceScalarWhereInput[]
-    OR?: evidenceScalarWhereInput[]
-    NOT?: evidenceScalarWhereInput | evidenceScalarWhereInput[]
-    id?: StringFilter<"evidence"> | string
-    diagnosis_id?: StringFilter<"evidence"> | string
-    item_id?: StringFilter<"evidence"> | string
-    extracted_answer?: StringNullableFilter<"evidence"> | string | null
-    correct?: BoolNullableFilter<"evidence"> | boolean | null
-    confidence?: FloatFilter<"evidence"> | number
-    quality?: Enumevidence_qualityFilter<"evidence"> | $Enums.evidence_quality
-    created_at?: DateTimeFilter<"evidence"> | Date | string
+  export type EvidenceItemScalarWhereInput = {
+    AND?: EvidenceItemScalarWhereInput | EvidenceItemScalarWhereInput[]
+    OR?: EvidenceItemScalarWhereInput[]
+    NOT?: EvidenceItemScalarWhereInput | EvidenceItemScalarWhereInput[]
+    id?: StringFilter<"EvidenceItem"> | string
+    diagnosis_id?: StringFilter<"EvidenceItem"> | string
+    item_id?: StringFilter<"EvidenceItem"> | string
+    extracted_answer?: StringNullableFilter<"EvidenceItem"> | string | null
+    correct?: BoolFilter<"EvidenceItem"> | boolean
+    confidence?: FloatFilter<"EvidenceItem"> | number
+    quality?: EnumEvidenceQualityFilter<"EvidenceItem"> | $Enums.EvidenceQuality
+    created_at?: DateTimeFilter<"EvidenceItem"> | Date | string
   }
 
-  export type diagnosisCreateWithoutEvidenceInput = {
+  export type DiagnosisCreateWithoutEvidenceInput = {
     id?: string
     student_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
-    skill: skillCreateNestedOneWithoutDiagnosesInput
+    skill: SkillCreateNestedOneWithoutDiagnosesInput
   }
 
-  export type diagnosisUncheckedCreateWithoutEvidenceInput = {
+  export type DiagnosisUncheckedCreateWithoutEvidenceInput = {
     id?: string
     student_id: string
     skill_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
   }
 
-  export type diagnosisCreateOrConnectWithoutEvidenceInput = {
-    where: diagnosisWhereUniqueInput
-    create: XOR<diagnosisCreateWithoutEvidenceInput, diagnosisUncheckedCreateWithoutEvidenceInput>
+  export type DiagnosisCreateOrConnectWithoutEvidenceInput = {
+    where: DiagnosisWhereUniqueInput
+    create: XOR<DiagnosisCreateWithoutEvidenceInput, DiagnosisUncheckedCreateWithoutEvidenceInput>
   }
 
-  export type diagnosisUpsertWithoutEvidenceInput = {
-    update: XOR<diagnosisUpdateWithoutEvidenceInput, diagnosisUncheckedUpdateWithoutEvidenceInput>
-    create: XOR<diagnosisCreateWithoutEvidenceInput, diagnosisUncheckedCreateWithoutEvidenceInput>
-    where?: diagnosisWhereInput
+  export type DiagnosisUpsertWithoutEvidenceInput = {
+    update: XOR<DiagnosisUpdateWithoutEvidenceInput, DiagnosisUncheckedUpdateWithoutEvidenceInput>
+    create: XOR<DiagnosisCreateWithoutEvidenceInput, DiagnosisUncheckedCreateWithoutEvidenceInput>
+    where?: DiagnosisWhereInput
   }
 
-  export type diagnosisUpdateToOneWithWhereWithoutEvidenceInput = {
-    where?: diagnosisWhereInput
-    data: XOR<diagnosisUpdateWithoutEvidenceInput, diagnosisUncheckedUpdateWithoutEvidenceInput>
+  export type DiagnosisUpdateToOneWithWhereWithoutEvidenceInput = {
+    where?: DiagnosisWhereInput
+    data: XOR<DiagnosisUpdateWithoutEvidenceInput, DiagnosisUncheckedUpdateWithoutEvidenceInput>
   }
 
-  export type diagnosisUpdateWithoutEvidenceInput = {
+  export type DiagnosisUpdateWithoutEvidenceInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    skill?: skillUpdateOneRequiredWithoutDiagnosesNestedInput
+    skill?: SkillUpdateOneRequiredWithoutDiagnosesNestedInput
   }
 
-  export type diagnosisUncheckedUpdateWithoutEvidenceInput = {
+  export type DiagnosisUncheckedUpdateWithoutEvidenceInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     skill_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type skillCreateWithoutInterventionsInput = {
+  export type SkillCreateWithoutInterventionsInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    diagnoses?: diagnosisCreateNestedManyWithoutSkillInput
+    diagnoses?: DiagnosisCreateNestedManyWithoutSkillInput
   }
 
-  export type skillUncheckedCreateWithoutInterventionsInput = {
+  export type SkillUncheckedCreateWithoutInterventionsInput = {
     id?: string
     code: string
     name: string
     difficulty?: number
     description?: string | null
-    prereq_skills?: skillCreateprereq_skillsInput | string[]
+    prereq_skills?: SkillCreateprereq_skillsInput | string[]
     created_at?: Date | string
     updated_at?: Date | string
-    diagnoses?: diagnosisUncheckedCreateNestedManyWithoutSkillInput
+    diagnoses?: DiagnosisUncheckedCreateNestedManyWithoutSkillInput
   }
 
-  export type skillCreateOrConnectWithoutInterventionsInput = {
-    where: skillWhereUniqueInput
-    create: XOR<skillCreateWithoutInterventionsInput, skillUncheckedCreateWithoutInterventionsInput>
+  export type SkillCreateOrConnectWithoutInterventionsInput = {
+    where: SkillWhereUniqueInput
+    create: XOR<SkillCreateWithoutInterventionsInput, SkillUncheckedCreateWithoutInterventionsInput>
   }
 
-  export type intervention_noteCreateWithoutInterventionInput = {
+  export type InterventionNoteCreateWithoutInterventionInput = {
     id?: string
     teacher_id: string
     content: string
     created_at?: Date | string
   }
 
-  export type intervention_noteUncheckedCreateWithoutInterventionInput = {
+  export type InterventionNoteUncheckedCreateWithoutInterventionInput = {
     id?: string
     teacher_id: string
     content: string
     created_at?: Date | string
   }
 
-  export type intervention_noteCreateOrConnectWithoutInterventionInput = {
-    where: intervention_noteWhereUniqueInput
-    create: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput>
+  export type InterventionNoteCreateOrConnectWithoutInterventionInput = {
+    where: InterventionNoteWhereUniqueInput
+    create: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput>
   }
 
-  export type intervention_noteCreateManyInterventionInputEnvelope = {
-    data: intervention_noteCreateManyInterventionInput | intervention_noteCreateManyInterventionInput[]
+  export type InterventionNoteCreateManyInterventionInputEnvelope = {
+    data: InterventionNoteCreateManyInterventionInput | InterventionNoteCreateManyInterventionInput[]
     skipDuplicates?: boolean
   }
 
-  export type skillUpsertWithoutInterventionsInput = {
-    update: XOR<skillUpdateWithoutInterventionsInput, skillUncheckedUpdateWithoutInterventionsInput>
-    create: XOR<skillCreateWithoutInterventionsInput, skillUncheckedCreateWithoutInterventionsInput>
-    where?: skillWhereInput
+  export type SkillUpsertWithoutInterventionsInput = {
+    update: XOR<SkillUpdateWithoutInterventionsInput, SkillUncheckedUpdateWithoutInterventionsInput>
+    create: XOR<SkillCreateWithoutInterventionsInput, SkillUncheckedCreateWithoutInterventionsInput>
+    where?: SkillWhereInput
   }
 
-  export type skillUpdateToOneWithWhereWithoutInterventionsInput = {
-    where?: skillWhereInput
-    data: XOR<skillUpdateWithoutInterventionsInput, skillUncheckedUpdateWithoutInterventionsInput>
+  export type SkillUpdateToOneWithWhereWithoutInterventionsInput = {
+    where?: SkillWhereInput
+    data: XOR<SkillUpdateWithoutInterventionsInput, SkillUncheckedUpdateWithoutInterventionsInput>
   }
 
-  export type skillUpdateWithoutInterventionsInput = {
+  export type SkillUpdateWithoutInterventionsInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    diagnoses?: diagnosisUpdateManyWithoutSkillNestedInput
+    diagnoses?: DiagnosisUpdateManyWithoutSkillNestedInput
   }
 
-  export type skillUncheckedUpdateWithoutInterventionsInput = {
+  export type SkillUncheckedUpdateWithoutInterventionsInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     difficulty?: IntFieldUpdateOperationsInput | number
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    prereq_skills?: skillUpdateprereq_skillsInput | string[]
+    prereq_skills?: SkillUpdateprereq_skillsInput | string[]
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    diagnoses?: diagnosisUncheckedUpdateManyWithoutSkillNestedInput
+    diagnoses?: DiagnosisUncheckedUpdateManyWithoutSkillNestedInput
   }
 
-  export type intervention_noteUpsertWithWhereUniqueWithoutInterventionInput = {
-    where: intervention_noteWhereUniqueInput
-    update: XOR<intervention_noteUpdateWithoutInterventionInput, intervention_noteUncheckedUpdateWithoutInterventionInput>
-    create: XOR<intervention_noteCreateWithoutInterventionInput, intervention_noteUncheckedCreateWithoutInterventionInput>
+  export type InterventionNoteUpsertWithWhereUniqueWithoutInterventionInput = {
+    where: InterventionNoteWhereUniqueInput
+    update: XOR<InterventionNoteUpdateWithoutInterventionInput, InterventionNoteUncheckedUpdateWithoutInterventionInput>
+    create: XOR<InterventionNoteCreateWithoutInterventionInput, InterventionNoteUncheckedCreateWithoutInterventionInput>
   }
 
-  export type intervention_noteUpdateWithWhereUniqueWithoutInterventionInput = {
-    where: intervention_noteWhereUniqueInput
-    data: XOR<intervention_noteUpdateWithoutInterventionInput, intervention_noteUncheckedUpdateWithoutInterventionInput>
+  export type InterventionNoteUpdateWithWhereUniqueWithoutInterventionInput = {
+    where: InterventionNoteWhereUniqueInput
+    data: XOR<InterventionNoteUpdateWithoutInterventionInput, InterventionNoteUncheckedUpdateWithoutInterventionInput>
   }
 
-  export type intervention_noteUpdateManyWithWhereWithoutInterventionInput = {
-    where: intervention_noteScalarWhereInput
-    data: XOR<intervention_noteUpdateManyMutationInput, intervention_noteUncheckedUpdateManyWithoutInterventionInput>
+  export type InterventionNoteUpdateManyWithWhereWithoutInterventionInput = {
+    where: InterventionNoteScalarWhereInput
+    data: XOR<InterventionNoteUpdateManyMutationInput, InterventionNoteUncheckedUpdateManyWithoutInterventionInput>
   }
 
-  export type intervention_noteScalarWhereInput = {
-    AND?: intervention_noteScalarWhereInput | intervention_noteScalarWhereInput[]
-    OR?: intervention_noteScalarWhereInput[]
-    NOT?: intervention_noteScalarWhereInput | intervention_noteScalarWhereInput[]
-    id?: StringFilter<"intervention_note"> | string
-    intervention_id?: StringFilter<"intervention_note"> | string
-    teacher_id?: StringFilter<"intervention_note"> | string
-    content?: StringFilter<"intervention_note"> | string
-    created_at?: DateTimeFilter<"intervention_note"> | Date | string
+  export type InterventionNoteScalarWhereInput = {
+    AND?: InterventionNoteScalarWhereInput | InterventionNoteScalarWhereInput[]
+    OR?: InterventionNoteScalarWhereInput[]
+    NOT?: InterventionNoteScalarWhereInput | InterventionNoteScalarWhereInput[]
+    id?: StringFilter<"InterventionNote"> | string
+    intervention_id?: StringFilter<"InterventionNote"> | string
+    teacher_id?: StringFilter<"InterventionNote"> | string
+    content?: StringFilter<"InterventionNote"> | string
+    created_at?: DateTimeFilter<"InterventionNote"> | Date | string
   }
 
-  export type interventionCreateWithoutNotes_listInput = {
+  export type InterventionCreateWithoutNotes_listInput = {
     id?: string
     student_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
-    skill: skillCreateNestedOneWithoutInterventionsInput
+    skill: SkillCreateNestedOneWithoutInterventionsInput
   }
 
-  export type interventionUncheckedCreateWithoutNotes_listInput = {
+  export type InterventionUncheckedCreateWithoutNotes_listInput = {
     id?: string
     student_id: string
     skill_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
   }
 
-  export type interventionCreateOrConnectWithoutNotes_listInput = {
-    where: interventionWhereUniqueInput
-    create: XOR<interventionCreateWithoutNotes_listInput, interventionUncheckedCreateWithoutNotes_listInput>
+  export type InterventionCreateOrConnectWithoutNotes_listInput = {
+    where: InterventionWhereUniqueInput
+    create: XOR<InterventionCreateWithoutNotes_listInput, InterventionUncheckedCreateWithoutNotes_listInput>
   }
 
-  export type interventionUpsertWithoutNotes_listInput = {
-    update: XOR<interventionUpdateWithoutNotes_listInput, interventionUncheckedUpdateWithoutNotes_listInput>
-    create: XOR<interventionCreateWithoutNotes_listInput, interventionUncheckedCreateWithoutNotes_listInput>
-    where?: interventionWhereInput
+  export type InterventionUpsertWithoutNotes_listInput = {
+    update: XOR<InterventionUpdateWithoutNotes_listInput, InterventionUncheckedUpdateWithoutNotes_listInput>
+    create: XOR<InterventionCreateWithoutNotes_listInput, InterventionUncheckedCreateWithoutNotes_listInput>
+    where?: InterventionWhereInput
   }
 
-  export type interventionUpdateToOneWithWhereWithoutNotes_listInput = {
-    where?: interventionWhereInput
-    data: XOR<interventionUpdateWithoutNotes_listInput, interventionUncheckedUpdateWithoutNotes_listInput>
+  export type InterventionUpdateToOneWithWhereWithoutNotes_listInput = {
+    where?: InterventionWhereInput
+    data: XOR<InterventionUpdateWithoutNotes_listInput, InterventionUncheckedUpdateWithoutNotes_listInput>
   }
 
-  export type interventionUpdateWithoutNotes_listInput = {
+  export type InterventionUpdateWithoutNotes_listInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    skill?: skillUpdateOneRequiredWithoutInterventionsNestedInput
+    skill?: SkillUpdateOneRequiredWithoutInterventionsNestedInput
   }
 
-  export type interventionUncheckedUpdateWithoutNotes_listInput = {
+  export type InterventionUncheckedUpdateWithoutNotes_listInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     skill_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type diagnosisCreateManySkillInput = {
+  export type DiagnosisCreateManySkillInput = {
     id?: string
     student_id: string
     p_known?: number
     confidence?: number
-    status?: $Enums.diagnosis_status
+    status?: $Enums.DiagnosisStatus
     created_at?: Date | string
     updated_at?: Date | string
   }
 
-  export type interventionCreateManySkillInput = {
+  export type InterventionCreateManySkillInput = {
     id?: string
     student_id: string
     priority?: number
-    status?: $Enums.intervention_status
+    status?: $Enums.InterventionStatus
     teacher_id?: string | null
     notes?: string | null
     created_at?: Date | string
     resolved_at?: Date | string | null
   }
 
-  export type diagnosisUpdateWithoutSkillInput = {
+  export type DiagnosisUpdateWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    evidence?: evidenceUpdateManyWithoutDiagnosisNestedInput
+    evidence?: EvidenceItemUpdateManyWithoutDiagnosisNestedInput
   }
 
-  export type diagnosisUncheckedUpdateWithoutSkillInput = {
+  export type DiagnosisUncheckedUpdateWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
-    evidence?: evidenceUncheckedUpdateManyWithoutDiagnosisNestedInput
+    evidence?: EvidenceItemUncheckedUpdateManyWithoutDiagnosisNestedInput
   }
 
-  export type diagnosisUncheckedUpdateManyWithoutSkillInput = {
+  export type DiagnosisUncheckedUpdateManyWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     p_known?: FloatFieldUpdateOperationsInput | number
     confidence?: FloatFieldUpdateOperationsInput | number
-    status?: Enumdiagnosis_statusFieldUpdateOperationsInput | $Enums.diagnosis_status
+    status?: EnumDiagnosisStatusFieldUpdateOperationsInput | $Enums.DiagnosisStatus
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type interventionUpdateWithoutSkillInput = {
+  export type InterventionUpdateWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    notes_list?: intervention_noteUpdateManyWithoutInterventionNestedInput
+    notes_list?: InterventionNoteUpdateManyWithoutInterventionNestedInput
   }
 
-  export type interventionUncheckedUpdateWithoutSkillInput = {
+  export type InterventionUncheckedUpdateWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    notes_list?: intervention_noteUncheckedUpdateManyWithoutInterventionNestedInput
+    notes_list?: InterventionNoteUncheckedUpdateManyWithoutInterventionNestedInput
   }
 
-  export type interventionUncheckedUpdateManyWithoutSkillInput = {
+  export type InterventionUncheckedUpdateManyWithoutSkillInput = {
     id?: StringFieldUpdateOperationsInput | string
     student_id?: StringFieldUpdateOperationsInput | string
     priority?: IntFieldUpdateOperationsInput | number
-    status?: Enumintervention_statusFieldUpdateOperationsInput | $Enums.intervention_status
+    status?: EnumInterventionStatusFieldUpdateOperationsInput | $Enums.InterventionStatus
     teacher_id?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     resolved_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type evidenceCreateManyDiagnosisInput = {
+  export type EvidenceItemCreateManyDiagnosisInput = {
     id?: string
     item_id: string
     extracted_answer?: string | null
-    correct?: boolean | null
+    correct: boolean
     confidence?: number
-    quality?: $Enums.evidence_quality
+    quality?: $Enums.EvidenceQuality
     created_at?: Date | string
   }
 
-  export type evidenceUpdateWithoutDiagnosisInput = {
+  export type EvidenceItemUpdateWithoutDiagnosisInput = {
     id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type evidenceUncheckedUpdateWithoutDiagnosisInput = {
+  export type EvidenceItemUncheckedUpdateWithoutDiagnosisInput = {
     id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type evidenceUncheckedUpdateManyWithoutDiagnosisInput = {
+  export type EvidenceItemUncheckedUpdateManyWithoutDiagnosisInput = {
     id?: StringFieldUpdateOperationsInput | string
     item_id?: StringFieldUpdateOperationsInput | string
     extracted_answer?: NullableStringFieldUpdateOperationsInput | string | null
-    correct?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    correct?: BoolFieldUpdateOperationsInput | boolean
     confidence?: FloatFieldUpdateOperationsInput | number
-    quality?: Enumevidence_qualityFieldUpdateOperationsInput | $Enums.evidence_quality
+    quality?: EnumEvidenceQualityFieldUpdateOperationsInput | $Enums.EvidenceQuality
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type intervention_noteCreateManyInterventionInput = {
+  export type InterventionNoteCreateManyInterventionInput = {
     id?: string
     teacher_id: string
     content: string
     created_at?: Date | string
   }
 
-  export type intervention_noteUpdateWithoutInterventionInput = {
+  export type InterventionNoteUpdateWithoutInterventionInput = {
     id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type intervention_noteUncheckedUpdateWithoutInterventionInput = {
+  export type InterventionNoteUncheckedUpdateWithoutInterventionInput = {
     id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type intervention_noteUncheckedUpdateManyWithoutInterventionInput = {
+  export type InterventionNoteUncheckedUpdateManyWithoutInterventionInput = {
     id?: StringFieldUpdateOperationsInput | string
     teacher_id?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
@@ -9020,25 +9033,25 @@ export namespace Prisma {
      */
     export type InterventionCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InterventionCountOutputTypeDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use skillDefaultArgs instead
+     * @deprecated Use SkillDefaultArgs instead
      */
-    export type skillArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = skillDefaultArgs<ExtArgs>
+    export type SkillArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SkillDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use diagnosisDefaultArgs instead
+     * @deprecated Use DiagnosisDefaultArgs instead
      */
-    export type diagnosisArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = diagnosisDefaultArgs<ExtArgs>
+    export type DiagnosisArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiagnosisDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use evidenceDefaultArgs instead
+     * @deprecated Use EvidenceItemDefaultArgs instead
      */
-    export type evidenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = evidenceDefaultArgs<ExtArgs>
+    export type EvidenceItemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = EvidenceItemDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use interventionDefaultArgs instead
+     * @deprecated Use InterventionDefaultArgs instead
      */
-    export type interventionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = interventionDefaultArgs<ExtArgs>
+    export type InterventionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InterventionDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use intervention_noteDefaultArgs instead
+     * @deprecated Use InterventionNoteDefaultArgs instead
      */
-    export type intervention_noteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = intervention_noteDefaultArgs<ExtArgs>
+    export type InterventionNoteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InterventionNoteDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

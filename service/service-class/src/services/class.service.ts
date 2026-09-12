@@ -87,6 +87,16 @@ export interface ClassStats {
   interventionAvailable: boolean;
 }
 
+/**
+ * Shape returned by `getClassStudents` — a roster of student IDs enrolled
+ * in the class. Used by `svc-bkt` to assemble class-level views via the
+ * `GET /api/class/classes/:id/students` endpoint.
+ */
+export interface ClassStudentRoster {
+  classId: string;
+  students: Array<{ id: string }>;
+}
+
 /** Subset of the user record we need to confirm a teacher is real. */
 interface AuthUserResponse {
   data?: { id: string; isActive?: boolean };
@@ -501,4 +511,33 @@ export async function getClassStats(
     interventionCount,
     interventionAvailable
   };
+}
+
+/**
+ * Roster of a class — the list of student IDs currently enrolled.
+ *
+ * Cross-service endpoint consumed by `svc-bkt` (`getClassDiagnoses`) so it
+ * can assemble class-level BKT views. Soft-deleted students and dropped
+ * enrollments are filtered out.
+ */
+export async function getClassStudents(
+  id: string
+): Promise<ClassStudentRoster> {
+  await findActiveClassOrThrow(id);
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: { class_id: id, deleted_at: null, dropped_at: null },
+    select: { student: { select: { id: true } } },
+    orderBy: { enrolled_at: 'asc' }
+  });
+
+  const seen = new Set<string>();
+  const students: Array<{ id: string }> = [];
+  for (const e of enrollments) {
+    if (seen.has(e.student.id)) continue;
+    seen.add(e.student.id);
+    students.push({ id: e.student.id });
+  }
+
+  return { classId: id, students };
 }
