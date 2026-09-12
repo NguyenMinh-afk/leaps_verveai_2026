@@ -39,6 +39,7 @@ vi.mock('../../src/utils/logger.js', () => ({
 // ── Prisma mock — declared before vi.mock() so the same ref is used ─────────
 
 const mockPrisma = {
+  $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   student: {
     findFirst: vi.fn<() => Promise<unknown>>(),
   },
@@ -69,14 +70,14 @@ const {
 
 const FIXTURE_NOW = new Date('2025-01-15T12:00:00Z');
 
-const FIXTURE_STUDENT_ID = 'a1111111-1111-4111-8111-111111111111';
-const FIXTURE_SKILL_ID = 'd1111111-1111-4111-8111-111111111111';
+const FIXTURE_STUDENT_ID = '51111111-1111-4111-8111-111111111111';
+const FIXTURE_SKILL_ID = '51111111-1111-4111-8111-111111111111';
 
 const FIXTURE_PROGRESS_ROWS = [
   {
     id: 'p1111111-1111-1111-1111-111111111111',
     student_id: FIXTURE_STUDENT_ID,
-    skill_id: 'd1111111-1111-4111-8111-111111111111',
+    skill_id: '51111111-1111-4111-8111-111111111111',
     p_known: 0.9,
     last_p_known: 0.7,
     attempt_count: 5,
@@ -85,16 +86,16 @@ const FIXTURE_PROGRESS_ROWS = [
   {
     id: 'p2222222-2222-2222-2222-222222222222',
     student_id: FIXTURE_STUDENT_ID,
-    skill_id: 'd2222222-2222-4222-8222-222222222222',
-    p_known: 0.3,
-    last_p_known: 0.2,
+    skill_id: '52222222-2222-4222-8222-222222222222',
+    p_known: 0.2,
+    last_p_known: 0.1,
     attempt_count: 2,
     updated_at: new Date('2025-01-14T08:00:00Z'),
   },
   {
     id: 'p3333333-3333-3333-3333-333333333333',
     student_id: FIXTURE_STUDENT_ID,
-    skill_id: 'd3333333-3333-4333-8333-333333333333',
+    skill_id: '53333333-3333-4333-8333-333333333333',
     p_known: 0.6,
     last_p_known: 0.5,
     attempt_count: 1,
@@ -216,47 +217,52 @@ describe('updateProgress', () => {
     expect(result.attemptCount).toBe(4); // incremented
   });
 
-  it('clamps p_known to [0, 1] range', async () => {
-    mockPrisma.student.findFirst.mockResolvedValue({ id: FIXTURE_STUDENT_ID });
-    mockPrisma.progress.findUnique.mockResolvedValue(null);
+it('clamps p_known to [0, 1] range', async () => {
+  mockPrisma.student.findFirst.mockResolvedValue({ id: FIXTURE_STUDENT_ID });
+  mockPrisma.progress.findUnique.mockResolvedValue(null);
 
-    mockPrisma.progress.create.mockImplementation(async (args: unknown) => {
-      const a = args as { data: { p_known: number } };
-      return {
-        id: 'new-id',
-        student_id: FIXTURE_STUDENT_ID,
-        skill_id: FIXTURE_SKILL_ID,
-        p_known: a.data.p_known,
-        last_p_known: 0,
-        attempt_count: 1,
-        updated_at: FIXTURE_NOW,
-      };
-    });
+  mockPrisma.progress.create.mockImplementation(async (args: unknown) => {
+    const a = args as { data: { p_known: number } };
 
-    await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, 1.5);
-    expect(mockPrisma.progress.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ p_known: 1 }) })
-    );
-
-    mockPrisma.progress.create.mockClear();
-
-    await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, -0.3);
-    expect(mockPrisma.progress.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ p_known: 0 }) })
-    );
+    return {
+      id: 'new-id',
+      student_id: FIXTURE_STUDENT_ID,
+      skill_id: FIXTURE_SKILL_ID,
+      p_known: a.data.p_known,
+      last_p_known: 0,
+      attempt_count: 1,
+      updated_at: FIXTURE_NOW,
+    };
   });
 
-  it('throws ValidationError for malformed skill UUID', async () => {
-    await expect(
-      updateProgress(FIXTURE_STUDENT_ID, 'bad-uuid', 0.5)
-    ).rejects.toThrow('Invalid skill id');
-  });
+  await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, 1.5);
 
-  it('throws ValidationError for p_known out of [0, 1] range', async () => {
-    mockPrisma.student.findFirst.mockResolvedValue({ id: FIXTURE_STUDENT_ID });
+  expect(mockPrisma.progress.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        p_known: 1,
+      }),
+    })
+  );
 
-    await expect(
-      updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, 1.2)
+  mockPrisma.progress.create.mockClear();
+
+  await updateProgress(FIXTURE_STUDENT_ID, FIXTURE_SKILL_ID, -0.3);
+
+  expect(mockPrisma.progress.create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        p_known: 0,
+      }),
+    })
+  );
+});
+
+it('throws ValidationError for malformed skill UUID', async () => {
+  await expect(
+    updateProgress(FIXTURE_STUDENT_ID, 'bad-uuid', 0.5)
+  ).rejects.toThrow('Invalid skill id');
+});
     ).rejects.toThrow('Invalid pKnown');
   });
 });
@@ -345,15 +351,15 @@ describe('getStudentSkills', () => {
 
     // sk1: p_known=0.9, count=5 → MASTERED (p>=0.8)
     expect(
-      result.find((s) => s.skillId === 'd1111111-1111-4111-8111-111111111111')?.masteryStatus
+      result.find((s) => s.skillId === '51111111-1111-4111-8111-111111111111')?.masteryStatus
     ).toBe('MASTERED');
     // sk2: p_known=0.3, count=2 → STRUGGLING (p<0.3)
     expect(
-      result.find((s) => s.skillId === 'd2222222-2222-4222-8222-222222222222')?.masteryStatus
+      result.find((s) => s.skillId === '52222222-2222-4222-8222-222222222222')?.masteryStatus
     ).toBe('STRUGGLING');
     // sk3: p_known=0.6, count=1 → DIAGNOSED (0.3 <= p < 0.8)
     expect(
-      result.find((s) => s.skillId === 'd3333333-3333-4333-8333-333333333333')?.masteryStatus
+      result.find((s) => s.skillId === '53333333-3333-4333-8333-333333333333')?.masteryStatus
     ).toBe('DIAGNOSED');
   });
 

@@ -1,42 +1,13 @@
 import 'dotenv/config';
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
 
+import { createApp } from './app.js';
 import { validateEnv } from './config/env.js';
 import { registerWithConsul, deregisterFromConsul } from './config/consul.js';
 import { logger } from './utils/logger.js';
-import { errorHandler } from './middleware/errorHandler.js';
-import { metricsMiddleware, metricsHandler } from './middleware/metrics.js';
 import { prisma, disconnectPrisma } from './prisma/client.js';
-import healthRoutes from './routes/health.routes.js';
-import syncRoutes from './routes/index.js';
 
 const env = validateEnv();
-
-const app = express();
-
-// Security middleware
-app.use(helmet());
-app.use(cors());
-
-// Body parsing
-app.use(express.json());
-
-// Metrics middleware
-app.use(metricsMiddleware);
-
-// Health routes
-app.use('/health', healthRoutes);
-
-// Metrics endpoint
-app.get('/metrics', metricsHandler);
-
-// Sync routes
-app.use('/api/sync', syncRoutes);
-
-// Error handler
-app.use(errorHandler);
+const app = createApp();
 
 // Graceful shutdown handler
 async function shutdown(signal: string): Promise<void> {

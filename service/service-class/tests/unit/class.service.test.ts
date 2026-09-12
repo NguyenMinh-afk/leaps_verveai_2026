@@ -41,6 +41,7 @@ vi.mock('../../src/utils/logger.js', () => ({
 // ── Prisma mock — must be declared before importing the service ─────────────
 
 const mockPrisma = {
+  $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   class: {
     findFirst: vi.fn<() => Promise<unknown>>(),
     findMany: vi.fn<() => Promise<unknown>>(),
@@ -78,7 +79,7 @@ const FIXTURE_CLASS = {
   id: 'a1111111-1111-4111-8111-111111111111',
   name: 'Math 101',
   subject: 'Mathematics',
-  teacher_id: 'a1111111-1111-4111-8111-111111111111',
+  teacher_id: '91111111-1111-4111-8111-111111111111',
   created_at: FIXTURE_NOW,
   updated_at: FIXTURE_NOW,
   deleted_at: null,
@@ -136,7 +137,7 @@ describe('listClasses', () => {
     mockPrisma.class.findMany.mockResolvedValue([]);
     mockPrisma.class.count.mockResolvedValue(0);
 
-    const teacherId = 'a2222222-2222-4222-8222-222222222222';
+    const teacherId = '92222222-2222-4222-8222-222222222222';
     await listClasses(teacherId, { skip: 0, take: 20 });
 
     expect(mockPrisma.class.findMany).toHaveBeenCalledWith(
@@ -166,7 +167,7 @@ describe('createClass', () => {
   const validInput = {
     name: 'Math 101',
     subject: 'Mathematics',
-    teacherId: 'a1111111-1111-4111-8111-111111111111',
+    teacherId: '91111111-1111-4111-8111-111111111111',
   };
 
   it('creates a class after verifying teacher via svc-auth', async () => {
@@ -187,7 +188,9 @@ describe('createClass', () => {
 
   it('throws ValidationError when svc-auth says teacher is unknown', async () => {
     const { callSvcAuth } = await import('../../src/services/inter-service.js');
-    vi.mocked(callSvcAuth).mockResolvedValue(null);
+    // Production treats `null` as "service unreachable" (fail-open);
+    // "teacher doesn't exist" is `{ data: null }`.
+    vi.mocked(callSvcAuth).mockResolvedValue({ data: null });
 
     await expect(createClass(validInput)).rejects.toThrow('Unknown teacher');
   });
@@ -206,8 +209,8 @@ describe('createClass', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('updateClass', () => {
-  const ownerId = 'a1111111-1111-4111-8111-111111111111';
-  const otherId = 'a2222222-2222-4222-8222-222222222222';
+  const ownerId = '91111111-1111-4111-8111-111111111111';
+  const otherId = '92222222-2222-4222-8222-222222222222';
 
   it('allows owner teacher to update the class name', async () => {
     mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
@@ -250,8 +253,8 @@ describe('updateClass', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('deleteClass', () => {
-  const ownerId = 'a1111111-1111-4111-8111-111111111111';
-  const otherId = 'a2222222-2222-4222-8222-222222222222';
+  const ownerId = '91111111-1111-4111-8111-111111111111';
+  const otherId = '92222222-2222-4222-8222-222222222222';
 
   it('soft-deletes class and cascades deleted_at to enrollments', async () => {
     mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);

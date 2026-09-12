@@ -294,11 +294,21 @@ export async function getReviewStats(): Promise<ReviewStats> {
     }
   }
 
-  const reviewerWorkload = (reviewerRaw as Array<ReviewerRow>)
-    .map((row) => ({
-      reviewerId: row.reviewer_id,
-      pendingCount: pendingByReviewer.get(row.reviewer_id) ?? 0,
-      totalCount: row._count._all,
+  // Collapse the raw groupBy rows (one per status) into one row per reviewer
+  // by summing the counts across statuses.
+  const totalByReviewer = new Map<string, number>();
+  for (const row of reviewerRaw as Array<ReviewerRow>) {
+    totalByReviewer.set(
+      row.reviewer_id,
+      (totalByReviewer.get(row.reviewer_id) ?? 0) + row._count._all,
+    );
+  }
+
+  const reviewerWorkload = Array.from(totalByReviewer.entries())
+    .map(([reviewerId, totalCount]) => ({
+      reviewerId,
+      pendingCount: pendingByReviewer.get(reviewerId) ?? 0,
+      totalCount,
     }))
     .sort((a: { pendingCount: number }, b: { pendingCount: number }) => b.pendingCount - a.pendingCount);
 

@@ -40,6 +40,7 @@ vi.mock('../../src/utils/logger.js', () => ({
 // ── Prisma mock — declared before vi.mock() so the same ref is used ─────────
 
 const mockPrisma = {
+  $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   student: {
     findFirst: vi.fn<() => Promise<unknown>>(),
     findUnique: vi.fn<() => Promise<unknown>>(),
@@ -81,7 +82,7 @@ const {
 const FIXTURE_NOW = new Date('2025-01-15T12:00:00Z');
 
 const FIXTURE_STUDENT = {
-  id: 'a1111111-1111-4111-8111-111111111111',
+  id: '51111111-1111-4111-8111-111111111111',
   name: 'Alice Nguyen',
   email: 'alice@school.vn',
   created_at: FIXTURE_NOW,
