@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import {
   DashboardLayoutWrapper,
   PageHeader,
-  PageSection,
   EmptyState,
 } from '@/components/layout'
 import {
@@ -14,12 +13,24 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  getUserById,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend user response type
+interface BackendUserResponse {
+  id: string
+  email: string
+  name: string
+  role: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  last_login?: string
+  class_id?: string
+  class_name?: string
+}
 
 /**
  * User Detail Page
@@ -28,14 +39,36 @@ export default function UserDetailPage() {
   const router = useRouter()
   const params = useParams()
   const userId = params.id as string
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
+  const [userData, setUserData] = React.useState<BackendUserResponse | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const userData = getUserById(userId)
+  // Fetch user from real API
+  React.useEffect(() => {
+    async function fetchUser() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const response = await api.get<BackendUserResponse>(`/api/auth/users/${userId}`)
+        setUserData(response)
+      } catch {
+        setLoadError('Không thể tải thông tin người dùng')
+        setUserData(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    if (userId) {
+      fetchUser()
+    }
+  }, [userId])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -43,7 +76,7 @@ export default function UserDetailPage() {
     { label: 'Home', labelVi: 'Trang chủ', href: '/' },
     { label: 'Admin', labelVi: 'Quản trị', href: '/admin' },
     { label: 'Users', labelVi: 'Người dùng', href: '/admin/users' },
-    { label: userData?.nameVi || 'User', labelVi: userData?.nameVi || 'Người dùng' },
+    { label: userData?.name || 'User', labelVi: userData?.name || 'Người dùng' },
   ]
 
   const handleRoleChange = (newRole: UserRole) => {
@@ -58,10 +91,31 @@ export default function UserDetailPage() {
     router.push('/admin/settings')
   }
 
-  if (!userData) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+            <p className="text-sm text-slate-500">Đang tải thông tin người dùng...</p>
+          </div>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (loadError || !userData) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -70,8 +124,8 @@ export default function UserDetailPage() {
         <EmptyState
           title="User not found"
           titleVi="Không tìm thấy người dùng"
-          description="The user you're looking for doesn't exist"
-          descriptionVi="Người dùng bạn đang tìm kiếm không tồn tại"
+          description={loadError || "The user you're looking for doesn't exist"}
+          descriptionVi={loadError || 'Người dùng bạn đang tìm kiếm không tồn tại'}
           action={
             <Button variant="primary" onClick={() => router.push('/admin/users')}>
               Quay lại Người dùng
@@ -82,26 +136,24 @@ export default function UserDetailPage() {
     )
   }
 
-  const statusConfig = {
-    active: { label: 'Hoạt động', variant: 'success' as const },
-    inactive: { label: 'Không hoạt động', variant: 'default' as const },
-    suspended: { label: 'Bị đình chỉ', variant: 'error' as const },
-    pending: { label: 'Đang chờ', variant: 'warning' as const },
+  const statusConfig: Record<string, { label: string; variant: 'success' | 'default' | 'warning' | 'error' }> = {
+    true: { label: 'Hoạt động', variant: 'success' },
+    false: { label: 'Không hoạt động', variant: 'default' },
   }
 
-  const roleConfig = {
+  const roleConfig: Record<string, { label: string; color: string }> = {
     admin: { label: 'Quản trị viên', color: 'bg-info-100 text-info-700 dark:bg-info-900/30 dark:text-info-300' },
     teacher: { label: 'Giáo viên', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
     student: { label: 'Học sinh', color: 'bg-verve-100 text-verve-700 dark:bg-verve-900/30 dark:text-verve-300' },
     reviewer: { label: 'Người duyệt', color: 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300' },
   }
 
-  const config = statusConfig[userData.status]
-  const role = roleConfig[userData.role]
+  const config = statusConfig[userData.is_active ? 'true' : 'false']
+  const role = roleConfig[userData.role.toLowerCase()] || roleConfig.student
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -110,8 +162,8 @@ export default function UserDetailPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <PageHeader
-          title={userData.nameVi}
-          titleVi={userData.nameVi}
+          title={userData.name}
+          titleVi={userData.name}
           description={userData.email}
           actions={
             <div className="flex items-center gap-2">
@@ -132,12 +184,12 @@ export default function UserDetailPage() {
         <Card variant="default" padding="lg">
           <div className="flex items-start gap-6">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-200 text-3xl font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-300">
-              {userData.nameVi.charAt(0)}
+              {userData.name.charAt(0)}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {userData.nameVi}
+                  {userData.name}
                 </h2>
                 <Badge variant={config.variant} size="sm">
                   {config.label}
@@ -187,21 +239,21 @@ export default function UserDetailPage() {
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ngày tạo</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {formatDate(new Date(userData.createdAt))}
+                  {formatDate(new Date(userData.created_at))}
                 </p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Hoạt động cuối</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {userData.lastActiveAt
-                    ? formatRelativeTime(new Date(userData.lastActiveAt))
+                  {userData.last_login
+                    ? formatRelativeTime(new Date(userData.last_login))
                     : 'Never'}
                 </p>
               </div>
-              {userData.className && (
+              {userData.class_name && (
                 <div className="flex justify-between">
                   <p className="text-sm text-slate-500 dark:text-slate-400">Lớp</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{userData.className}</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{userData.class_name}</p>
                 </div>
               )}
             </div>
@@ -214,24 +266,13 @@ export default function UserDetailPage() {
             Hành động quản trị
           </h3>
           <div className="mt-4 flex flex-wrap gap-3">
-            {userData.status === 'active' && (
+            {userData.is_active ? (
               <Button variant="outline" size="sm">
                 Vô hiệu hóa tài khoản
               </Button>
-            )}
-            {userData.status === 'inactive' && (
+            ) : (
               <Button variant="primary" size="sm">
                 Kích hoạt tài khoản
-              </Button>
-            )}
-            {userData.status !== 'suspended' && (
-              <Button variant="destructive" size="sm">
-                Đình chỉ tài khoản
-              </Button>
-            )}
-            {userData.status === 'suspended' && (
-              <Button variant="primary" size="sm">
-                Hủy đình chỉ
               </Button>
             )}
             <Button variant="outline" size="sm">

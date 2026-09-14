@@ -12,12 +12,24 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  getCourseById,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend class response type
+interface BackendClassResponse {
+  id: string
+  name: string
+  subject: string
+  teacher_id: string
+  student_count: number
+  question_count: number
+  topic_count: number
+  status: string
+  created_at: string
+  updated_at: string
+}
 
 /**
  * Course Detail Page
@@ -26,14 +38,36 @@ export default function CourseDetailPage() {
   const router = useRouter()
   const params = useParams()
   const courseId = params.id as string
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
+  const [course, setCourse] = React.useState<BackendClassResponse | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const course = getCourseById(courseId)
+  // Fetch course from real API
+  React.useEffect(() => {
+    async function fetchCourse() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const response = await api.get<BackendClassResponse>(`/api/class/classes/${courseId}`)
+        setCourse(response)
+      } catch {
+        setLoadError('Không thể tải thông tin khóa học')
+        setCourse(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    if (courseId) {
+      fetchCourse()
+    }
+  }, [courseId])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -41,7 +75,7 @@ export default function CourseDetailPage() {
     { label: 'Home', labelVi: 'Trang chủ', href: '/' },
     { label: 'Admin', labelVi: 'Quản trị', href: '/admin' },
     { label: 'Courses', labelVi: 'Khóa học', href: '/admin/courses' },
-    { label: course?.nameVi || 'Course', labelVi: course?.nameVi || 'Khóa học' },
+    { label: course?.name || 'Course', labelVi: course?.name || 'Khóa học' },
   ]
 
   const handleRoleChange = (newRole: UserRole) => {
@@ -56,10 +90,31 @@ export default function CourseDetailPage() {
     router.push('/admin/settings')
   }
 
-  if (!course) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+            <p className="text-sm text-slate-500">Đang tải thông tin khóa học...</p>
+          </div>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (loadError || !course) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -68,8 +123,8 @@ export default function CourseDetailPage() {
         <EmptyState
           title="Course not found"
           titleVi="Không tìm thấy khóa học"
-          description="The course you're looking for doesn't exist"
-          descriptionVi="Khóa học bạn đang tìm kiếm không tồn tại"
+          description={loadError || "The course you're looking for doesn't exist"}
+          descriptionVi={loadError || 'Khóa học bạn đang tìm kiếm không tồn tại'}
           action={
             <Button variant="primary" onClick={() => router.push('/admin/courses')}>
               Quay lại Khóa học
@@ -86,11 +141,11 @@ export default function CourseDetailPage() {
     draft: { label: 'Bản nháp', variant: 'warning' as const },
   }
 
-  const config = statusConfig[course.status]
+  const config = statusConfig[course.status as keyof typeof statusConfig] || statusConfig.active
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -99,9 +154,9 @@ export default function CourseDetailPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <PageHeader
-          title={course.nameVi}
-          titleVi={course.nameVi}
-          description={course.code}
+          title={course.name}
+          titleVi={course.name}
+          description={course.subject}
           actions={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => router.push('/admin/courses')}>
@@ -123,38 +178,34 @@ export default function CourseDetailPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {course.nameVi}
+                  {course.name}
                 </h2>
                 <Badge variant={config.variant} size="sm">
                   {config.label}
                 </Badge>
               </div>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{course.code}</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{course.subject}</p>
             </div>
           </div>
-
-          <p className="mt-4 text-slate-600 dark:text-slate-400">
-            {course.descriptionVi}
-          </p>
         </Card>
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">Giáo viên</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.teacherCount}</p>
-          </Card>
-          <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">Học sinh</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.studentCount}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.student_count}</p>
           </Card>
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">Câu hỏi</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.questionCount}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.question_count}</p>
           </Card>
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">Chủ đề</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.topicCount}</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.topic_count}</p>
+          </Card>
+          <Card variant="default" padding="md">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Môn học</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{course.subject}</p>
           </Card>
         </div>
 
@@ -167,7 +218,7 @@ export default function CourseDetailPage() {
             <div className="mt-4 space-y-4">
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Mã khóa học</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{course.code}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{course.id}</p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Trạng thái</p>
@@ -176,13 +227,13 @@ export default function CourseDetailPage() {
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ngày tạo</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {formatDate(new Date(course.createdAt))}
+                  {formatDate(new Date(course.created_at))}
                 </p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Cập nhật lần cuối</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {formatRelativeTime(new Date(course.updatedAt))}
+                  {formatRelativeTime(new Date(course.updated_at))}
                 </p>
               </div>
             </div>
@@ -190,13 +241,10 @@ export default function CourseDetailPage() {
 
           <Card variant="default" padding="lg">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              Mô tả
+              Môn học
             </h3>
             <p className="mt-4 text-slate-600 dark:text-slate-400">
-              {course.descriptionVi}
-            </p>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-500">
-              {course.description}
+              {course.subject}
             </p>
           </Card>
         </div>

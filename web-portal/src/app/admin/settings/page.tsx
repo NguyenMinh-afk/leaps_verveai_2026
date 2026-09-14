@@ -16,12 +16,28 @@ import {
 } from '@/components/ui'
 import { useToast, ConfirmationDialog } from '@/components/ui/toast'
 import { useLanguage } from '@/components/providers/language-provider'
-import {
-  mockAdminProfile,
-  mockSettingsGroups,
-} from '@/data/admin-mock-data'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { SettingsGroup, Setting } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Client-side settings type (stored in localStorage)
+interface ClientSettings {
+  [key: string]: unknown
+  language: string
+  theme: 'light' | 'dark' | 'system'
+  notifications: boolean
+  emailNotifications: boolean
+  dashboardLayout: 'grid' | 'list'
+}
+
+const DEFAULT_SETTINGS: ClientSettings = {
+  language: 'vi',
+  theme: 'system',
+  notifications: true,
+  emailNotifications: true,
+  dashboardLayout: 'grid',
+}
 
 /**
  * Setting Row Component
@@ -29,15 +45,23 @@ import type { SettingsGroup, Setting } from '@/types'
 interface SettingRowProps {
   setting: Setting
   onSaveSuccess?: (name: string) => void
+  onValueChange?: (key: string, value: unknown) => void
+  currentValue?: unknown
 }
 
-const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
+const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess, onValueChange, currentValue }) => {
   const { t } = useLanguage()
-  const [localValue, setLocalValue] = React.useState(setting.value)
+  const [localValue, setLocalValue] = React.useState(currentValue ?? setting.value)
   const [hasChanges, setHasChanges] = React.useState(false)
 
+  const handleChange = (newValue: unknown) => {
+    setLocalValue(newValue)
+    setHasChanges(true)
+    onValueChange?.(setting.key, newValue)
+  }
+
   const handleSave = () => {
-    // In a real app, this would call an API to save the setting
+    // Settings are saved to localStorage for client preferences
     onSaveSuccess?.(`${t('common.save')} "${setting.nameVi}" ${t('common.with')}: ${String(localValue)}`)
     setHasChanges(false)
   }
@@ -47,11 +71,8 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
       case 'text':
         return (
           <Input
-            value={String(localValue)}
-            onChange={(e) => {
-              setLocalValue(e.target.value)
-              setHasChanges(true)
-            }}
+            value={String(localValue ?? '')}
+            onChange={(e) => handleChange(e.target.value)}
             className="max-w-sm"
           />
         )
@@ -59,11 +80,8 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
         return (
           <Input
             type="number"
-            value={String(localValue)}
-            onChange={(e) => {
-              setLocalValue(Number(e.target.value))
-              setHasChanges(true)
-            }}
+            value={String(localValue ?? '')}
+            onChange={(e) => handleChange(Number(e.target.value))}
             className="max-w-[120px]"
           />
         )
@@ -74,10 +92,7 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
               type="checkbox"
               className="peer sr-only"
               checked={Boolean(localValue)}
-              onChange={(e) => {
-                setLocalValue(e.target.checked)
-                setHasChanges(true)
-              }}
+              onChange={(e) => handleChange(e.target.checked)}
             />
             <div className="peer h-6 w-11 rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-verve-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-verve-300 dark:bg-slate-700" />
           </label>
@@ -85,11 +100,8 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
       case 'select':
         return (
           <select
-            value={String(localValue)}
-            onChange={(e) => {
-              setLocalValue(e.target.value)
-              setHasChanges(true)
-            }}
+            value={String(localValue ?? '')}
+            onChange={(e) => handleChange(e.target.value)}
             className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800 max-w-[200px]"
           >
             {setting.options?.map((opt) => (
@@ -100,7 +112,7 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
           </select>
         )
       default:
-        return <span className="text-sm text-slate-600 dark:text-slate-400">{String(localValue)}</span>
+        return <span className="text-sm text-slate-600 dark:text-slate-400">{String(localValue ?? '')}</span>
     }
   }
 
@@ -160,9 +172,11 @@ const SettingRow: React.FC<SettingRowProps> = ({ setting, onSaveSuccess }) => {
 interface SettingsGroupCardProps {
   group: SettingsGroup
   onSaveSuccess?: (message: string) => void
+  onValueChange?: (key: string, value: unknown) => void
+  currentValues?: Record<string, unknown>
 }
 
-const SettingsGroupCard: React.FC<SettingsGroupCardProps> = ({ group, onSaveSuccess }) => {
+const SettingsGroupCard: React.FC<SettingsGroupCardProps> = ({ group, onSaveSuccess, onValueChange, currentValues }) => {
   const [isExpanded, setIsExpanded] = React.useState(true)
 
   return (
@@ -193,7 +207,13 @@ const SettingsGroupCard: React.FC<SettingsGroupCardProps> = ({ group, onSaveSucc
       {isExpanded && (
         <div className="border-t border-slate-200 px-4 dark:border-slate-700">
           {group.settings.map((setting) => (
-            <SettingRow key={setting.id} setting={setting} onSaveSuccess={onSaveSuccess} />
+            <SettingRow 
+              key={setting.id} 
+              setting={setting} 
+              onSaveSuccess={onSaveSuccess}
+              onValueChange={onValueChange}
+              currentValue={currentValues?.[setting.key]}
+            />
           ))}
         </div>
       )}
@@ -206,8 +226,9 @@ const SettingsGroupCard: React.FC<SettingsGroupCardProps> = ({ group, onSaveSucc
  */
 export default function SettingsPage() {
   const router = useRouter()
-  const { t } = useLanguage()
-  const { success, info } = useToast()
+  const { t, language, setLanguage } = useLanguage()
+  const { success } = useToast()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
   const [confirmDialog, setConfirmDialog] = React.useState<{
     isOpen: boolean
@@ -216,13 +237,57 @@ export default function SettingsPage() {
     onConfirm: () => void
     variant: 'danger' | 'warning' | 'default'
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {}, variant: 'default' })
+  
+  // Client-side settings (stored in localStorage)
+  const [clientSettings, setClientSettings] = React.useState<ClientSettings>(DEFAULT_SETTINGS)
+  
+  // Load settings from localStorage
+  React.useEffect(() => {
+    const stored = localStorage.getItem('client_settings')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setClientSettings({ ...DEFAULT_SETTINGS, ...parsed })
+      } catch {
+        // Use defaults
+      }
+    }
+  }, [])
+  
+  // Handle setting value changes
+  const handleValueChange = (key: string, value: unknown) => {
+    const newSettings = { ...clientSettings, [key]: value }
+    setClientSettings(newSettings)
+    localStorage.setItem('client_settings', JSON.stringify(newSettings))
+    
+    // Apply theme changes immediately
+    if (key === 'theme') {
+      applyTheme(value as ClientSettings['theme'])
+    } else if (key === 'language' && typeof value === 'string') {
+      setLanguage(value as 'vi' | 'en')
+    }
+  }
+  
+  // Apply theme to document
+  const applyTheme = (theme: ClientSettings['theme']) => {
+    const root = document.documentElement
+    if (theme === 'dark') {
+      root.classList.add('dark')
+    } else if (theme === 'light') {
+      root.classList.remove('dark')
+    } else {
+      // System preference
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
+    }
+  }
 
-  const admin = mockAdminProfile
-  const settingsGroups = mockSettingsGroups
-
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -252,9 +317,108 @@ export default function SettingsPage() {
     success(t('common.success'), t('settings.allSettingsSaved'))
   }
 
+  // Build settings groups from client settings
+  const settingsGroups: SettingsGroup[] = [
+    {
+      id: 'appearance',
+      name: 'Appearance',
+      nameVi: 'Giao diện',
+      description: 'Customize the appearance',
+      descriptionVi: 'Tùy chỉnh giao diện ứng dụng',
+      settings: [
+        {
+          id: 'language',
+          key: 'language',
+          name: 'Language',
+          nameVi: 'Ngôn ngữ',
+          description: 'Select your preferred language',
+          descriptionVi: 'Chọn ngôn ngữ ưa thích của bạn',
+          type: 'select',
+          value: clientSettings.language,
+          defaultValue: 'vi',
+          options: [
+            { label: 'Tiếng Việt', labelVi: 'Tiếng Việt', value: 'vi' },
+            { label: 'English', labelVi: 'English', value: 'en' },
+          ],
+        },
+        {
+          id: 'theme',
+          key: 'theme',
+          name: 'Theme',
+          nameVi: 'Giao diện',
+          description: 'Choose light, dark, or system theme',
+          descriptionVi: 'Chọn giao diện sáng, tối hoặc theo hệ thống',
+          type: 'select',
+          value: clientSettings.theme,
+          defaultValue: 'system',
+          options: [
+            { label: 'Light', labelVi: 'Sáng', value: 'light' },
+            { label: 'Dark', labelVi: 'Tối', value: 'dark' },
+            { label: 'System', labelVi: 'Hệ thống', value: 'system' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'notifications',
+      name: 'Thông báo',
+      nameVi: 'Thông báo',
+      description: 'Notification preferences',
+      descriptionVi: 'Tùy chọn thông báo',
+      settings: [
+        {
+          id: 'notifications',
+          key: 'notifications',
+          name: 'Push notifications',
+          nameVi: 'Thông báo đẩy',
+          description: 'Receive push notifications',
+          descriptionVi: 'Nhận thông báo đẩy từ trình duyệt',
+          type: 'boolean',
+          value: clientSettings.notifications,
+          defaultValue: true,
+        },
+        {
+          id: 'emailNotifications',
+          key: 'emailNotifications',
+          name: 'Email notifications',
+          nameVi: 'Thông báo qua email',
+          description: 'Receive email notifications',
+          descriptionVi: 'Nhận thông báo qua email',
+          type: 'boolean',
+          value: clientSettings.emailNotifications,
+          defaultValue: true,
+        },
+      ],
+    },
+    {
+      id: 'dashboard',
+      name: 'Dashboard',
+      nameVi: 'Bảng điều khiển',
+      description: 'Dashboard preferences',
+      descriptionVi: 'Tùy chọn bảng điều khiển',
+      settings: [
+        {
+          id: 'dashboardLayout',
+          key: 'dashboardLayout',
+          name: 'Layout',
+          nameVi: 'Bố cục',
+          description: 'Choose dashboard layout',
+          descriptionVi: 'Chọn bố cục bảng điều khiển',
+          type: 'select',
+          value: clientSettings.dashboardLayout,
+          defaultValue: 'grid',
+          options: [
+            { label: 'Grid', labelVi: 'Lưới', value: 'grid' },
+            { label: 'List', labelVi: 'Danh sách', value: 'list' },
+          ],
+        },
+      ],
+    },
+  ]
+
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -294,7 +458,13 @@ export default function SettingsPage() {
         {/* Settings Groups */}
         <div className="space-y-6">
           {settingsGroups.map((group) => (
-            <SettingsGroupCard key={group.id} group={group} onSaveSuccess={handleSaveSuccess} />
+            <SettingsGroupCard 
+              key={group.id} 
+              group={group} 
+              onSaveSuccess={handleSaveSuccess}
+              onValueChange={handleValueChange}
+              currentValues={clientSettings}
+            />
           ))}
         </div>
 

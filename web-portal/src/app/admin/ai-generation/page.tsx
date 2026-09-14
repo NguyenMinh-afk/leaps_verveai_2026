@@ -15,14 +15,38 @@ import {
   Badge,
   Input,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockAIGenerationJobs,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { AIGenerationJob } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend AI generation job response type
+interface BackendAIGenerationResponse {
+  items: Array<{
+    id: string
+    status: string
+    course_id: string
+    course_name: string
+    topic_id: string
+    topic_name: string
+    source_document?: string
+    requested_count: number
+    generated_count: number
+    approved_count: number
+    rejected_count: number
+    error_message?: string
+    requested_by: string
+    requested_by_name: string
+    created_at: string
+    started_at?: string
+    completed_at?: string
+  }>
+  total: number
+  skip: number
+  take: number
+}
 
 /**
  * Job Card Component
@@ -41,7 +65,7 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
     cancelled: { label: t('admin.cancelled'), variant: 'default' as const, color: 'text-slate-600 dark:text-slate-400' },
   }
 
-  const config = statusConfig[job.status]
+  const config = statusConfig[job.status] || statusConfig.pending
 
   return (
     <Link href={`/admin/ai-generation/${job.id}`}>
@@ -109,12 +133,66 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
 export default function AIGenerationPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState('all')
+  const [jobs, setJobs] = React.useState<AIGenerationJob[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const jobs = mockAIGenerationJobs
+  // Fetch AI generation jobs from real API
+  const fetchJobs = React.useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      params.set('take', '50')
+      
+      const query = params.toString()
+      try {
+        const response = await api.get<BackendAIGenerationResponse>(`/api/ai/jobs${query ? `?${query}` : ''}`)
+        
+        // Map backend response to frontend type
+        const mappedJobs: AIGenerationJob[] = response.items.map((item) => ({
+          id: item.id,
+          status: item.status as AIGenerationJob['status'],
+          courseId: item.course_id,
+          courseName: item.course_name,
+          courseNameVi: item.course_name,
+          topicId: item.topic_id,
+          topicName: item.topic_name,
+          topicNameVi: item.topic_name,
+          sourceDocument: item.source_document,
+          requestedCount: item.requested_count,
+          generatedCount: item.generated_count,
+          approvedCount: item.approved_count,
+          rejectedCount: item.rejected_count,
+          errorMessage: item.error_message,
+          requestedBy: item.requested_by,
+          requestedByName: item.requested_by_name,
+          createdAt: new Date(item.created_at),
+          startedAt: item.started_at ? new Date(item.started_at) : undefined,
+          completedAt: item.completed_at ? new Date(item.completed_at) : undefined,
+        }))
+        
+        setJobs(mappedJobs)
+      } catch {
+        // API endpoint might not exist - show empty state
+        setJobs([])
+      }
+    } catch (err) {
+      setLoadError('Không thể tải danh sách công việc AI')
+      setJobs([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [statusFilter])
+
+  React.useEffect(() => {
+    fetchJobs()
+  }, [fetchJobs])
 
   // Filter jobs
   const filteredJobs = React.useMemo(() => {
@@ -131,7 +209,7 @@ export default function AIGenerationPage() {
       )
     }
 
-    // Status filter
+    // Status filter (already done in API call, but keep for client-side)
     if (statusFilter !== 'all') {
       result = result.filter(j => j.status === statusFilter)
     }
@@ -148,9 +226,9 @@ export default function AIGenerationPage() {
     failed: jobs.filter(j => j.status === 'failed').length,
   }), [jobs])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -174,7 +252,7 @@ export default function AIGenerationPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -240,7 +318,26 @@ export default function AIGenerationPage() {
         </Card>
 
         {/* Jobs Grid */}
-        {filteredJobs.length > 0 ? (
+        {isLoading ? (
+          <Card variant="default" padding="lg">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+              <p className="mt-4 text-sm text-slate-500">Đang tải công việc AI...</p>
+            </div>
+          </Card>
+        ) : loadError ? (
+          <Card variant="default" padding="lg" className="border-error-200 dark:border-error-800">
+            <div className="flex flex-col items-center justify-center py-8">
+              <svg className="h-12 w-12 text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="mt-4 text-sm text-error-600 dark:text-error-400">{loadError}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={fetchJobs}>
+                Thử lại
+              </Button>
+            </div>
+          </Card>
+        ) : filteredJobs.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredJobs.map((job) => (
               <JobCard key={job.id} job={job} />
@@ -250,8 +347,8 @@ export default function AIGenerationPage() {
           <EmptyState
             title="No jobs found"
             titleVi="Không tìm thấy công việc"
-            description="Try adjusting your search or filters"
-            descriptionVi="Thử điều chỉnh tìm kiếm hoặc bộ lọc"
+            description="No AI generation jobs match your criteria"
+            descriptionVi="Không có công việc nào phù hợp với tiêu chí của bạn"
           />
         )}
       </div>

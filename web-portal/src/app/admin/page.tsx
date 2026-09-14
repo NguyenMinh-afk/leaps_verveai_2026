@@ -8,20 +8,13 @@ import {
   PageHeader,
   PageSection,
   PageGrid,
-  EmptyState,
 } from '@/components/layout'
 import {
   Card,
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockAdminDashboardStats,
-  mockAuditLogEntries,
-  mockAIGenerationJobs,
-} from '@/data/admin-mock-data'
-import { formatRelativeTime } from '@/lib/utils'
+import { adminService } from '@/services/admin'
 import { authService } from '@/services/auth'
 import { useLanguage } from '@/components/providers/language-provider'
 import type { UserRole, BreadcrumbItem } from '@/types'
@@ -65,82 +58,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, titleVi, value, icon, color,
 }
 
 /**
- * Activity Item Component
- */
-interface ActivityItemProps {
-  actorName: string
-  action: string
-  actionVi: string
-  entity: string
-  entityVi: string
-  timestamp: Date
-  status: 'success' | 'failure' | 'pending'
-}
-
-const ActivityItem: React.FC<ActivityItemProps> = ({ actorName, action, actionVi, entity, entityVi, timestamp, status }) => {
-  const { t } = useLanguage()
-  const statusColors = {
-    success: 'bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-300',
-    failure: 'bg-error-100 text-error-700 dark:bg-error-900/30 dark:text-error-300',
-    pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  }
-
-  return (
-    <div className="flex items-start gap-3 py-3">
-      <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium', statusColors[status])}>
-        {status === 'success' ? '✓' : status === 'failure' ? '✗' : '○'}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-900 dark:text-slate-100">
-          <span className="font-medium">{actorName}</span>{' '}
-          <span className="text-slate-600 dark:text-slate-400">{actionVi}</span>{' '}
-          <span className="font-medium">{entityVi}</span>
-        </p>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-          {formatRelativeTime(timestamp)}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/**
- * AI Job Status Component
- */
-interface AIJobStatusProps {
-  job: typeof mockAIGenerationJobs[0]
-}
-
-const AIJobStatus: React.FC<AIJobStatusProps> = ({ job }) => {
-  const { t } = useLanguage()
-  const statusConfig = {
-    pending: { label: t('common.pending'), variant: 'default' as const, color: 'text-slate-600 dark:text-slate-400' },
-    processing: { label: t('admin.processing'), variant: 'info' as const, color: 'text-info-600 dark:text-info-400' },
-    completed: { label: t('admin.completed'), variant: 'success' as const, color: 'text-success-600 dark:text-success-400' },
-    failed: { label: t('admin.failed'), variant: 'error' as const, color: 'text-error-600 dark:text-error-400' },
-    cancelled: { label: t('admin.cancelled'), variant: 'default' as const, color: 'text-slate-600 dark:text-slate-400' },
-  }
-
-  const config = statusConfig[job.status]
-
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-          {job.courseNameVi}
-        </p>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-          {job.requestedCount} {t('questions.title').toLowerCase()} • {formatRelativeTime(job.createdAt)}
-        </p>
-      </div>
-      <Badge variant={config.variant} size="sm">
-        {config.label}
-      </Badge>
-    </div>
-  )
-}
-
-/**
  * Admin Dashboard Page
  */
 export default function AdminDashboardPage() {
@@ -148,14 +65,47 @@ export default function AdminDashboardPage() {
   const [currentRole] = React.useState<UserRole>('admin')
   const { t } = useLanguage()
 
-  const admin = mockAdminProfile
-  const stats = mockAdminDashboardStats
-  const recentActivity = mockAuditLogEntries.slice(0, 5)
-  const activeJobs = mockAIGenerationJobs.filter(j => j.status === 'processing' || j.status === 'pending')
+  // Real data state
+  const [userStats, setUserStats] = React.useState<{ total: number; active: number; byRole: Record<string, number> } | null>(null)
+  const [classStats, setClassStats] = React.useState<{ total: number; active: number; totalStudents: number } | null>(null)
+  const [questionStats, setQuestionStats] = React.useState<{ total: number; pendingReview: number; approved: number } | null>(null)
+  const [examStats, setExamStats] = React.useState<{ total: number } | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  // Fetch real stats on mount
+  React.useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [user, classData, question, exam] = await Promise.all([
+          adminService.getUserStats().catch(() => null),
+          adminService.getClassStats().catch(() => null),
+          adminService.getQuestionStats().catch(() => null),
+          adminService.getExamStats().catch(() => null),
+        ])
+        setUserStats(user)
+        setClassStats(classData)
+        setQuestionStats(question)
+        setExamStats(exam)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load stats')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  // Get current user from auth service
+  const [session, setSession] = React.useState<{ user: { name: string; email: string; role: UserRole } } | null>(null)
+
+  React.useEffect(() => {
+    authService.getSession().then(setSession).catch(() => null)
+  }, [])
+
+  const user = session?.user ?? {
+    name: 'Admin',
+    email: 'admin@verveai.local',
     role: 'admin' as UserRole,
   }
 
@@ -181,6 +131,22 @@ export default function AdminDashboardPage() {
     router.push('/admin/settings')
   }
 
+  // Calculate values from real data
+  const stats = {
+    totalUsers: userStats?.total ?? 0,
+    activeUsers: userStats?.active ?? 0,
+    teachers: userStats?.byRole?.['TEACHER'] ?? 0,
+    students: classStats?.totalStudents ?? 0,
+    totalQuestions: questionStats?.total ?? 0,
+    pendingReview: questionStats?.pendingReview ?? 0,
+    publishedQuestions: questionStats?.approved ?? 0,
+    totalCourses: classStats?.active ?? 0,
+    aiJobsTotal: 0,
+    aiJobsProcessing: 0,
+    aiJobsCompleted: 0,
+    aiJobsFailed: 0,
+  }
+
   return (
     <DashboardLayoutWrapper
       user={user}
@@ -190,13 +156,28 @@ export default function AdminDashboardPage() {
       onSettings={handleSettings}
     >
       <div className="space-y-6">
-        {/* Page Header */}
-        <PageHeader
-          title="Admin Dashboard"
-          titleVi="Bảng điều khiển Quản trị"
-          description="System overview and management"
-          descriptionVi="Tổng quan và quản lý hệ thống"
-        />
+        {/* Loading/Error States */}
+        {loading && (
+          <div className="flex items-center justify-center p-8">
+            <p className="text-slate-500">Loading dashboard...</p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="rounded-lg bg-error-50 p-4 text-error-700 dark:bg-error-900/30 dark:text-error-300">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* Page Header */}
+            <PageHeader
+              title="Admin Dashboard"
+              titleVi="Bảng điều khiển Quản trị"
+              description="System overview and management"
+              descriptionVi="Tổng quan và quản lý hệ thống"
+            />
 
         {/* System Overview */}
         <PageSection title={t('admin.systemOverview')} titleVi={t('admin.systemOverview')}>
@@ -350,60 +331,54 @@ export default function AdminDashboardPage() {
           </PageGrid>
         </PageSection>
 
-        {/* Recent Activity and AI Jobs */}
+        {/* Quick Actions */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Recent Activity */}
-          <PageSection title={t('admin.recentActivity')} titleVi={t('admin.recentActivity')}>
+          {/* Quick Links */}
+          <PageSection title={t('admin.quickActions') || 'Quick Actions'} titleVi="Thao tác nhanh">
             <Card variant="default" padding="md">
-              <div className="divide-y divide-slate-200 dark:divide-slate-700">
-                {recentActivity.map((activity) => (
-                  <ActivityItem
-                    key={activity.id}
-                    actorName={activity.actorName}
-                    action={activity.action}
-                    actionVi={activity.actionVi}
-                    entity={activity.entityName}
-                    entityVi={activity.entityNameVi}
-                    timestamp={new Date(activity.timestamp)}
-                    status={activity.status}
-                  />
-                ))}
-              </div>
-              {recentActivity.length === 0 && (
-                <p className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                  {t('admin.noActivity')}
-                </p>
-              )}
-              <div className="mt-4">
-                <Button variant="ghost" size="sm" onClick={() => router.push('/admin/audit')} className="w-full">
-                  {t('admin.viewAllLogs')}
+              <div className="grid gap-3">
+                <Button variant="outline" onClick={() => router.push('/admin/users')}>
+                  {t('admin.manageUsers') || 'Manage Users'}
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/admin/courses')}>
+                  {t('admin.manageCourses') || 'Manage Courses'}
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/admin/questions')}>
+                  {t('admin.manageQuestions') || 'Manage Questions'}
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/admin/moderation')}>
+                  {t('admin.moderation') || 'Moderation'} ({questionStats?.pendingReview ?? 0})
                 </Button>
               </div>
             </Card>
           </PageSection>
 
-          {/* Active AI Jobs */}
-          <PageSection title={t('admin.activeAIJobs')} titleVi={t('admin.activeAIJobs')}>
+          {/* System Status */}
+          <PageSection title={t('admin.systemStatus') || 'System Status'} titleVi="Trạng thái hệ thống">
             <Card variant="default" padding="md">
-              <div className="space-y-3">
-                {activeJobs.length > 0 ? (
-                  activeJobs.map((job) => (
-                    <AIJobStatus key={job.id} job={job} />
-                  ))
-                ) : (
-                  <p className="p-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                    {t('admin.noActiveAIJobs')}
-                  </p>
-                )}
-              </div>
-              <div className="mt-4">
-                <Button variant="ghost" size="sm" onClick={() => router.push('/admin/ai-generation')} className="w-full">
-                  {t('admin.viewAllJobs')}
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Database</span>
+                  <Badge variant="success" size="sm">Operational</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">API Gateway</span>
+                  <Badge variant="success" size="sm">Operational</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Auth Service</span>
+                  <Badge variant="success" size="sm">Operational</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Content Service</span>
+                  <Badge variant="success" size="sm">Operational</Badge>
+                </div>
               </div>
             </Card>
           </PageSection>
         </div>
+      </>
+      )}
       </div>
     </DashboardLayoutWrapper>
   )

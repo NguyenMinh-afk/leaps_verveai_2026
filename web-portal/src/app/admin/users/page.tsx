@@ -8,7 +8,6 @@ import {
   DashboardLayoutWrapper,
   PageHeader,
   PageSection,
-  EmptyState,
 } from '@/components/layout'
 import {
   Card,
@@ -19,46 +18,50 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockAdminUsers,
-} from '@/data/admin-mock-data'
+import { adminService } from '@/services/admin'
+import { authService } from '@/services/auth'
 import { formatRelativeTime } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
 import type { UserRole, BreadcrumbItem } from '@/types'
-import type { AdminUser } from '@/types'
 
 /**
  * User Row Component
  */
 interface UserRowProps {
-  user: AdminUser
+  user: {
+    id: string;
+    name: string;
+    nameVi?: string;
+    email: string;
+    role: string;
+    status?: string;
+    is_active?: boolean;
+    created_at?: Date | string;
+    createdAt?: Date | string;
+  };
 }
 
 const UserRow: React.FC<UserRowProps> = ({ user }) => {
   const { t } = useLanguage()
   const statusConfig = {
-    active: { label: t('common.active'), variant: 'success' as const },
-    inactive: { label: t('common.inactive'), variant: 'default' as const },
-    suspended: { label: t('admin.suspended'), variant: 'error' as const },
-    pending: { label: t('common.pending'), variant: 'warning' as const },
+    true: { label: t('common.active'), variant: 'success' as const },
+    false: { label: t('common.inactive'), variant: 'default' as const },
   }
 
   const roleConfig = {
-    admin: { label: t('auth.admin'), color: 'text-info-600 dark:text-info-400' },
-    teacher: { label: t('auth.teacher'), color: 'text-amber-600 dark:text-amber-400' },
-    student: { label: t('auth.student'), color: 'text-verve-600 dark:text-verve-400' },
-    reviewer: { label: t('admin.reviewer'), color: 'text-success-600 dark:text-success-400' },
+    ADMIN: { label: t('auth.admin'), color: 'text-info-600 dark:text-info-400' },
+    TEACHER: { label: t('auth.teacher'), color: 'text-amber-600 dark:text-amber-400' },
+    SUPERVISOR: { label: t('admin.reviewer'), color: 'text-success-600 dark:text-success-400' },
   }
 
-  const config = statusConfig[user.status]
-  const role = roleConfig[user.role]
+  const config = statusConfig[(user.is_active ?? user.status === 'active') ? 'true' : 'false']
+  const role = roleConfig[user.role as keyof typeof roleConfig] || { label: user.role, color: 'text-slate-600' }
 
   return (
     <tr className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50">
       <td className="px-4 py-3">
         <div>
-          <p className="font-medium text-slate-900 dark:text-slate-100">{user.nameVi}</p>
+          <p className="font-medium text-slate-900 dark:text-slate-100">{user.name}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
         </div>
       </td>
@@ -68,23 +71,13 @@ const UserRow: React.FC<UserRowProps> = ({ user }) => {
         </span>
       </td>
       <td className="px-4 py-3">
-        <Badge variant={config.variant} size="sm">
-          {config.label}
+        <Badge variant={config?.variant || 'default'} size="sm">
+          {config?.label || 'Unknown'}
         </Badge>
       </td>
       <td className="px-4 py-3">
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          {user.className || '-'}
-        </p>
-      </td>
-      <td className="px-4 py-3">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {formatRelativeTime(new Date(user.createdAt))}
-        </p>
-      </td>
-      <td className="px-4 py-3">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {user.lastActiveAt ? formatRelativeTime(new Date(user.lastActiveAt)) : 'Never'}
+          {formatRelativeTime(new Date(user.created_at || user.createdAt || Date.now()))}
         </p>
       </td>
       <td className="px-4 py-3">
@@ -110,9 +103,34 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [roleFilter, setRoleFilter] = React.useState<string>('all')
   const [statusFilter, setStatusFilter] = React.useState<string>('all')
+  const [users, setUsers] = React.useState<Array<{
+    id: string;
+    name: string;
+    nameVi?: string;
+    email: string;
+    role: string;
+    status?: string;
+    is_active?: boolean;
+    created_at?: Date;
+    createdAt?: Date | string;
+  }>>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const users = mockAdminUsers
+  // Fetch real users
+  React.useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const result = await adminService.listUsers({ take: 100 })
+        setUsers(result.items)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load users')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchUsers()
+  }, [])
 
   // Filter users
   const filteredUsers = React.useMemo(() => {
@@ -123,7 +141,6 @@ export default function UsersPage() {
       const query = searchQuery.toLowerCase()
       result = result.filter(u =>
         u.name.toLowerCase().includes(query) ||
-        u.nameVi.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query)
       )
     }
@@ -135,7 +152,7 @@ export default function UsersPage() {
 
     // Status filter
     if (statusFilter !== 'all') {
-      result = result.filter(u => u.status === statusFilter)
+      result = result.filter(u => (statusFilter === 'active') === u.is_active)
     }
 
     return result
@@ -144,15 +161,22 @@ export default function UsersPage() {
   // Stats
   const stats = React.useMemo(() => ({
     total: users.length,
-    admins: users.filter(u => u.role === 'admin').length,
-    teachers: users.filter(u => u.role === 'teacher').length,
-    students: users.filter(u => u.role === 'student').length,
-    active: users.filter(u => u.status === 'active').length,
+    admins: users.filter(u => u.role === 'ADMIN').length,
+    teachers: users.filter(u => u.role === 'TEACHER').length,
+    students: users.filter(u => u.role === 'STUDENT').length,
+    active: users.filter(u => u.is_active).length,
   }), [users])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  // Get current user from auth
+  const [session, setSession] = React.useState<{ user: { name: string; email: string; role: UserRole } } | null>(null)
+
+  React.useEffect(() => {
+    authService.getSession().then(setSession).catch(() => null)
+  }, [])
+
+  const user = session?.user ?? {
+    name: 'Admin',
+    email: 'admin@verveai.local',
     role: 'admin' as UserRole,
   }
 
@@ -166,8 +190,13 @@ export default function UsersPage() {
     router.push('/')
   }
 
-  const handleSignOut = () => {
-    router.push('/')
+  const handleSignOut = async () => {
+    try {
+      await authService.logout()
+    } catch (error) {
+      // Ignore
+    }
+    router.push('/login')
   }
 
   const handleSettings = () => {
@@ -183,121 +212,123 @@ export default function UsersPage() {
       onSettings={handleSettings}
     >
       <div className="space-y-6">
-        {/* Page Header */}
-        <PageHeader
-          title="User Management"
-          titleVi="Quản lý Người dùng"
-          description="Manage platform users and their roles"
-          descriptionVi="Quản lý người dùng nền tảng và vai trò của họ"
-        />
+        {/* Loading/Error States */}
+        {loading && (
+          <div className="flex items-center justify-center p-8">
+            <p className="text-slate-500">Loading users...</p>
+          </div>
+        )}
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin.totalUsers')}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
-          </Card>
-          <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.admin')}</p>
-            <p className="mt-1 text-2xl font-bold text-info-600 dark:text-info-400">{stats.admins}</p>
-          </Card>
-          <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.teacher')}</p>
-            <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.teachers}</p>
-          </Card>
-          <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.student')}</p>
-            <p className="mt-1 text-2xl font-bold text-verve-600 dark:text-verve-400">{stats.students}</p>
-          </Card>
-          <Card variant="default" padding="md">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.active')}</p>
-            <p className="mt-1 text-2xl font-bold text-success-600 dark:text-success-400">{stats.active}</p>
-          </Card>
-        </div>
+        {error && !loading && (
+          <div className="rounded-lg bg-error-50 p-4 text-error-700 dark:bg-error-900/30 dark:text-error-300">
+            {error}
+          </div>
+        )}
 
-        {/* Filters */}
-        <Card variant="default" padding="md">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Input
-              placeholder={t('common.search') + '...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-xs"
+        {!loading && !error && (
+          <>
+            {/* Page Header */}
+            <PageHeader
+              title="User Management"
+              titleVi="Quản lý Người dùng"
+              description="Manage platform users and their roles"
+              descriptionVi="Quản lý người dùng nền tảng và vai trò của họ"
             />
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              >
-                <option value="all">{t('common.all')} {t('common.role')}</option>
-                <option value="admin">{t('auth.admin')}</option>
-                <option value="teacher">{t('auth.teacher')}</option>
-                <option value="student">{t('auth.student')}</option>
-                <option value="reviewer">{t('admin.reviewer')}</option>
-              </select>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
-              >
-                <option value="all">{t('common.all')} {t('common.status')}</option>
-                <option value="active">{t('common.active')}</option>
-                <option value="inactive">{t('common.inactive')}</option>
-                <option value="suspended">{t('admin.suspended')}</option>
-                <option value="pending">{t('common.pending')}</option>
-              </select>
-            </div>
-          </div>
-        </Card>
 
-        {/* Users Table */}
-        <Card variant="default" padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('nav.users')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.role')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.status')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('class.class')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('admin.createdDate')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('admin.lastActive')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {filteredUsers.map((user) => (
-                  <UserRow key={user.id} user={user} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredUsers.length === 0 && (
-            <div className="p-8">
-              <EmptyState
-                title="No users found"
-                titleVi="Không tìm thấy người dùng"
-                description="Try adjusting your search or filters"
-                descriptionVi="Thử điều chỉnh tìm kiếm hoặc bộ lọc"
-              />
+            {/* Stats */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Card variant="default" padding="md">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin.totalUsers')}</p>
+                <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{stats.total}</p>
+              </Card>
+              <Card variant="default" padding="md">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.admin')}</p>
+                <p className="mt-1 text-2xl font-bold text-info-600 dark:text-info-400">{stats.admins}</p>
+              </Card>
+              <Card variant="default" padding="md">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.teacher')}</p>
+                <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.teachers}</p>
+              </Card>
+              <Card variant="default" padding="md">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('auth.student')}</p>
+                <p className="mt-1 text-2xl font-bold text-verve-600 dark:text-verve-400">{stats.students}</p>
+              </Card>
+              <Card variant="default" padding="md">
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.active')}</p>
+                <p className="mt-1 text-2xl font-bold text-success-600 dark:text-success-400">{stats.active}</p>
+              </Card>
             </div>
-          )}
-        </Card>
+
+            {/* Filters */}
+            <Card variant="default" padding="md">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <Input
+                  placeholder={t('common.search') + '...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="max-w-xs"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  >
+                    <option value="all">{t('common.all')} {t('common.role')}</option>
+                    <option value="ADMIN">{t('auth.admin')}</option>
+                    <option value="TEACHER">{t('auth.teacher')}</option>
+                  </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                  >
+                    <option value="all">{t('common.all')} {t('common.status')}</option>
+                    <option value="active">{t('common.active')}</option>
+                    <option value="inactive">{t('common.inactive')}</option>
+                  </select>
+                </div>
+              </div>
+            </Card>
+
+            {/* Users Table */}
+            <Card variant="default" padding="none">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('nav.users')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('common.role')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('common.status')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('admin.createdDate')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {t('common.actions')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                    {filteredUsers.map((user) => (
+                      <UserRow key={user.id} user={user} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {filteredUsers.length === 0 && (
+                <div className="p-8 text-center text-slate-500">
+                  {t('admin.noUsersFound') || 'No users found'}
+                </div>
+              )}
+            </Card>
+          </>
+        )}
       </div>
     </DashboardLayoutWrapper>
   )
