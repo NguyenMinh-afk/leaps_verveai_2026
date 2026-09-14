@@ -1,0 +1,191 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["exam"]
+}
+
+/// Exam status enum
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@schema("exam")
+}
+
+/// An exam created by a teacher for a class.
+model Exam {
+  id          String   @id @default(uuid())
+  class_id    String
+  teacher_id  String
+  title       String
+  description String?
+  status      ExamStatus @default(DRAFT)
+  time_limit  Int?     // minutes, null = unlimited
+  passing_score Float   @default(60)  // percentage
+  max_score   Float    @default(100)
+  max_attempts Int     @default(1)
+  shuffle_questions Boolean @default(false)
+  show_results_immediately Boolean @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+
+  questions   ExamQuestion[]
+  attempts    ExamAttempt[]
+
+  @@index([class_id])
+  @@index([teacher_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@schema("exam")
+  @@map("exams")
+}
+
+/// A question included in an exam.
+model ExamQuestion {
+  id            String   @id @default(uuid())
+  exam_id       String
+  question_id   String   // reference to content service question
+  points        Float    @default(1.0)
+  order_index   Int      @default(0)
+  required      Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  exam          Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+
+  @@unique([exam_id, question_id])
+  @@index([exam_id])
+  @@schema("exam")
+  @@map("exam_questions")
+}
+
+/// A student's attempt at an exam.
+model ExamAttempt {
+  id           String   @id @default(uuid())
+  exam_id      String
+  student_id   String
+  status       ExamAttemptStatus @default(IN_PROGRESS)
+  score        Float?
+  max_score    Float?
+  percentage   Float?
+  started_at   DateTime @default(now())
+  submitted_at DateTime?
+  graded_at    DateTime?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  bkt_evidence_sent_at DateTime?  // Tracks when BKT evidence was sent for idempotency
+
+  exam         Exam     @relation(fields: [exam_id], references: [id])
+  answers      ExamAnswer[]
+
+  @@unique([exam_id, student_id])
+  @@index([exam_id])
+  @@index([student_id])
+  @@index([status])
+  @@schema("exam")
+  @@map("exam_attempts")
+}
+
+/// A student's answer to a specific question in an attempt.
+model ExamAnswer {
+  id               String   @id @default(uuid())
+  attempt_id       String
+  question_id      String
+  selected_options String[] @default([])  // for choice questions
+  text_answer      String?                  // for short answer
+  is_correct       Boolean?
+  points_earned    Float?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  attempt          ExamAttempt @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+
+  @@unique([attempt_id, question_id])
+  @@index([attempt_id])
+  @@index([question_id])
+  @@schema("exam")
+  @@map("exam_answers")
+}
+
+enum ExamAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  MANUAL_REVIEW
+  COMPLETED
+
+  @@schema("exam")
+}
+
+/// Maps content service questions to BKT skills for evidence tracking.
+/// This allows exam answers to generate BKT evidence for the corresponding skill.
+model QuestionSkillMapping {
+  id            String   @id @default(uuid())
+  question_id   String   // reference to content service question
+  skill_id      String   // reference to BKT service skill
+  created_at    DateTime @default(now())
+  created_by    String?  // teacher/user who created the mapping
+
+  @@unique([question_id, skill_id])
+  @@index([question_id])
+  @@index([skill_id])
+  @@schema("exam")
+  @@map("question_skill_mappings")
+}
+
+/// Diagnosis session status enum
+enum DiagnosisStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+
+  @@schema("exam")
+}
+
+/// A diagnostic assessment session for determining student mastery on a skill.
+/// Created when a student starts a diagnostic test, updated as they answer questions.
+model DiagnosisSession {
+  id                  String         @id @default(uuid())
+  student_id          String
+  skill_id            String
+  skill_name          String
+  status              DiagnosisStatus @default(NOT_STARTED)
+  questions_answered  Int            @default(0)
+  total_questions     Int            @default(5)
+  current_p_known     Float          @default(0.1)
+  result              String?        // JSON string of DiagnosisResult
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+
+  answers             DiagnosisAnswer[]
+
+  @@index([student_id])
+  @@index([skill_id])
+  @@index([status])
+  @@schema("exam")
+  @@map("diagnosis_sessions")
+}
+
+/// An answer submitted during a diagnostic assessment.
+model DiagnosisAnswer {
+  id           String   @id @default(uuid())
+  session_id   String
+  question_id  String
+  answer      String
+  is_correct  Boolean
+  created_at  DateTime @default(now())
+
+  session     DiagnosisSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
+  @@index([question_id])
+  @@schema("exam")
+  @@map("diagnosis_answers")
+}

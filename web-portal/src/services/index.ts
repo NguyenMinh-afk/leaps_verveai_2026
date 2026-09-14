@@ -9,6 +9,7 @@ export { assignmentService } from './assignment'
 export { classService } from './class'
 export { courseService } from './course'
 export { aiGenerationService } from './aiGeneration'
+export { teacherExamService } from './exam'
 
 // Auth types
 export type { LoginInput, RegisterInput, AuthSession, AuthUser } from './auth/auth.types'
@@ -52,3 +53,6 @@ export type {
   QuestionDifficulty as AIGenerationDifficulty,
   QuestionType as AIGenerationQuestionType,
 } from './aiGeneration/aiGeneration.types'
+
+// Exam types
+export type { ExamListResult, ExamOperationResult } from './exam'

@@ -13,12 +13,31 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  getAIGenerationJobById,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend AI generation job detail response type
+interface BackendAIGenerationDetailResponse {
+  id: string
+  status: string
+  course_id: string
+  course_name: string
+  topic_id: string
+  topic_name: string
+  source_document?: string
+  requested_count: number
+  generated_count: number
+  approved_count: number
+  rejected_count: number
+  error_message?: string
+  requested_by: string
+  requested_by_name: string
+  created_at: string
+  started_at?: string
+  completed_at?: string
+}
 
 /**
  * AI Generation Job Detail Page
@@ -27,14 +46,36 @@ export default function AIGenerationJobDetailPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
+  const [job, setJob] = React.useState<BackendAIGenerationDetailResponse | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const job = getAIGenerationJobById(jobId)
+  // Fetch job from real API
+  React.useEffect(() => {
+    async function fetchJob() {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const response = await api.get<BackendAIGenerationDetailResponse>(`/api/ai/jobs/${jobId}`)
+        setJob(response)
+      } catch {
+        setLoadError('Không thể tải thông tin công việc')
+        setJob(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    if (jobId) {
+      fetchJob()
+    }
+  }, [jobId])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -57,10 +98,31 @@ export default function AIGenerationJobDetailPage() {
     router.push('/admin/settings')
   }
 
-  if (!job) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+            <p className="text-sm text-slate-500">Đang tải thông tin công việc...</p>
+          </div>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (loadError || !job) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -69,8 +131,8 @@ export default function AIGenerationJobDetailPage() {
         <EmptyState
           title="Job not found"
           titleVi="Không tìm thấy công việc"
-          description="The job you're looking for doesn't exist"
-          descriptionVi="Công việc bạn đang tìm kiếm không tồn tại"
+          description={loadError || "The job you're looking for doesn't exist"}
+          descriptionVi={loadError || 'Công việc bạn đang tìm kiếm không tồn tại'}
           action={
             <Button variant="primary" onClick={() => router.push('/admin/ai-generation')}>
               Quay lại AI Generation
@@ -89,11 +151,11 @@ export default function AIGenerationJobDetailPage() {
     cancelled: { label: 'Đã hủy', variant: 'default' as const, color: 'border-slate-500' },
   }
 
-  const config = statusConfig[job.status]
+  const config = statusConfig[job.status as keyof typeof statusConfig] || statusConfig.pending
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -104,7 +166,7 @@ export default function AIGenerationJobDetailPage() {
         <PageHeader
           title={`AI Generation Job: ${job.id}`}
           titleVi={`Công việc Tạo AI: ${job.id}`}
-          description={job.courseNameVi}
+          description={job.course_name}
           actions={
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => router.push('/admin/ai-generation')}>
@@ -140,13 +202,13 @@ export default function AIGenerationJobDetailPage() {
               )}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Yêu cầu bởi: {job.requestedByName}
+              Yêu cầu bởi: {job.requested_by_name}
             </p>
           </div>
         </Card>
 
         {/* Error Message */}
-        {job.errorMessage && (
+        {job.error_message && (
           <Card variant="default" padding="lg" className="border-l-4 border-error-500">
             <div className="flex items-start gap-3">
               <svg className="h-5 w-5 text-error-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,7 +216,7 @@ export default function AIGenerationJobDetailPage() {
               </svg>
               <div>
                 <h4 className="font-medium text-error-900 dark:text-error-100">Lỗi xảy ra</h4>
-                <p className="mt-1 text-sm text-error-700 dark:text-error-300">{job.errorMessage}</p>
+                <p className="mt-1 text-sm text-error-700 dark:text-error-300">{job.error_message}</p>
               </div>
             </div>
           </Card>
@@ -174,16 +236,16 @@ export default function AIGenerationJobDetailPage() {
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Khóa học</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.courseNameVi}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.course_name}</p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Chủ đề</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.topicNameVi}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.topic_name}</p>
               </div>
-              {job.sourceDocument && (
+              {job.source_document && (
                 <div className="flex justify-between">
                   <p className="text-sm text-slate-500 dark:text-slate-400">Tài liệu nguồn</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.sourceDocument}</p>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{job.source_document}</p>
                 </div>
               )}
             </div>
@@ -198,19 +260,19 @@ export default function AIGenerationJobDetailPage() {
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Ngày tạo</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {formatDate(new Date(job.createdAt))}
+                  {formatDate(new Date(job.created_at))}
                 </p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Bắt đầu</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {job.startedAt ? formatRelativeTime(new Date(job.startedAt)) : 'Chưa bắt đầu'}
+                  {job.started_at ? formatRelativeTime(new Date(job.started_at)) : 'Chưa bắt đầu'}
                 </p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Hoàn thành</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {job.completedAt ? formatRelativeTime(new Date(job.completedAt)) : 'Chưa hoàn thành'}
+                  {job.completed_at ? formatRelativeTime(new Date(job.completed_at)) : 'Chưa hoàn thành'}
                 </p>
               </div>
             </div>
@@ -224,19 +286,19 @@ export default function AIGenerationJobDetailPage() {
           </h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg bg-slate-50 p-4 text-center dark:bg-slate-800/50">
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{job.requestedCount}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{job.requested_count}</p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Yêu cầu</p>
             </div>
             <div className="rounded-lg bg-slate-50 p-4 text-center dark:bg-slate-800/50">
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{job.generatedCount}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{job.generated_count}</p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Đã tạo</p>
             </div>
             <div className="rounded-lg bg-success-50 p-4 text-center dark:bg-success-900/20">
-              <p className="text-3xl font-bold text-success-600 dark:text-success-400">{job.approvedCount}</p>
+              <p className="text-3xl font-bold text-success-600 dark:text-success-400">{job.approved_count}</p>
               <p className="mt-1 text-sm text-success-700 dark:text-success-300">Đã duyệt</p>
             </div>
             <div className="rounded-lg bg-error-50 p-4 text-center dark:bg-error-900/20">
-              <p className="text-3xl font-bold text-error-600 dark:text-error-400">{job.rejectedCount}</p>
+              <p className="text-3xl font-bold text-error-600 dark:text-error-400">{job.rejected_count}</p>
               <p className="mt-1 text-sm text-error-700 dark:text-error-300">Từ chối</p>
             </div>
           </div>

@@ -23,15 +23,7 @@ import {
   MasteryBadge,
   MasteryRingIndicator,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  mockStudentDashboardStats,
-  mockTopicMasteries,
-  mockRecommendations,
-  mockStudentAssignments,
-  mockStudentExams,
-  mockLearningActivities,
-} from '@/data/student-mock-data'
+import { studentDashboardService } from '@/services/dashboard'
 import { formatRelativeTime, getMasteryLevel } from '@/lib/utils'
 import { authService } from '@/services/auth'
 import { useLanguage } from '@/components/providers/language-provider'
@@ -338,21 +330,92 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, t }) => {
 export default function StudentDashboardPage() {
   const router = useRouter()
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
   const [currentRole] = React.useState<UserRole>('student')
+  const [currentUser, setCurrentUser] = React.useState<{ name: string; email: string; role: UserRole } | null>(null)
+  const [dashboardData, setDashboardData] = React.useState<{
+    profile: { id: string; name: string; email: string } | null
+    stats: {
+      overallMastery: number
+      masteryLevel: 'mastered' | 'learning' | 'needs-support' | 'unknown'
+      topicsCompleted: number
+      topicsInProgress: number
+      assignmentsPending: number
+      assignmentsCompleted: number
+      examsCompleted: number
+      averageScore: number
+    }
+    recommendations: LearningRecommendation[]
+    assignments: StudentAssignment[]
+    exams: StudentExam[]
+    activities: LearningActivity[]
+  } | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+  const [recommendationsUnavailable, setRecommendationsUnavailable] = React.useState(false)
 
-  const student = mockStudentProfile
-  const stats = mockStudentDashboardStats
-  const recommendations = mockRecommendations.filter(r => r.priority === 'high').slice(0, 3)
-  const pendingAssignments = mockStudentAssignments.filter(a => a.status !== 'completed').slice(0, 3)
-  const availableExams = mockStudentExams.filter(e => e.status === 'available').slice(0, 2)
-  const recentActivities = mockLearningActivities.slice(0, 5)
+  // Fetch current user and dashboard data
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        // Get current session
+        const session = await authService.getSession()
+        if (session?.user) {
+          setCurrentUser({
+            name: session.user.name,
+            email: session.user.email,
+            role: session.user.role,
+          })
 
-  const user = {
-    name: student.name,
-    email: student.email,
-    role: 'student' as UserRole,
+          // Fetch dashboard data from real APIs using the student's ID
+          const result = await studentDashboardService.getDashboardData(session.user.id)
+          if (result.success && result.data) {
+            setDashboardData({
+              profile: session.user,
+              stats: result.data.stats,
+              recommendations: result.data.recommendations,
+              assignments: result.data.assignments,
+              exams: result.data.exams,
+              activities: result.data.activities,
+            })
+            if (result.partialError) {
+              setRecommendationsUnavailable(true)
+            }
+          } else {
+            setError(result.error || 'Failed to load dashboard')
+          }
+        } else {
+          // No session - show error state
+          setError('Please log in to view your dashboard')
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  // Profile comes from session - no fake fallbacks
+  const studentProfile = dashboardData?.profile || null
+
+  // Use real data or safe defaults for stats
+  const stats = dashboardData?.stats || {
+    overallMastery: 0,
+    masteryLevel: 'unknown' as const,
+    topicsCompleted: 0,
+    topicsInProgress: 0,
+    assignmentsPending: 0,
+    assignmentsCompleted: 0,
+    examsCompleted: 0,
+    averageScore: 0,
   }
+  const recommendations = dashboardData?.recommendations.filter(r => r.priority === 'high').slice(0, 3) || []
+  const pendingAssignments = dashboardData?.assignments.filter(a => a.status !== 'completed').slice(0, 3) || []
+  const availableExams = dashboardData?.exams.filter(e => e.status === 'available').slice(0, 2) || []
+  const recentActivities = dashboardData?.activities.slice(0, 5) || []
+
+  const user = currentUser || { name: 'Student', email: '', role: 'student' as UserRole }
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Trang chủ', labelVi: 'Trang chủ', href: '/' },
@@ -390,6 +453,30 @@ export default function StudentDashboardPage() {
     )
   }
 
+  if (error) {
+    return (
+      <DashboardLayoutWrapper
+        user={user}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <EmptyState
+          title="Error loading dashboard"
+          titleVi="Lỗi khi tải dashboard"
+          description={error}
+          descriptionVi={error}
+          action={
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              {t('common.retry') || 'Thử lại'}
+            </Button>
+          }
+        />
+      </DashboardLayoutWrapper>
+    )
+  }
+
   const masteryLevel = getMasteryLevel(stats.overallMastery)
 
   const levelLabels = {
@@ -410,8 +497,8 @@ export default function StudentDashboardPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <PageHeader
-          title={`Chào ${student.name.split(' ').pop()}!`}
-          titleVi={`Chào ${student.name.split(' ').pop()}!`}
+          title={`Chào ${studentProfile?.name.split(' ').pop() ?? 'bạn'}!`}
+          titleVi={`Chào ${studentProfile?.name.split(' ').pop() ?? 'bạn'}!`}
           description="Tiếp tục hành trình học tập của bạn"
           actions={
             <Button variant="primary" size="sm" onClick={() => router.push('/student/recommendations')}>

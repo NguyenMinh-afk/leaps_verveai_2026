@@ -20,12 +20,10 @@ import {
   TabsTrigger,
   TabsContent,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  mockStudentExams,
-} from '@/data/student-mock-data'
+import { examService } from '@/services/exam'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { StudentExam } from '@/types'
 
@@ -47,7 +45,7 @@ const ExamCard: React.FC<ExamCardProps> = ({ exam }) => {
     expired: { label: t('common.expired') || 'Đã hết hạn', variant: 'error' as const },
   }
 
-  const config = statusConfig[exam.status]
+  const config = statusConfig[exam.status] || statusConfig.available
 
   return (
     <Link href={`/student/exams/${exam.id}`}>
@@ -66,9 +64,11 @@ const ExamCard: React.FC<ExamCardProps> = ({ exam }) => {
           </Badge>
         </div>
 
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
-          {exam.descriptionVi}
-        </p>
+        {exam.description && (
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+            {exam.descriptionVi}
+          </p>
+        )}
 
         {exam.topicNameVi && (
           <div className="mt-3">
@@ -142,44 +142,57 @@ const ExamCard: React.FC<ExamCardProps> = ({ exam }) => {
 export default function ExamsPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('student')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [activeTab, setActiveTab] = React.useState('available')
+  const [exams, setExams] = React.useState<StudentExam[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const student = mockStudentProfile
-  const exams = mockStudentExams
+  // Load exams from API
+  React.useEffect(() => {
+    loadExams()
+  }, [activeTab])
+
+  const loadExams = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      let status: 'available' | 'upcoming' | 'completed' | undefined;
+      if (activeTab === 'available') status = 'available';
+      else if (activeTab === 'upcoming') status = 'upcoming';
+      else if (activeTab === 'completed') status = 'completed';
+
+      const result = await examService.getExams({ status });
+      setExams(result.exams)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load exams')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Filter exams
   const filteredExams = React.useMemo(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     let items = [...exams]
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       items = items.filter(e =>
-        e.titleVi.toLowerCase().includes(query) ||
-        e.descriptionVi.toLowerCase().includes(query) ||
-        e.className.toLowerCase().includes(query)
+        e.titleVi?.toLowerCase().includes(query) ||
+        e.descriptionVi?.toLowerCase().includes(query) ||
+        e.className?.toLowerCase().includes(query)
       )
     }
 
-    // Tab filter
-    switch (activeTab) {
-      case 'available':
-        return items.filter(e => e.status === 'available')
-      case 'upcoming':
-        return items.filter(e => e.status === 'upcoming')
-      case 'completed':
-        return items.filter(e => e.status === 'completed')
-      default:
-        return items
-    }
-  }, [exams, searchQuery, activeTab])
+    return items
+  }, [exams, searchQuery])
 
-  const user = {
-    name: student.name,
-    email: student.email,
+  const userData = {
+    name: user?.name || 'Student',
+    email: user?.email || '',
     role: 'student' as UserRole,
   }
 
@@ -203,7 +216,6 @@ export default function ExamsPage() {
 
   // Stats
   const stats = React.useMemo(() => ({
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     total: exams.length,
     available: exams.filter(e => e.status === 'available').length,
     upcoming: exams.filter(e => e.status === 'upcoming').length,
@@ -212,7 +224,7 @@ export default function ExamsPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userData}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -289,7 +301,21 @@ export default function ExamsPage() {
         </Card>
 
         {/* Exams List */}
-        {filteredExams.length > 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+        ) : error ? (
+          <Card variant="default" padding="lg" className="text-center">
+            <p className="text-error-600 dark:text-error-400">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={loadExams}>
+              {t('common.retry') || 'Thử lại'}
+            </Button>
+          </Card>
+        ) : filteredExams.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredExams.map((exam) => (
               <ExamCard key={exam.id} exam={exam} />

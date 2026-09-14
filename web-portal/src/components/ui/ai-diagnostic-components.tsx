@@ -12,6 +12,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/providers/language-provider';
+import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from './button';
 import { Badge } from './badge';
 import { Card } from './card';
@@ -489,6 +490,8 @@ export interface TeacherOverrideModalProps {
   onClose: () => void;
   diagnosis: Diagnosis | null;
   onOverride: (override: TeacherOverride) => void;
+  teacherId?: string;
+  teacherName?: string;
 }
 
 const overrideReasons: { value: OverrideReason; label: string; labelVi: string; description: string }[] = [
@@ -503,12 +506,17 @@ const overrideReasons: { value: OverrideReason; label: string; labelVi: string; 
 /**
  * Teacher Override Modal Component
  */
-export function TeacherOverrideModal({ isOpen, onClose, diagnosis, onOverride }: TeacherOverrideModalProps) {
+export function TeacherOverrideModal({ isOpen, onClose, diagnosis, onOverride, teacherId, teacherName }: TeacherOverrideModalProps) {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [overrideType, setOverrideType] = React.useState<'accept' | 'adjust' | 'reject'>('accept');
   const [reason, setReason] = React.useState<OverrideReason>('correct_conclusion');
   const [newConclusion, setNewConclusion] = React.useState('');
   const [note, setNote] = React.useState('');
+
+  // Resolve teacher info: props > auth context > fallback
+  const resolvedTeacherId = teacherId || user?.id || 'unknown';
+  const resolvedTeacherName = teacherName || user?.name || 'Unknown Teacher';
 
   // Reset form when diagnosis changes
   React.useEffect(() => {
@@ -532,8 +540,8 @@ export function TeacherOverrideModal({ isOpen, onClose, diagnosis, onOverride }:
       overrideType,
       reason,
       reasonDetail: note,
-      teacherId: 'teacher-1', // TODO: Get from auth
-      teacherName: 'Giáo viên Demo',
+      teacherId: resolvedTeacherId,
+      teacherName: resolvedTeacherName,
       createdAt: new Date(),
     };
     onOverride(override);

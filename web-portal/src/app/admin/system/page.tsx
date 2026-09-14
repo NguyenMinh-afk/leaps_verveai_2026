@@ -12,14 +12,22 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockSystemHealthStatus,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { SystemHealthStatus } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend health response type
+interface BackendHealthResponse {
+  service: string
+  serviceVi: string
+  status: 'healthy' | 'degraded' | 'offline' | 'unknown'
+  message?: string
+  uptime?: string
+  timestamp: string
+}
 
 /**
  * Health Card Component
@@ -122,15 +130,80 @@ const HealthCard: React.FC<HealthCardProps> = ({ health }) => {
 export default function SystemPage() {
   const router = useRouter()
   const { t } = useLanguage()
-  const [currentRole] = React.useState<UserRole>('admin')
+  const { user } = useAuth()
   const [lastRefresh, setLastRefresh] = React.useState(new Date())
+  const [healthStatuses, setHealthStatuses] = React.useState<SystemHealthStatus[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const healthStatuses = mockSystemHealthStatus
+  // Fetch health status from real API
+  const fetchHealthStatus = React.useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const services: Array<BackendHealthResponse & { lastCheck: Date }> = []
+      
+      // Try to fetch health from various endpoints
+      const healthEndpoints = [
+        { path: '/api/auth/health', service: 'Gateway', serviceVi: 'Cổng API' },
+        { path: '/api/health', service: 'Gateway', serviceVi: 'Cổng API' },
+      ]
+      
+      for (const endpoint of healthEndpoints) {
+        try {
+          const response = await api.get<BackendHealthResponse>(endpoint.path)
+          services.push({
+            service: endpoint.service,
+            serviceVi: endpoint.serviceVi,
+            status: response.status || 'healthy',
+            message: response.message,
+            uptime: response.uptime,
+            timestamp: response.timestamp || new Date().toISOString(),
+            lastCheck: new Date(response.timestamp || Date.now()),
+          })
+          break // If we got a response, stop trying
+        } catch {
+          // Continue to next endpoint
+        }
+      }
+      
+      // Add placeholder entries for services we can't directly check
+      // These would normally be fetched from a dedicated health endpoint
+      const allServices: SystemHealthStatus[] = services.length > 0 ? services.map(s => ({
+        service: s.service,
+        serviceVi: s.service,
+        status: s.status,
+        lastCheck: new Date(),
+        message: s.message,
+        messageVi: s.message,
+        uptime: s.uptime,
+      })) : [
+        {
+          service: 'Gateway',
+          serviceVi: 'Cổng API',
+          status: 'unknown',
+          lastCheck: new Date(),
+          message: 'Không thể kết nối',
+          messageVi: 'Không thể kết nối đến cổng API',
+        },
+      ]
+      
+      setHealthStatuses(allServices)
+    } catch (err) {
+      setLoadError('Không thể tải trạng thái hệ thống')
+      setHealthStatuses([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  React.useEffect(() => {
+    fetchHealthStatus()
+  }, [fetchHealthStatus])
+
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -140,7 +213,7 @@ export default function SystemPage() {
     { label: 'System', labelVi: 'Hệ thống' },
   ]
 
-  const handleRoleChange = (newRole: UserRole) => {
+  const handleRoleChange = () => {
     router.push('/')
   }
 
@@ -154,18 +227,21 @@ export default function SystemPage() {
 
   const handleRefresh = () => {
     setLastRefresh(new Date())
+    fetchHealthStatus()
   }
 
   // Overall status
-  const overallStatus = healthStatuses.every(h => h.status === 'healthy')
-    ? 'healthy'
-    : healthStatuses.some(h => h.status === 'offline')
-      ? 'offline'
-      : 'degraded'
+  const overallStatus = healthStatuses.length === 0
+    ? 'unknown'
+    : healthStatuses.every(h => h.status === 'healthy')
+      ? 'healthy'
+      : healthStatuses.some(h => h.status === 'offline')
+        ? 'offline'
+        : 'degraded'
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -223,13 +299,54 @@ export default function SystemPage() {
         </Card>
 
         {/* Health Cards */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {healthStatuses.map((health) => (
-            <HealthCard key={health.service} health={health} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+              <p className="text-sm text-slate-500">Đang tải trạng thái hệ thống...</p>
+            </div>
+          </div>
+        ) : loadError ? (
+          <Card variant="default" padding="lg" className="border-l-4 border-error-500">
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+              <svg className="h-12 w-12 text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <h4 className="font-medium text-slate-900 dark:text-slate-100">{loadError}</h4>
+                <p className="mt-1 text-sm text-slate-500">Vui lòng thử tải lại trang</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchHealthStatus}>
+                Thử lại
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {healthStatuses.map((health) => (
+              <HealthCard key={health.service} health={health} />
+            ))}
+          </div>
+        )}
 
-        {/* Demo Notice */}
+        {/* Empty State when no services configured */}
+        {!isLoading && !loadError && healthStatuses.length === 0 && (
+          <Card variant="default" padding="lg">
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">
+                Không có thông tin trạng thái
+              </h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Hệ thống không có thông tin trạng thái để hiển thị
+              </p>
+            </div>
+          </Card>
+        )}
+
+        {/* Info Notice */}
         <Card variant="default" padding="md" className="border-l-4 border-slate-500">
           <div className="flex items-start gap-3">
             <svg className="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,10 +354,10 @@ export default function SystemPage() {
             </svg>
             <div>
               <h4 className="font-medium text-slate-900 dark:text-slate-100">
-                {t('admin.demoNote')}
+                Thông tin hệ thống
               </h4>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                {t('admin.demoNoteDesc')}
+                Trạng thái hệ thống được cập nhật tự động. Thời gian phản hồi có thể thay đổi tùy theo tải.
               </p>
             </div>
           </div>

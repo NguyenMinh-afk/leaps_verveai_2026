@@ -10,6 +10,7 @@ router.get('/classes/:id', proxyRequest(UPSTREAM, 'class'));
 router.put('/classes/:id', proxyRequest(UPSTREAM, 'class'));
 router.delete('/classes/:id', proxyRequest(UPSTREAM, 'class'));
 router.get('/classes/:id/stats', proxyRequest(UPSTREAM, 'class'));
+router.get('/classes/:id/students', proxyRequest(UPSTREAM, 'class'));
 
 router.get('/students/:id', proxyRequest(UPSTREAM, 'class'));
 router.post('/students', proxyRequest(UPSTREAM, 'class'));

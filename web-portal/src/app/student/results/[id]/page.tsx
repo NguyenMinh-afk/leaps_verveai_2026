@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import {
   DashboardLayoutWrapper,
   PageHeader,
-  PageSection,
   EmptyState,
 } from '@/components/layout'
 import {
@@ -14,30 +13,55 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  getResultById,
-} from '@/data/student-mock-data'
+import { examService } from '@/services/exam'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import type { ExamResult } from '@/types'
 
 /**
  * Result Detail Page
+ * Fetches exam result data from real backend API
  */
 export default function ResultDetailPage() {
   const router = useRouter()
   const params = useParams()
   const resultId = params.id as string
-  const [currentRole] = React.useState<UserRole>('student')
   const { t } = useLanguage()
+  const { user } = useAuth()
 
-  const student = mockStudentProfile
-  const result = getResultById(resultId)
+  // State
+  const [result, setResult] = React.useState<ExamResult | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const user = {
-    name: student.name,
-    email: student.email,
+  // Load result data from backend
+  React.useEffect(() => {
+    loadResult()
+  }, [resultId])
+
+  const loadResult = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Get result by attempt ID
+      const examResult = await examService.getResult(resultId)
+      if (examResult) {
+        setResult(examResult)
+      } else {
+        setError('Result not found')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load result')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const userData = {
+    name: user?.name || 'Student',
+    email: user?.email || '',
     role: 'student' as UserRole,
   }
 
@@ -57,13 +81,34 @@ export default function ResultDetailPage() {
   }
 
   const handleSettings = () => {
-    // Navigate to settings
+    router.push('/student/settings')
   }
 
-  if (!result) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userData}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (error || !result) {
+    return (
+      <DashboardLayoutWrapper
+        user={userData}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -72,8 +117,8 @@ export default function ResultDetailPage() {
         <EmptyState
           title="Result not found"
           titleVi="Không tìm thấy kết quả"
-          description="The result you're looking for doesn't exist"
-          descriptionVi="Kết quả bạn đang tìm kiếm không tồn tại"
+          description={error || "The result you're looking for doesn't exist"}
+          descriptionVi={error || "Kết quả bạn đang tìm kiếm không tồn tại"}
           action={
             <Button variant="primary" onClick={() => router.push('/student/results')}>
               Quay lại Kết quả
@@ -122,7 +167,7 @@ export default function ResultDetailPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userData}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -244,14 +289,14 @@ export default function ResultDetailPage() {
             </h3>
             <div className="mt-4">
               <Badge
-                variant={result.status === 'reviewed' ? 'success' : 'info'}
+                variant={result.status === 'completed' ? 'success' : 'info'}
                 size="lg"
               >
-                {result.status === 'reviewed' ? t('common.reviewed') || 'Đã được duyệt' : t('common.pendingReview') || 'Chưa duyệt'}
+                {result.status === 'completed' ? t('common.reviewed') || 'Hoàn thành' : t('common.pendingReview') || 'Đang chờ'}
               </Badge>
-              {result.status === 'reviewed' && (
+              {result.status === 'completed' && (
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {t('common.resultReviewed') || 'Kết quả đã được giáo viên xem xét'}
+                  {t('common.resultReviewed') || 'Kết quả đã được ghi nhận'}
                 </p>
               )}
             </div>
@@ -273,7 +318,7 @@ export default function ResultDetailPage() {
               </h3>
             </div>
             <div className="mt-4 space-y-3">
-              {result.strengthsVi.length > 0 ? (
+              {result.strengthsVi && result.strengthsVi.length > 0 ? (
                 result.strengthsVi.map((strength, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/30">
@@ -307,7 +352,7 @@ export default function ResultDetailPage() {
               </h3>
             </div>
             <div className="mt-4 space-y-3">
-              {result.areasForImprovementVi.length > 0 ? (
+              {result.areasForImprovementVi && result.areasForImprovementVi.length > 0 ? (
                 result.areasForImprovementVi.map((area, index) => (
                   <div key={index} className="flex items-start gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">

@@ -15,6 +15,7 @@ const GATEWAY_URL =
   'http://localhost:8080';
 
 const TOKEN_STORAGE_KEY = 'verveai.auth.token';
+const AUTH_TOKEN_COOKIE = 'verveai-auth-token';
 
 export interface ApiErrorPayload {
   code: string;
@@ -65,22 +66,81 @@ export function getGatewayUrl(): string {
   return GATEWAY_URL;
 }
 
+/**
+ * Read token from cookie (for middleware/server-side)
+ */
+export function getTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )' + AUTH_TOKEN_COOKIE + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+/**
+ * Write token to cookie (for middleware to read)
+ */
+export function setTokenCookie(token: string): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${AUTH_TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+}
+
+/**
+ * Clear token cookie
+ */
+export function clearTokenCookie(): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${AUTH_TOKEN_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+/**
+ * Sync token between localStorage and cookie
+ * Call this on app initialization
+ */
+export function syncTokenStorage(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  // Get token from localStorage
+  const localToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  
+  // If localStorage has token but cookie doesn't, set cookie
+  if (localToken && !getTokenFromCookie()) {
+    setTokenCookie(localToken);
+  }
+  
+  // If cookie has token but localStorage doesn't, set localStorage
+  const cookieToken = getTokenFromCookie();
+  if (cookieToken && !localToken) {
+    window.localStorage.setItem(TOKEN_STORAGE_KEY, cookieToken);
+  }
+  
+  return localToken || cookieToken;
+}
+
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  
+  // Try localStorage first
+  const localToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (localToken) return localToken;
+  
+  // Fallback to cookie (for cases where localStorage was cleared but cookie still exists)
+  return getTokenFromCookie();
 }
 
 export function setStoredToken(token: string | null): void {
   if (typeof window === 'undefined') return;
   if (token === null) {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    clearTokenCookie();
   } else {
     window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    setTokenCookie(token);
   }
 }
 
 export function clearStoredToken(): void {
-  setStoredToken(null);
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+  clearTokenCookie();
 }
 
 function buildUrl(path: string, baseUrl?: string): string {
@@ -168,6 +228,10 @@ export const api = {
   },
   put: async <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method'>) => {
     const env = await apiRequest<T>(path, { ...options, method: 'PUT', body });
+    return unwrap(env);
+  },
+  patch: async <T>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method'>) => {
+    const env = await apiRequest<T>(path, { ...options, method: 'PATCH', body });
     return unwrap(env);
   },
   delete: async <T>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>) => {

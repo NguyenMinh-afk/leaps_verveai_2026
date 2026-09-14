@@ -1,7 +1,7 @@
 #!/bin/bash
 # VERVEAI Development — Start ALL services locally
 # Docker Compose chỉ chạy infrastructure (Postgres, Consul, Jaeger, Prometheus, Grafana)
-# Script này chạy Gateway + 5 services locally để phát triển
+# Script này chạy Gateway + 7 services locally để phát triển (Phase 3+: exam + assignment)
 
 set -e
 
@@ -46,12 +46,15 @@ echo ""
 
 # Step 3: Install dependencies & generate Prisma
 echo -e "${YELLOW}[3/6] Installing dependencies...${NC}"
+# NOTE: Phase 3+ added service-exam and service-assignment (7 services total)
 SERVICES=(
     "service/service-auth"
     "service/service-bkt"
     "service/service-class"
     "service/service-content"
     "service/service-sync"
+    "service/service-assignment"
+    "service/service-exam"
     "service/gateway"
 )
 
@@ -111,6 +114,16 @@ echo -e "${BLUE}Starting service-sync (port 3005)...${NC}"
 (cd service/service-sync && npm run dev > ../../logs/service-sync.log 2>&1 &)
 sleep 2
 
+# Start service-assignment (port 3006)
+echo -e "${BLUE}Starting service-assignment (port 3006)...${NC}"
+(cd service/service-assignment && npm run dev > ../../logs/service-assignment.log 2>&1 &)
+sleep 2
+
+# Start service-exam (port 3007)
+echo -e "${BLUE}Starting service-exam (port 3007)...${NC}"
+(cd service/service-exam && npm run dev > ../../logs/service-exam.log 2>&1 &)
+sleep 2
+
 # Start gateway (port 8080)
 echo -e "${BLUE}Starting gateway (port 8080)...${NC}"
 (cd service/gateway && npm run dev > ../../logs/gateway.log 2>&1 &)
@@ -140,6 +153,8 @@ check_health "service-bkt" "http://localhost:3002/health"
 check_health "service-class" "http://localhost:3003/health"
 check_health "service-content" "http://localhost:3004/health"
 check_health "service-sync" "http://localhost:3005/health"
+check_health "service-assignment" "http://localhost:3006/health"
+check_health "service-exam" "http://localhost:3007/health"
 check_health "gateway" "http://localhost:8080/health"
 
 echo ""

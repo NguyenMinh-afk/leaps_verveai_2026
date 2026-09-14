@@ -17,6 +17,12 @@ apiEndpoints:
   sync:
     paths:
       - /api/sync/*
+  assignment:
+    paths:
+      - /api/assignment/*
+  exam:
+    paths:
+      - /api/exam/*
 
 serviceEndpoints:
   svcAuth:
@@ -29,6 +35,10 @@ serviceEndpoints:
     url: http://svc-content:3004
   svcSync:
     url: http://svc-sync:3005
+  svcAssignment:
+    url: http://svc-assignment:3006
+  svcExam:
+    url: http://svc-exam:3007
 
 pipelines:
   default:
@@ -38,6 +48,8 @@ pipelines:
       - class
       - content
       - sync
+      - assignment
+      - exam
     policies:
       - cors
       - rate-limit

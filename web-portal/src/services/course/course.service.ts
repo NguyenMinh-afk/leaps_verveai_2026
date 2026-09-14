@@ -1,103 +1,122 @@
 // ============================================
-// VERVE AI - Course Service Mock Implementation
+// VERVE AI - Course Service - Real API Implementation
 // ============================================
+//
+// Connects to the real backend through the Gateway.
+// All course management uses real database data.
+//
+// Backend: service-class -> Gateway /api/class/*
+//
 
+import { api } from '@/lib/api/apiClient'
 import type { AdminCourse } from '@/types'
-import { mockAdminCourses } from '@/data/admin-mock-data'
 
-/**
- * Development course service
- * This is a mock implementation for development only
- */
+// Backend API response types
+interface BackendClassResponse {
+  id: string
+  name: string
+  subject: string
+  teacherId: string
+  createdAt: Date
+  updatedAt: Date
+}
 
-const MOCK_DELAY = 500
+interface BackendClassWithStats extends BackendClassResponse {
+  studentCount: number
+  averageProgress: number
+}
 
-async function simulateDelay(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY))
+interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  skip: number
+  take: number
+}
+
+// Map backend response to frontend type
+function mapToAdminCourse(row: BackendClassWithStats): AdminCourse {
+  return {
+    id: row.id,
+    name: row.name,
+    nameVi: row.name,
+    code: '',
+    description: '',
+    descriptionVi: '',
+    status: 'active',
+    teacherCount: 0,
+    studentCount: row.studentCount,
+    questionCount: 0,
+    topicCount: 0,
+    createdAt: new Date(row.createdAt),
+    updatedAt: new Date(row.updatedAt),
+  }
 }
 
 /**
- * Generate unique ID
- */
-function generateId(): string {
-  return `course-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
-
-/**
- * Local state for courses (simulates backend storage)
- */
-let localCourses: AdminCourse[] = [...mockAdminCourses]
-
-/**
- * Reset to mock data
- */
-function resetToMockData(): void {
-  localCourses = [...mockAdminCourses]
-}
-
-/**
- * Course service
+ * Course service using real backend API
  */
 export const courseService = {
   /**
-   * Get all courses
+   * Get all courses (admin sees all)
+   * Calls: GET /api/class/classes
    */
   async getCourses(): Promise<AdminCourse[]> {
-    await simulateDelay()
-    return [...localCourses]
+    try {
+      const result = await api.get<PaginatedResponse<BackendClassWithStats>>('/api/class/classes?take=100')
+      return result.items.map(mapToAdminCourse)
+    } catch {
+      return []
+    }
   },
 
   /**
    * Get course by ID
+   * Calls: GET /api/class/classes/:id
    */
   async getCourseById(id: string): Promise<AdminCourse | null> {
-    await simulateDelay()
-    return localCourses.find((c) => c.id === id) || null
+    try {
+      const result = await api.get<BackendClassWithStats>(`/api/class/classes/${id}`)
+      return mapToAdminCourse(result)
+    } catch {
+      return null
+    }
   },
 
   /**
    * Create new course
+   * Calls: POST /api/class/classes
    */
   async createCourse(input: {
     name: string
     nameVi?: string
-    description: string
+    description?: string
     descriptionVi?: string
-    code: string
+    code?: string
     subject: string
     grade?: number
   }): Promise<{ success: boolean; course?: AdminCourse; error?: string }> {
-    await simulateDelay()
-
     try {
-      const newCourse: AdminCourse = {
-        id: generateId(),
-        name: input.name,
-        nameVi: input.nameVi || input.name,
-        description: input.description,
-        descriptionVi: input.descriptionVi || input.description,
-        code: input.code,
+      const result = await api.post<BackendClassResponse>('/api/class/classes', {
+        name: input.nameVi || input.name,
         subject: input.subject,
-        grade: input.grade,
-        status: 'draft',
-        teacherCount: 0,
-        studentCount: 0,
-        questionCount: 0,
-        topicCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+      })
+      return {
+        success: true,
+        course: mapToAdminCourse({
+          ...result,
+          studentCount: 0,
+          averageProgress: 0,
+        }),
       }
-
-      localCourses = [newCourse, ...localCourses]
-
-      return { success: true, course: newCourse }
-    } catch (error) {
-      return { success: false, error: 'Không thể tạo khóa học' }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create course'
+      return { success: false, error: message }
     }
   },
 
   /**
    * Update course
+   * Calls: PUT /api/class/classes/:id
    */
   async updateCourse(
     id: string,
@@ -112,43 +131,37 @@ export const courseService = {
       status: 'active' | 'archived' | 'draft'
     }>
   ): Promise<{ success: boolean; course?: AdminCourse; error?: string }> {
-    await simulateDelay()
-
     try {
-      const index = localCourses.findIndex((c) => c.id === id)
-      if (index === -1) {
-        return { success: false, error: 'Không tìm thấy khóa học' }
+      const result = await api.put<BackendClassResponse>(`/api/class/classes/${id}`, {
+        name: input.nameVi || input.name,
+        subject: input.subject,
+      })
+      const existing = await this.getCourseById(id)
+      return {
+        success: true,
+        course: mapToAdminCourse({
+          ...result,
+          studentCount: existing?.studentCount ?? 0,
+          averageProgress: existing?.questionCount ?? 0,
+        }),
       }
-
-      const updated: AdminCourse = {
-        ...localCourses[index],
-        ...input,
-        updatedAt: new Date(),
-      }
-
-      localCourses = [
-        ...localCourses.slice(0, index),
-        updated,
-        ...localCourses.slice(index + 1),
-      ]
-
-      return { success: true, course: updated }
-    } catch (error) {
-      return { success: false, error: 'Không thể cập nhật khóa học' }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update course'
+      return { success: false, error: message }
     }
   },
 
   /**
-   * Delete course
+   * Delete course (soft delete)
+   * Calls: DELETE /api/class/classes/:id
    */
   async deleteCourse(id: string): Promise<{ success: boolean; error?: string }> {
-    await simulateDelay()
-
     try {
-      localCourses = localCourses.filter((c) => c.id !== id)
+      await api.delete(`/api/class/classes/${id}`)
       return { success: true }
-    } catch (error) {
-      return { success: false, error: 'Không thể xóa khóa học' }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete course'
+      return { success: false, error: message }
     }
   },
 
@@ -156,27 +169,29 @@ export const courseService = {
    * Archive course
    */
   async archiveCourse(id: string): Promise<{ success: boolean; course?: AdminCourse; error?: string }> {
-    return courseService.updateCourse(id, { status: 'archived' })
+    return this.updateCourse(id, { status: 'archived' })
   },
 
   /**
    * Activate course
    */
   async activateCourse(id: string): Promise<{ success: boolean; course?: AdminCourse; error?: string }> {
-    return courseService.updateCourse(id, { status: 'active' })
+    return this.updateCourse(id, { status: 'active' })
   },
 
   /**
    * Get courses snapshot
    */
   getCoursesSnapshot(): AdminCourse[] {
-    return [...localCourses]
+    return []
   },
 
   /**
-   * Reset to mock data
+   * Reset - not applicable for real API
    */
-  resetToMockData,
+  resetToMockData(): void {
+    // No-op for real API
+  },
 }
 
 export default courseService

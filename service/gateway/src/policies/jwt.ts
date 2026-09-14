@@ -41,3 +41,58 @@ export function verifyJwt(req: Request, res: Response, next: NextFunction) {
     });
   }
 }
+
+/**
+ * Admin authorization middleware.
+ * Must be used after verifyJwt middleware.
+ * Checks x-user-role header (set by verifyJwt).
+ */
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const userRole = req.headers['x-user-role'] as string | undefined;
+
+  if (!userRole) {
+    res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+    });
+    return;
+  }
+
+  if (userRole !== 'ADMIN') {
+    res.status(403).json({
+      success: false,
+      error: { code: 'FORBIDDEN', message: 'Admin access required' },
+    });
+    return;
+  }
+
+  next();
+}
+
+/**
+ * Require specific roles middleware factory.
+ * Must be used after verifyJwt middleware.
+ */
+export function requireRole(...roles: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const userRole = req.headers['x-user-role'] as string | undefined;
+
+    if (!userRole) {
+      res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+      });
+      return;
+    }
+
+    if (!roles.includes(userRole)) {
+      res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: `Required role: ${roles.join(' or ')}` },
+      });
+      return;
+    }
+
+    next();
+  };
+}

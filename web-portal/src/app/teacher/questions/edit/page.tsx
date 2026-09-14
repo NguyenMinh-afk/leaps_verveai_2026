@@ -27,6 +27,7 @@ import type {
 import { validateQuestionInput } from '@/services/question'
 import type { UserRole, BreadcrumbItem, Question } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Question type options
@@ -69,8 +70,17 @@ export default function EditQuestionPage() {
   const searchParams = useSearchParams()
   const questionId = searchParams.get('id')
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('teacher')
   const [isLoading, setIsLoading] = React.useState(true)
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
+
   const [isSaving, setIsSaving] = React.useState(false)
 
   // Form state
@@ -145,12 +155,6 @@ export default function EditQuestionPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
   }
 
   const breadcrumbs: BreadcrumbItem[] = [
@@ -291,7 +295,7 @@ export default function EditQuestionPage() {
   if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -310,7 +314,7 @@ export default function EditQuestionPage() {
   if (!questionId) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -328,7 +332,7 @@ export default function EditQuestionPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}

@@ -74,7 +74,10 @@ const JWT_ISSUER = process.env['SERVICE_NAME'] ?? 'verveai';
  */
 export function signJwt(payload: JwtPayload, options: JwtOptions = {}): string {
   const { expiresIn = '1d', issuer = JWT_ISSUER } = options;
-  return jwt.sign(payload, JWT_SECRET, { expiresIn, issuer });
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: expiresIn as jwt.SignOptions['expiresIn'],
+    issuer,
+  });
 }
 
 /**

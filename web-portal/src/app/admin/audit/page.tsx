@@ -14,14 +14,33 @@ import {
   Badge,
   Input,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockAuditLogEntries,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { AuditLogEntry } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend audit response type
+interface BackendAuditResponse {
+  items: Array<{
+    id: string
+    action: string
+    entity_type: string
+    entity_id: string
+    entity_name: string
+    actor_id: string
+    actor_name: string
+    actor_role: string
+    status: string
+    details?: string
+    ip_address?: string
+    created_at: string
+  }>
+  total: number
+  skip: number
+  take: number
+}
 
 /**
  * Audit Row Component
@@ -101,13 +120,50 @@ const AuditRow: React.FC<AuditRowProps> = ({ entry }) => {
 export default function AuditPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('admin')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [actorFilter, setActorFilter] = React.useState('all')
   const [actionFilter, setActionFilter] = React.useState('all')
+  const [entries, setEntries] = React.useState<AuditLogEntry[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const entries = mockAuditLogEntries
+  // Fetch audit entries from real API
+  const fetchAuditEntries = React.useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const response = await api.get<BackendAuditResponse>('/api/auth/audit')
+      const mappedEntries: AuditLogEntry[] = response.items.map((item) => ({
+        id: item.id,
+        action: item.action,
+        actionVi: item.action,
+        entityType: item.entity_type as AuditLogEntry['entityType'],
+        entityId: item.entity_id,
+        entityName: item.entity_name,
+        entityNameVi: item.entity_name,
+        actorId: item.actor_id,
+        actorName: item.actor_name,
+        actorRole: item.actor_role as AuditLogEntry['actorRole'],
+        status: item.status as AuditLogEntry['status'],
+        details: item.details,
+        detailsVi: item.details,
+        ipAddress: item.ip_address,
+        timestamp: new Date(item.created_at),
+      }))
+      setEntries(mappedEntries)
+    } catch (err) {
+      setLoadError('Không thể tải nhật ký kiểm toán')
+      setEntries([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    fetchAuditEntries()
+  }, [fetchAuditEntries])
 
   // Filter entries
   const filteredEntries = React.useMemo(() => {
@@ -119,9 +175,9 @@ export default function AuditPage() {
       result = result.filter(e =>
         e.actorName.toLowerCase().includes(query) ||
         e.action.toLowerCase().includes(query) ||
-        e.actionVi.toLowerCase().includes(query) ||
+        e.actionVi?.toLowerCase().includes(query) ||
         e.entityName.toLowerCase().includes(query) ||
-        e.entityNameVi.toLowerCase().includes(query)
+        e.entityNameVi?.toLowerCase().includes(query)
       )
     }
 
@@ -138,9 +194,9 @@ export default function AuditPage() {
     return result
   }, [entries, searchQuery, actorFilter, actionFilter])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -162,9 +218,13 @@ export default function AuditPage() {
     router.push('/admin/settings')
   }
 
+  const handleRetry = () => {
+    fetchAuditEntries()
+  }
+
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -216,47 +276,74 @@ export default function AuditPage() {
           </div>
         </Card>
 
-        {/* Audit Table */}
-        <Card variant="default" padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 dark:bg-slate-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('admin.performer')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.actions')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('admin.target')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.status')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('common.time')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                {filteredEntries.map((entry) => (
-                  <AuditRow key={entry.id} entry={entry} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filteredEntries.length === 0 && (
-            <div className="p-8">
-              <EmptyState
-                title="No entries found"
-                titleVi="Không tìm thấy mục nào"
-                description="Try adjusting your search or filters"
-                descriptionVi="Thử điều chỉnh tìm kiếm hoặc bộ lọc"
-              />
+        {/* Loading State */}
+        {isLoading && (
+          <Card variant="default" padding="lg">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+              <p className="mt-4 text-sm text-slate-500">Đang tải nhật ký kiểm toán...</p>
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {!isLoading && loadError && (
+          <Card variant="default" padding="lg" className="border-error-200 dark:border-error-800">
+            <div className="flex flex-col items-center justify-center py-8">
+              <svg className="h-12 w-12 text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="mt-4 text-sm text-error-600 dark:text-error-400">{loadError}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={handleRetry}>
+                Thử lại
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Audit Table */}
+        {!isLoading && !loadError && (
+          <Card variant="default" padding="none">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {t('admin.performer')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {t('common.actions')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {t('admin.target')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {t('common.status')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {t('common.time')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {filteredEntries.map((entry) => (
+                    <AuditRow key={entry.id} entry={entry} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {filteredEntries.length === 0 && (
+              <div className="p-8">
+                <EmptyState
+                  title="No entries found"
+                  titleVi="Không tìm thấy mục nào"
+                  description="No audit log entries match your criteria"
+                  descriptionVi="Không có mục nào phù hợp với tiêu chí của bạn"
+                />
+              </div>
+            )}
+          </Card>
+        )}
       </div>
     </DashboardLayoutWrapper>
   )

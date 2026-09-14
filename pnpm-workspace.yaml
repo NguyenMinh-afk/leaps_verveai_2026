@@ -13,6 +13,9 @@ packages:
   - 'service/service-class'
   - 'service/service-content'
   - 'service/service-sync'
+  - 'service/service-assignment'
+  - 'service/service-exam'
+  - 'service/service-ai'
   # Phase 1: Content Pipeline
   - 'content-pipeline'
   - 'review-console'

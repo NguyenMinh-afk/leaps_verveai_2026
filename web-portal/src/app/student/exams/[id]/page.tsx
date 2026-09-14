@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import {
   DashboardLayoutWrapper,
   PageHeader,
-  PageSection,
   EmptyState,
 } from '@/components/layout'
 import {
@@ -14,16 +13,16 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  getExamById,
-} from '@/data/student-mock-data'
+import { examService } from '@/services/exam'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import type { StudentExam } from '@/types'
 
 /**
  * Exam Detail Page
+ * Fetches exam data from real backend API
  */
 export default function ExamDetailPage() {
   const router = useRouter()
@@ -31,13 +30,38 @@ export default function ExamDetailPage() {
   const examId = params.id as string
   const [currentRole] = React.useState<UserRole>('student')
   const { t } = useLanguage()
+  const { user } = useAuth()
 
-  const student = mockStudentProfile
-  const exam = getExamById(examId)
+  // State
+  const [exam, setExam] = React.useState<StudentExam | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const user = {
-    name: student.name,
-    email: student.email,
+  // Load exam data from backend
+  React.useEffect(() => {
+    loadExam()
+  }, [examId])
+
+  const loadExam = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const result = await examService.getExamById(examId)
+      if (result) {
+        setExam(result)
+      } else {
+        setError('Exam not found')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load exam')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const userData = {
+    name: user?.name || 'Student',
+    email: user?.email || '',
     role: 'student' as UserRole,
   }
 
@@ -60,10 +84,31 @@ export default function ExamDetailPage() {
     // Navigate to settings
   }
 
-  if (!exam) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userData}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (error || !exam) {
+    return (
+      <DashboardLayoutWrapper
+        user={userData}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -72,8 +117,8 @@ export default function ExamDetailPage() {
         <EmptyState
           title="Exam not found"
           titleVi="Không tìm thấy bài kiểm tra"
-          description="The exam you're looking for doesn't exist"
-          descriptionVi="Bài kiểm tra bạn đang tìm kiếm không tồn tại"
+          description={error || "The exam you're looking for doesn't exist"}
+          descriptionVi={error || "Bài kiểm tra bạn đang tìm kiếm không tồn tại"}
           action={
             <Button variant="primary" onClick={() => router.push('/student/exams')}>
               Quay lại Bài kiểm tra
@@ -84,6 +129,7 @@ export default function ExamDetailPage() {
     )
   }
 
+  // Status configuration
   const statusConfig = {
     available: { label: t('exam.available') || 'Sẵn sàng', variant: 'success' as const },
     upcoming: { label: t('exam.upcoming') || 'Sắp diễn ra', variant: 'info' as const },
@@ -92,11 +138,11 @@ export default function ExamDetailPage() {
     expired: { label: t('common.expired') || 'Đã hết hạn', variant: 'error' as const },
   }
 
-  const config = statusConfig[exam.status]
+  const config = statusConfig[exam.status] || statusConfig.available
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userData}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -185,29 +231,25 @@ export default function ExamDetailPage() {
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.description') || 'Mô tả'}</p>
                 <p className="mt-1 text-slate-900 dark:text-slate-100">
-                  {exam.descriptionVi}
+                  {exam.descriptionVi || t('common.noDescription') || 'Không có mô tả'}
                 </p>
               </div>
-              {exam.topicNameVi && (
+              {exam.className && (
                 <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('mastery.topics') || 'Chủ đề'}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.class') || 'Lớp'}</p>
                   <p className="mt-1 text-slate-900 dark:text-slate-100">
-                    {exam.topicNameVi}
+                    {exam.className}
                   </p>
                 </div>
               )}
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.class') || 'Lớp'}</p>
-                <p className="mt-1 text-slate-900 dark:text-slate-100">
-                  {exam.className}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.teacher') || 'Giáo viên'}</p>
-                <p className="mt-1 text-slate-900 dark:text-slate-100">
-                  {exam.teacherName}
-                </p>
-              </div>
+              {exam.teacherName && (
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.teacher') || 'Giáo viên'}</p>
+                  <p className="mt-1 text-slate-900 dark:text-slate-100">
+                    {exam.teacherName}
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -279,18 +321,22 @@ export default function ExamDetailPage() {
                 </svg>
                 {t('common.readCarefully') || 'Đọc kỹ đề bài trước khi trả lời'}
               </li>
-              <li className="flex items-start gap-2">
-                <svg className="mt-0.5 h-5 w-5 shrink-0 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {t('common.manageTime') || 'Bài kiểm tra có'} {exam.durationMinutes} {t('mastery.minutes') || 'phút'}. {t('common.manageTimeHint') || 'Hãy quản lý thời gian hợp lý.'}
-              </li>
-              <li className="flex items-start gap-2">
-                <svg className="mt-0.5 h-5 w-5 shrink-0 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {t('common.canRetake') || 'Bạn có thể làm lại bài tối đa'} {exam.maxAttempts} {t('common.times') || 'lần.'}
-              </li>
+              {exam.durationMinutes && (
+                <li className="flex items-start gap-2">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {t('common.manageTime') || 'Bài kiểm tra có'} {exam.durationMinutes} {t('mastery.minutes') || 'phút'}. {t('common.manageTimeHint') || 'Hãy quản lý thời gian hợp lý.'}
+                </li>
+              )}
+              {exam.maxAttempts && (
+                <li className="flex items-start gap-2">
+                  <svg className="mt-0.5 h-5 w-5 shrink-0 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {t('common.canRetake') || 'Bạn có thể làm lại bài tối đa'} {exam.maxAttempts} {t('common.times') || 'lần.'}
+                </li>
+              )}
               <li className="flex items-start gap-2">
                 <svg className="mt-0.5 h-5 w-5 shrink-0 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

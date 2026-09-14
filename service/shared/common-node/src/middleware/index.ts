@@ -44,10 +44,8 @@ export function errorHandler(
     return;
   }
 
-  // Unexpected — log full stack
+  // Unexpected — log error
   const msg = err instanceof Error ? err.message : String(err);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const stack = err instanceof Error ? err.stack : undefined;
   logger.error({ err, requestId, path: req.path, method: req.method }, msg);
 
   res.status(500).json(

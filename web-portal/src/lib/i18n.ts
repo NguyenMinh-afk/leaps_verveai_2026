@@ -119,6 +119,7 @@ export const resources = {
         completed: 'Hoàn thành',
         totalExams: 'Tổng bài kiểm tra',
         overdue: 'Quá hạn',
+        retry: 'Thử lại',
       },
 
       // ============================================
@@ -380,6 +381,10 @@ export const resources = {
         permissions: 'Quyền hạn',
         reviewer: 'Người duyệt',
         lastCheck: 'Kiểm tra lần cuối',
+        manageUsers: 'Quản lý người dùng',
+        manageCourses: 'Quản lý khóa học',
+        manageQuestions: 'Quản lý câu hỏi',
+        moderation: 'Kiểm duyệt',
       },
 
       // ============================================
@@ -844,6 +849,7 @@ export const resources = {
         completed: 'Completed',
         totalExams: 'Total Exams',
         overdue: 'Overdue',
+        retry: 'Retry',
       },
 
       // ============================================
@@ -1105,6 +1111,10 @@ export const resources = {
         permissions: 'Permissions',
         reviewer: 'Reviewer',
         lastCheck: 'Last Check',
+        manageUsers: 'Manage Users',
+        manageCourses: 'Manage Courses',
+        manageQuestions: 'Manage Questions',
+        moderation: 'Moderation',
       },
 
       // ============================================

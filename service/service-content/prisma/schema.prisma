@@ -18,6 +18,9 @@ model content_item {
   difficulty Int           @default(1)
   status     content_status @default(DRAFT)
   author_id  String
+  topic      String?        @default("")
+  chapter    String?        @default("")
+  metadata   Json           @default("{}")
   created_at DateTime      @default(now())
   updated_at DateTime      @updatedAt
   deleted_at DateTime?

@@ -27,6 +27,7 @@ import type {
 import { validateQuestionInput } from '@/services/question'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Question type options
@@ -67,7 +68,15 @@ const difficultyOptions: { value: QuestionDifficulty; label: string; labelVi: st
 export default function CreateQuestionPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('teacher')
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
 
   // Form state
   const [content, setContent] = React.useState('')
@@ -98,12 +107,6 @@ export default function CreateQuestionPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [errors, setErrors] = React.useState<QuestionValidationError[]>([])
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -228,7 +231,7 @@ export default function CreateQuestionPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}

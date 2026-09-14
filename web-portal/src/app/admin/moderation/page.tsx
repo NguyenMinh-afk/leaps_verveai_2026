@@ -17,23 +17,48 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import {
-  mockAdminProfile,
-  mockModerationItems,
-} from '@/data/admin-mock-data'
 import { formatRelativeTime } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { useToast } from '@/components/ui/toast'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { ModerationItem } from '@/types'
+import { api } from '@/lib/api/apiClient'
+
+// Backend moderation response type
+interface BackendModerationResponse {
+  items: Array<{
+    id: string
+    type: string
+    content: string
+    source: string
+    creator_id: string
+    creator_name: string
+    creator_role: string
+    topic_name: string
+    topic_id: string
+    status: string
+    reason?: string
+    reviewed_by?: string
+    reviewed_by_name?: string
+    reviewed_at?: string
+    created_at: string
+  }>
+  total: number
+  skip: number
+  take: number
+}
 
 /**
  * Moderation Card Component
  */
 interface ModerationCardProps {
   item: ModerationItem
+  onApprove: (item: ModerationItem) => void
+  onReject: (item: ModerationItem) => void
 }
 
-const ModerationCard: React.FC<ModerationCardProps> = ({ item }) => {
+const ModerationCard: React.FC<ModerationCardProps> = ({ item, onApprove, onReject }) => {
   const { t } = useLanguage()
   const statusConfig = {
     pending: { label: t('common.pending'), variant: 'warning' as const },
@@ -91,10 +116,10 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ item }) => {
 
       {item.status === 'pending' && (
         <div className="mt-4 flex gap-2">
-          <Button variant="primary" size="sm" className="flex-1">
+          <Button variant="primary" size="sm" className="flex-1" onClick={() => onApprove(item)}>
             {t('questions.approve')}
           </Button>
-          <Button variant="destructive" size="sm" className="flex-1">
+          <Button variant="destructive" size="sm" className="flex-1" onClick={() => onReject(item)}>
             {t('questions.reject')}
           </Button>
         </div>
@@ -115,12 +140,86 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ item }) => {
 export default function ModerationPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const { success, error: showError } = useToast()
   const [currentRole] = React.useState<UserRole>('admin')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState('pending')
+  const [items, setItems] = React.useState<ModerationItem[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
-  const admin = mockAdminProfile
-  const items = mockModerationItems
+  // Fetch moderation items from real API
+  const fetchItems = React.useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') params.set('status', statusFilter.toUpperCase())
+      params.set('take', '50')
+      
+      const query = params.toString()
+      try {
+        const response = await api.get<BackendModerationResponse>(`/api/content/moderation${query ? `?${query}` : ''}`)
+        
+        // Map backend response to frontend type
+        const mappedItems: ModerationItem[] = response.items.map((item) => ({
+          id: item.id,
+          type: item.type as ModerationItem['type'],
+          content: item.content,
+          contentVi: item.content,
+          source: item.source as ModerationItem['source'],
+          creatorId: item.creator_id,
+          creatorName: item.creator_name,
+          creatorRole: item.creator_role as 'teacher' | 'ai',
+          topicName: item.topic_name,
+          topicNameVi: item.topic_name,
+          status: item.status.toLowerCase() as ModerationItem['status'],
+          reason: item.reason,
+          reasonVi: item.reason,
+          reviewedBy: item.reviewed_by,
+          reviewedByName: item.reviewed_by_name,
+          reviewedAt: item.reviewed_at ? new Date(item.reviewed_at) : undefined,
+          createdAt: new Date(item.created_at),
+        }))
+        
+        setItems(mappedItems)
+      } catch {
+        // API endpoint might not exist - show empty state
+        setItems([])
+      }
+    } catch (err) {
+      setLoadError('Không thể tải danh sách kiểm duyệt')
+      setItems([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [statusFilter])
+
+  React.useEffect(() => {
+    fetchItems()
+  }, [fetchItems])
+
+  // Handle approve/reject actions
+  const handleApprove = async (item: ModerationItem) => {
+    try {
+      await api.post(`/api/content/questions/${item.id}/approve`)
+      success(t('common.success') || 'Thành công', 'Đã phê duyệt nội dung')
+      fetchItems()
+    } catch {
+      showError(t('common.error') || 'Lỗi', 'Không thể phê duyệt nội dung')
+    }
+  }
+
+  const handleReject = async (item: ModerationItem) => {
+    try {
+      await api.post(`/api/content/questions/${item.id}/reject`, { comment: 'Rejected by admin' })
+      success(t('common.success') || 'Thành công', 'Đã từ chối nội dung')
+      fetchItems()
+    } catch {
+      showError(t('common.error') || 'Lỗi', 'Không thể từ chối nội dung')
+    }
+  }
 
   // Filter items
   const filteredItems = React.useMemo(() => {
@@ -136,9 +235,9 @@ export default function ModerationPage() {
       )
     }
 
-    // Status filter
+    // Status filter (already done in API call, but keep for client-side)
     if (statusFilter !== 'all') {
-      result = result.filter(i => i.status === statusFilter)
+      result = result.filter(i => i.status.toLowerCase() === statusFilter.toLowerCase())
     }
 
     return result
@@ -152,9 +251,9 @@ export default function ModerationPage() {
     changesRequested: items.filter(i => i.status === 'changes-requested').length,
   }), [items])
 
-  const user = {
-    name: admin.name,
-    email: admin.email,
+  const userDisplay = {
+    name: user?.name || 'Admin',
+    email: user?.email || '',
     role: 'admin' as UserRole,
   }
 
@@ -178,7 +277,7 @@ export default function ModerationPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -275,20 +374,47 @@ export default function ModerationPage() {
           </div>
         </Card>
 
+        {/* Loading State */}
+        {isLoading && (
+          <Card variant="default" padding="lg">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+              <p className="mt-4 text-sm text-slate-500">Đang tải nội dung kiểm duyệt...</p>
+            </div>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {!isLoading && loadError && (
+          <Card variant="default" padding="lg" className="border-error-200 dark:border-error-800">
+            <div className="flex flex-col items-center justify-center py-8">
+              <svg className="h-12 w-12 text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="mt-4 text-sm text-error-600 dark:text-error-400">{loadError}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={fetchItems}>
+                Thử lại
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Moderation Items Grid */}
-        {filteredItems.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredItems.map((item) => (
-              <ModerationCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="No items to moderate"
-            titleVi="Không có mục nào cần kiểm duyệt"
-            description="All content has been moderated"
-            descriptionVi="Tất cả nội dung đã được kiểm duyệt"
-          />
+        {!isLoading && !loadError && (
+          filteredItems.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredItems.map((item) => (
+                <ModerationCard key={item.id} item={item} onApprove={handleApprove} onReject={handleReject} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No items to moderate"
+              titleVi="Không có mục nào cần kiểm duyệt"
+              description="All content has been moderated or no pending items exist"
+              descriptionVi="Tất cả nội dung đã được kiểm duyệt hoặc không có mục nào đang chờ"
+            />
+          )
         )}
       </div>
     </DashboardLayoutWrapper>

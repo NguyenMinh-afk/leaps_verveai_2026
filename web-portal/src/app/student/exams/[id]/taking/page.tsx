@@ -7,16 +7,16 @@ import {
   Card,
   Button,
   Badge,
+  Textarea,
 } from '@/components/ui'
 import { useToast, ConfirmationDialog } from '@/components/ui/toast'
-import { examService } from '@/services/exam'
-import { mockStudentProfile, getExamById } from '@/data/student-mock-data'
+import { examService, type ExamQuestion, type ExamSession } from '@/services/exam'
 import { useLanguage } from '@/components/providers/language-provider'
-import type { ExamSession } from '@/services/exam'
-import type { UserRole, Question } from '@/types'
+import type { UserRole } from '@/types'
 
 /**
  * Exam Taking Page
+ * Handles all question types: multiple-choice, true-false, short-answer
  */
 export default function ExamTakingPage() {
   const router = useRouter()
@@ -26,27 +26,25 @@ export default function ExamTakingPage() {
   const { t } = useLanguage()
 
   const { success, error: showError } = useToast()
-  
-  // Exam session state
+
+  // Session state
   const [session, setSession] = React.useState<ExamSession | null>(null)
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0)
-  const [answers, setAnswers] = React.useState<Record<string, number>>({})
+  const [textAnswers, setTextAnswers] = React.useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
   const [timeRemaining, setTimeRemaining] = React.useState<number | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
-  const [result, setResult] = React.useState<any>(null)
-
-  const student = mockStudentProfile
-  const exam = getExamById(examId)
+  const [result, setResult] = React.useState<{
+    score: number;
+    maxScore: number;
+    percentage: number;
+  } | null>(null)
+  const [loadError, setLoadError] = React.useState<string | null>(null)
 
   // Start exam on mount
   React.useEffect(() => {
-    if (exam && exam.status === 'available') {
-      startExam()
-    } else {
-      setIsLoading(false)
-    }
+    startExam()
   }, [examId])
 
   // Timer effect
@@ -67,26 +65,36 @@ export default function ExamTakingPage() {
   }, [session, timeRemaining])
 
   const startExam = async () => {
-    if (!exam) return
-    
     setIsLoading(true)
+    setLoadError(null)
+    
     try {
-      const response = await examService.startExam(examId, exam)
+      const response = await examService.startExam(examId)
+      
       if (response.success && response.session) {
         setSession(response.session)
-        setAnswers({})
         setCurrentQuestionIndex(0)
+        setTextAnswers({})
+        
         if (response.session.timeLimit) {
           setTimeRemaining(response.session.timeLimit * 60)
         }
-        success(t('common.success') || 'Thành công', t('exam.examStarted') || 'Bài kiểm tra đã bắt đầu')
+        
+        success(
+          t('common.success') || 'Thành công',
+          t('exam.examStarted') || 'Bài kiểm tra đã bắt đầu'
+        )
       } else {
-        showError(t('common.error') || 'Lỗi', response.error || t('exam.cannotStartExam') || 'Không thể bắt đầu bài kiểm tra')
-        router.push('/student/exams')
+        setLoadError(response.error || 'Không thể bắt đầu bài kiểm tra')
+        showError(
+          t('common.error') || 'Lỗi',
+          response.error || t('exam.cannotStartExam') || 'Không thể bắt đầu bài kiểm tra'
+        )
       }
     } catch (err) {
-      showError(t('common.error') || 'Lỗi', t('exam.errorStarting') || 'Đã xảy ra lỗi khi bắt đầu bài kiểm tra')
-      router.push('/student/exams')
+      const errorMsg = err instanceof Error ? err.message : 'Đã xảy ra lỗi khi bắt đầu bài kiểm tra'
+      setLoadError(errorMsg)
+      showError(t('common.error') || 'Lỗi', errorMsg)
     } finally {
       setIsLoading(false)
     }
@@ -94,18 +102,54 @@ export default function ExamTakingPage() {
 
   const currentQuestion = session?.questions[currentQuestionIndex]
 
-  const handleSelectAnswer = (questionId: string, optionIndex: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }))
+  // Count answered questions (including text answers)
+  const answeredCount = React.useMemo(() => {
+    if (!session) return 0
+    let count = 0
+    for (const q of session.questions) {
+      const answer = examService.getAnswer(q.questionId)
+      if (answer) {
+        if (answer.textAnswer) {
+          if (answer.textAnswer.trim().length > 0) count++
+        } else if (answer.selectedOptions && answer.selectedOptions.length > 0) {
+          count++
+        }
+      }
+    }
+    return count
+  }, [session])
+
+  const totalQuestions = session?.questions.length || 0
+
+  // Handle multiple-choice answer selection
+  const handleSelectOption = (questionId: string, optionIndex: number) => {
     examService.selectAnswer(questionId, optionIndex)
+    // Force re-render by updating session state
+    setSession(examService.getSession())
   }
 
+  // Handle true-false answer selection
+  const handleSelectTrueFalse = (questionId: string, isTrue: boolean) => {
+    examService.selectTrueFalse(questionId, isTrue)
+    setSession(examService.getSession())
+  }
+
+  // Handle short-answer text input
+  const handleTextAnswerChange = (questionId: string, text: string) => {
+    setTextAnswers((prev) => ({ ...prev, [questionId]: text }))
+    examService.setTextAnswer(questionId, text)
+    setSession(examService.getSession())
+  }
+
+  // Clear answer for a question
   const handleClearAnswer = (questionId: string) => {
-    setAnswers((prev) => {
-      const newAnswers = { ...prev }
-      delete newAnswers[questionId]
-      return newAnswers
-    })
     examService.clearAnswer(questionId)
+    setTextAnswers((prev) => {
+      const next = { ...prev }
+      delete next[questionId]
+      return next
+    })
+    setSession(examService.getSession())
   }
 
   const handleNext = () => {
@@ -127,18 +171,31 @@ export default function ExamTakingPage() {
   const handleSubmit = async () => {
     setShowConfirmDialog(false)
     setIsSubmitting(true)
-    
+
     try {
       const response = await examService.submitExam()
+      
       if (response.success && response.result) {
-        setResult(response.result)
-        setSession((prev) => prev ? { ...prev, isSubmitted: true } : null)
-        success(t('common.success') || 'Thành công', t('exam.examSubmitted') || 'Bài kiểm tra đã được nộp')
+        setResult({
+          score: response.result.score,
+          maxScore: response.result.maxScore,
+          percentage: response.result.percentage,
+        })
+        success(
+          t('common.success') || 'Thành công',
+          t('exam.examSubmitted') || 'Bài kiểm tra đã được nộp'
+        )
       } else {
-        showError(t('common.error') || 'Lỗi', response.error || t('exam.cannotSubmit') || 'Không thể nộp bài kiểm tra')
+        showError(
+          t('common.error') || 'Lỗi',
+          response.error || t('exam.cannotSubmit') || 'Không thể nộp bài kiểm tra'
+        )
       }
     } catch (err) {
-      showError(t('common.error') || 'Lỗi', t('exam.errorSubmitting') || 'Đã xảy ra lỗi khi nộp bài kiểm tra')
+      showError(
+        t('common.error') || 'Lỗi',
+        t('exam.errorSubmitting') || 'Đã xảy ra lỗi khi nộp bài kiểm tra'
+      )
     } finally {
       setIsSubmitting(false)
     }
@@ -156,9 +213,181 @@ export default function ExamTakingPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Count answered questions
-  const answeredCount = Object.keys(answers).length
-  const totalQuestions = session?.questions.length || 0
+  // Check if a question is answered
+  const isQuestionAnswered = (question: ExamQuestion): boolean => {
+    const answer = examService.getAnswer(question.questionId)
+    if (!answer) return false
+    if (answer.textAnswer) return answer.textAnswer.trim().length > 0
+    if (answer.selectedOptions) return answer.selectedOptions.length > 0
+    return false
+  }
+
+  // Get current answer for a question
+  const getCurrentOptionIndex = (question: ExamQuestion): number | null => {
+    const answer = examService.getAnswer(question.questionId)
+    if (!answer?.selectedOptions || answer.selectedOptions.length === 0) return null
+    const option = answer.selectedOptions[0]
+    // Handle both numeric indices and string values
+    const index = parseInt(option, 10)
+    return isNaN(index) ? null : index
+  }
+
+  const getCurrentTrueFalseValue = (question: ExamQuestion): boolean | null => {
+    const answer = examService.getAnswer(question.questionId)
+    if (!answer?.selectedOptions || answer.selectedOptions.length === 0) return null
+    const value = answer.selectedOptions[0]
+    return value === 'true' ? true : value === 'false' ? false : null
+  }
+
+  // Render question based on type
+  const renderQuestion = (question: ExamQuestion) => {
+    const { content } = question
+    const questionType = content.type
+
+    if (questionType === 'multiple-choice') {
+      return renderMultipleChoice(question)
+    } else if (questionType === 'true-false') {
+      return renderTrueFalse(question)
+    } else if (questionType === 'short-answer') {
+      return renderShortAnswer(question)
+    }
+
+    return <p className="text-slate-600">Unsupported question type</p>
+  }
+
+  // Render multiple-choice question
+  const renderMultipleChoice = (question: ExamQuestion) => {
+    const { content } = question
+    const options = content.options || []
+    const selectedIndex = getCurrentOptionIndex(question)
+
+    if (options.length === 0) {
+      return <p className="text-slate-500">No options available</p>
+    }
+
+    return (
+      <div className="space-y-3">
+        {options.map((option, index) => {
+          const isSelected = selectedIndex === index
+          return (
+            <button
+              key={option.id || index}
+              onClick={() => handleSelectOption(question.questionId, index)}
+              className={cn(
+                'w-full p-4 rounded-lg border-2 text-left transition-all',
+                isSelected
+                  ? 'border-verve-600 bg-verve-50 dark:bg-verve-900/20'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
+                  isSelected
+                    ? 'bg-verve-600 text-white'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                )}>
+                  {String.fromCharCode(65 + index)}
+                </div>
+                <span className={cn(
+                  'flex-1',
+                  isSelected ? 'font-medium text-verve-700 dark:text-verve-300' : 'text-slate-700 dark:text-slate-300'
+                )}>
+                  {option.contentVi || option.content}
+                </span>
+                {isSelected && (
+                  <svg className="w-5 h-5 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // Render true-false question
+  const renderTrueFalse = (question: ExamQuestion) => {
+    const currentValue = getCurrentTrueFalseValue(question)
+
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => handleSelectTrueFalse(question.questionId, true)}
+          className={cn(
+            'p-6 rounded-lg border-2 text-center transition-all',
+            currentValue === true
+              ? 'border-verve-600 bg-verve-50 dark:bg-verve-900/20'
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+          )}
+        >
+          <div className={cn(
+            'w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-3',
+            currentValue === true
+              ? 'bg-verve-600 text-white'
+              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+          )}>
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className={cn(
+            'font-semibold text-lg',
+            currentValue === true ? 'text-verve-700 dark:text-verve-300' : 'text-slate-700 dark:text-slate-300'
+          )}>
+            Đúng
+          </span>
+        </button>
+        <button
+          onClick={() => handleSelectTrueFalse(question.questionId, false)}
+          className={cn(
+            'p-6 rounded-lg border-2 text-center transition-all',
+            currentValue === false
+              ? 'border-verve-600 bg-verve-50 dark:bg-verve-900/20'
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+          )}
+        >
+          <div className={cn(
+            'w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-3',
+            currentValue === false
+              ? 'bg-verve-600 text-white'
+              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+          )}>
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <span className={cn(
+            'font-semibold text-lg',
+            currentValue === false ? 'text-verve-700 dark:text-verve-300' : 'text-slate-700 dark:text-slate-300'
+          )}>
+            Sai
+          </span>
+        </button>
+      </div>
+    )
+  }
+
+  // Render short-answer question
+  const renderShortAnswer = (question: ExamQuestion) => {
+    const currentText = textAnswers[question.questionId] || ''
+
+    return (
+      <div className="space-y-3">
+        <Textarea
+          value={currentText}
+          onChange={(e) => handleTextAnswerChange(question.questionId, e.target.value)}
+          placeholder={t('exam.enterAnswer') || 'Nhập câu trả lời của bạn...'}
+          className="min-h-[150px] resize-none"
+        />
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t('exam.shortAnswerHint') || 'Câu trả lời sẽ được giáo viên chấm điểm'}
+        </p>
+      </div>
+    )
+  }
 
   // Show result screen
   if (result) {
@@ -183,40 +412,34 @@ export default function ExamTakingPage() {
                 </span>
               </div>
             </div>
-            
+
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
               {t('exam.examResult') || 'Kết quả bài kiểm tra'}
             </h1>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {exam?.titleVi}
+              {session?.exam.titleVi}
             </p>
 
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="p-4 bg-success-50 dark:bg-success-900/20 rounded-lg">
                 <p className="text-2xl font-bold text-success-600 dark:text-success-400">
-                  {result.correct || (result.score && result.maxScore ? Math.round(result.score / result.maxScore * 100) : 0)}
+                  {result.score}
                 </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{t('exam.correct') || 'Đúng'}</p>
-              </div>
-              <div className="p-4 bg-error-50 dark:bg-error-900/20 rounded-lg">
-                <p className="text-2xl font-bold text-error-600 dark:text-error-400">
-                  {result.incorrect || (result.score !== undefined ? (result.maxScore - result.score) : 0)}
-                </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{t('exam.incorrect') || 'Sai'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.score') || 'Điểm'}</p>
               </div>
               <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
                 <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">
-                  {result.maxScore || totalQuestions}
+                  {result.maxScore}
                 </p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.total') || 'Tổng cộng'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.maxScore') || 'Tối đa'}</p>
+              </div>
+              <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <p className="text-2xl font-bold text-slate-600 dark:text-slate-400">
+                  {totalQuestions}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{t('exam.questions') || 'Câu hỏi'}</p>
               </div>
             </div>
-
-            {result.timeSpentMinutes && (
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                {t('common.timeSpent') || 'Thời gian làm bài'}: {result.timeSpentMinutes} {t('mastery.minutes') || 'phút'}
-              </p>
-            )}
 
             <div className="flex gap-3 justify-center">
               <Button variant="outline" onClick={() => router.push('/student/exams')}>
@@ -247,8 +470,8 @@ export default function ExamTakingPage() {
     )
   }
 
-  // No session / exam not found
-  if (!session || !exam) {
+  // Error / No session state
+  if (!session || loadError) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <Card variant="default" padding="lg" className="text-center max-w-md">
@@ -256,7 +479,7 @@ export default function ExamTakingPage() {
             {t('exam.examNotFound') || 'Không tìm thấy bài kiểm tra'}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-4">
-            {t('exam.notExistOrUnavailable') || 'Bài kiểm tra không tồn tại hoặc không khả dụng.'}
+            {loadError || t('exam.notExistOrUnavailable') || 'Bài kiểm tra không tồn tại hoặc không khả dụng.'}
           </p>
           <Button variant="primary" onClick={() => router.push('/student/exams')}>
             {t('common.backToList') || 'Quay lại danh sách'}
@@ -274,7 +497,7 @@ export default function ExamTakingPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {exam.titleVi}
+                {session.exam.titleVi}
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 {t('common.question') || 'Câu'} {currentQuestionIndex + 1} / {totalQuestions}
@@ -290,8 +513,8 @@ export default function ExamTakingPage() {
                   {formatTime(timeRemaining)}
                 </div>
               )}
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 size="sm"
                 onClick={() => setShowConfirmDialog(true)}
                 disabled={isSubmitting}
@@ -313,12 +536,12 @@ export default function ExamTakingPage() {
                 {t('common.questionNavigator') || 'Điều hướng câu hỏi'}
               </h3>
               <div className="grid grid-cols-5 gap-2">
-                {session.questions.map((eq, index) => {
-                  const isAnswered = answers[eq.questionId] !== undefined
+                {session.questions.map((q, index) => {
+                  const isAnswered = isQuestionAnswered(q)
                   const isCurrent = index === currentQuestionIndex
                   return (
                     <button
-                      key={eq.id}
+                      key={q.id}
                       onClick={() => handleGoToQuestion(index)}
                       className={cn(
                         'h-10 rounded-lg text-sm font-medium transition-colors',
@@ -352,56 +575,35 @@ export default function ExamTakingPage() {
             {currentQuestion && (
               <Card variant="default" padding="lg">
                 <div className="mb-6">
-                  <Badge variant="outline" size="sm" className="mb-2">
-                    {t('common.question') || 'Câu hỏi'} {currentQuestionIndex + 1}
-                  </Badge>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline" size="sm">
+                      {t('common.question') || 'Câu hỏi'} {currentQuestionIndex + 1}
+                    </Badge>
+                    <Badge variant="outline" size="sm">
+                      {currentQuestion.content.type === 'multiple-choice' ? 'Trắc nghiệm' :
+                       currentQuestion.content.type === 'true-false' ? 'Đúng/Sai' :
+                       'Tự luận'}
+                    </Badge>
+                    {currentQuestion.content.difficulty && (
+                      <Badge 
+                        variant={currentQuestion.content.difficulty === 'easy' ? 'success' :
+                                 currentQuestion.content.difficulty === 'medium' ? 'warning' : 'error'} 
+                        size="sm"
+                      >
+                        {currentQuestion.content.difficulty === 'easy' ? 'Dễ' :
+                         currentQuestion.content.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
+                      </Badge>
+                    )}
+                  </div>
                   <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                    {currentQuestion.question.contentVi || currentQuestion.question.content}
+                    {currentQuestion.content.bodyVi || currentQuestion.content.body}
                   </h2>
                 </div>
 
-                <div className="space-y-3">
-                  {currentQuestion.question.options.map((option, index) => {
-                    const isSelected = answers[currentQuestion.questionId] === index
-                    return (
-                      <button
-                        key={option.id}
-                        onClick={() => handleSelectAnswer(currentQuestion.questionId, index)}
-                        className={cn(
-                          'w-full p-4 rounded-lg border-2 text-left transition-all',
-                          isSelected
-                            ? 'border-verve-600 bg-verve-50 dark:bg-verve-900/20'
-                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={cn(
-                            'w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
-                            isSelected
-                              ? 'bg-verve-600 text-white'
-                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                          )}>
-                            {String.fromCharCode(65 + index)}
-                          </div>
-                          <span className={cn(
-                            'flex-1',
-                            isSelected ? 'font-medium text-verve-700 dark:text-verve-300' : 'text-slate-700 dark:text-slate-300'
-                          )}>
-                            {option.contentVi || option.content}
-                          </span>
-                          {isSelected && (
-                            <svg className="w-5 h-5 text-verve-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
+                {renderQuestion(currentQuestion)}
 
                 {/* Clear answer button */}
-                {answers[currentQuestion.questionId] !== undefined && (
+                {isQuestionAnswered(currentQuestion) && (
                   <div className="mt-4">
                     <Button
                       variant="ghost"

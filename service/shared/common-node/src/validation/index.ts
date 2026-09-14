@@ -15,7 +15,7 @@
  * @module validation
  */
 
-import { z, type ZodError, type ZodType, type ZodTypeDef } from 'zod';
+import { z, type ZodError, type ZodType, type ZodObject, type ZodTypeDef } from 'zod';
 
 // Re-export Zod primitives so callers don't need to import zod directly
 export { z, type ZodError, type ZodType, type ZodTypeDef };
@@ -55,17 +55,20 @@ export const ISO8601DateSchema = z.string().datetime({ message: 'Must be ISO 860
 export const PositiveIntSchema = z.number().int().positive();
 
 /** Enum-like string from allowed values */
-export function enumString<T extends string>(allowed: T[]) {
-  return z.enum(allowed, { errorMap: () => ({ message: `Must be one of: ${allowed.join(', ')}` }) });
+export function enumString<T extends string>(allowed: readonly [T, ...T[]]) {
+  return z.enum(allowed);
 }
 
 // ─── Schema builder helpers ───────────────────────────────────────────────────
+
+/** Re-export ZodRawShape type */
+import type { ZodRawShape } from 'zod';
 
 /**
  * Create a schema with common fields (id, createdAt, updatedAt).
  * Use as base for response DTOs.
  */
-export function withTimestamps<T extends ZodType>(schema: T) {
+export function withTimestamps<T extends ZodObject<ZodRawShape>>(schema: T) {
   return schema.extend({
     id: UUIDSchema,
     createdAt: z.date(),
@@ -77,7 +80,7 @@ export function withTimestamps<T extends ZodType>(schema: T) {
  * Create a schema with optional pagination fields.
  * Use for list endpoint request schemas.
  */
-export function withPagination(schema: ZodType) {
+export function withPagination<T extends ZodObject<ZodRawShape>>(schema: T) {
   return schema.extend({
     page: PageSchema.optional(),
     pageSize: PageSizeSchema.optional(),

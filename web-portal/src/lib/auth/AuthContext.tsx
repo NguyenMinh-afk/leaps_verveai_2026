@@ -52,6 +52,17 @@ export function AuthProvider({
   const [status, setStatus] = useState<AuthStatus>(initialUser ? 'authenticated' : 'loading');
   const [error, setError] = useState<string | null>(null);
 
+  // Sync token from cookie to localStorage on mount
+  // This ensures middleware can read the token
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Import dynamically to avoid SSR issues
+      import('@/lib/api/apiClient').then(({ syncTokenStorage }) => {
+        syncTokenStorage();
+      });
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const current = await getCurrentUser();

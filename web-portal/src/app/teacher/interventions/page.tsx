@@ -35,18 +35,63 @@ import {
   DiagnosticInterventionCard,
 } from '@/components/ui'
 import { useLanguage } from '@/components/providers/language-provider'
-import {
-  mockInterventions,
-  mockStudents,
-} from '@/data/teacher-mock-data'
-import {
-  mockDiagnosticInterventions,
-  mockDiagnoses,
-  getEvidenceByIds,
-} from '@/data/ai-diagnostic-mock-data'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { getMockInterventions, getMockDiagnoses, getEvidenceByIds } from '@/lib/teacher-helpers'
 import { formatRelativeTime } from '@/lib/utils'
 import type { UserRole, BreadcrumbItem, SeverityLevel } from '@/types'
 import type { InterventionGroup, Diagnosis, TeacherOverride, DiagnosticInterventionGroup } from '@/types'
+import { bktService } from '@/services/bkt'
+import type { Intervention } from '@/lib/api/bkt'
+
+/**
+ * Map backend intervention status to frontend status
+ */
+function mapStatus(status: string): 'pending' | 'in-progress' | 'resolved' {
+  switch (status) {
+    case 'RESOLVED':
+      return 'resolved'
+    case 'CANCELLED':
+      return 'resolved'
+    case 'ACTIVE':
+      return 'pending'
+    default:
+      return 'pending'
+  }
+}
+
+/**
+ * Map priority to severity
+ */
+function mapSeverity(priority: number): SeverityLevel {
+  if (priority >= 70) return 'high'
+  if (priority >= 40) return 'medium'
+  return 'low'
+}
+
+/**
+ * Map backend intervention to frontend InterventionGroup
+ * Note: Backend provides: id, studentId, skillId, priority, status, teacherId, notes, createdAt, resolvedAt, notes_list
+ * Backend does NOT provide: skillName, rootCause - these need BKT computation or external lookup
+ */
+function mapInterventionToGroup(intervention: Intervention): InterventionGroup {
+  // Backend notes is a string (summary), not an array
+  const notesContent = intervention.notes || ''
+  
+  return {
+    id: intervention.id,
+    rootCause: `Skill requires attention (Priority: ${intervention.priority})`,
+    rootCauseVi: `Kỹ năng cần chú ý (Ưu tiên: ${intervention.priority})`,
+    studentIds: [intervention.studentId],
+    severity: mapSeverity(intervention.priority),
+    size: 1,
+    evidenceSummary: notesContent || 'No additional notes',
+    evidenceSummaryVi: notesContent || 'Không có ghi chú bổ sung',
+    skills: ['Unknown Skill'], // Backend doesn't provide skill names
+    status: mapStatus(intervention.status),
+    createdAt: new Date(intervention.createdAt),
+    updatedAt: new Date(intervention.resolvedAt || intervention.createdAt),
+  }
+}
 
 /**
  * AI Diagnostic Intervention Detail Modal
@@ -337,16 +382,29 @@ const EvidenceDetailModal: React.FC<EvidenceDetailModalProps> = ({
 export default function InterventionCenterPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [severityFilter, setSeverityFilter] = React.useState<SeverityLevel | 'all'>('all')
   const [statusFilter, setStatusFilter] = React.useState<'pending' | 'in-progress' | 'resolved' | 'all'>('all')
   const [activeTab, setActiveTab] = React.useState('ai')
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
   
-  // Legacy intervention state
+  // Legacy intervention state - from real BKT API
+  const [legacyInterventions, setLegacyInterventions] = React.useState<InterventionGroup[]>([])
+  const [isLoadingLegacy, setIsLoadingLegacy] = React.useState(true)
+  const [legacyError, setLegacyError] = React.useState<string | null>(null)
   const [selectedIntervention, setSelectedIntervention] = React.useState<InterventionGroup | null>(null)
   const [isLegacyModalOpen, setIsLegacyModalOpen] = React.useState(false)
   
   // AI diagnostic state
+  const [diagnosticInterventions, setDiagnosticInterventions] = React.useState<DiagnosticInterventionGroup[]>([])
+  const [isLoadingDiagnostic, setIsLoadingDiagnostic] = React.useState(true)
   const [selectedDiagnosticIntervention, setSelectedDiagnosticIntervention] = React.useState<DiagnosticInterventionGroup | null>(null)
   const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = React.useState(false)
   const [selectedDiagnosis, setSelectedDiagnosis] = React.useState<Diagnosis | null>(null)
@@ -355,9 +413,45 @@ export default function InterventionCenterPage() {
   
   const [currentRole] = React.useState<UserRole>('teacher')
 
+  // Fetch legacy interventions from BKT API
+  React.useEffect(() => {
+    async function fetchInterventions() {
+      setIsLoadingLegacy(true)
+      setLegacyError(null)
+      try {
+        const interventions = await bktService.getInterventions({ pageSize: 100 })
+        setLegacyInterventions(interventions)
+      } catch (error) {
+        console.error('Failed to fetch interventions:', error)
+        setLegacyError('Không thể tải danh sách can thiệp. Vui lòng thử lại.')
+        setLegacyInterventions([])
+      } finally {
+        setIsLoadingLegacy(false)
+      }
+    }
+    fetchInterventions()
+  }, [])
+
+  // Fetch diagnostic interventions from AI API
+  React.useEffect(() => {
+    async function fetchDiagnosticInterventions() {
+      setIsLoadingDiagnostic(true)
+      try {
+        // Use mock data as fallback since there's no dedicated diagnostic interventions API
+        setDiagnosticInterventions(getMockDiagnoses() as unknown as DiagnosticInterventionGroup[])
+      } catch (error) {
+        console.error('Failed to fetch diagnostic interventions:', error)
+        setDiagnosticInterventions([])
+      } finally {
+        setIsLoadingDiagnostic(false)
+      }
+    }
+    fetchDiagnosticInterventions()
+  }, [])
+
   // Filter legacy interventions
   const filteredLegacyInterventions = React.useMemo(() => {
-    return mockInterventions.filter((intervention) => {
+    return legacyInterventions.filter((intervention) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch =
@@ -370,11 +464,11 @@ export default function InterventionCenterPage() {
       if (statusFilter !== 'all' && intervention.status !== statusFilter) return false
       return true
     })
-  }, [searchQuery, severityFilter, statusFilter])
+  }, [legacyInterventions, searchQuery, severityFilter, statusFilter])
 
   // Filter AI diagnostic interventions
   const filteredDiagnosticInterventions = React.useMemo(() => {
-    return mockDiagnosticInterventions.filter((intervention) => {
+    return diagnosticInterventions.filter((intervention) => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const matchesSearch =
@@ -396,24 +490,18 @@ export default function InterventionCenterPage() {
 
   // Stats
   const legacyStats = React.useMemo(() => ({
-    total: mockInterventions.length,
-    pending: mockInterventions.filter(i => i.status === 'pending').length,
-    inProgress: mockInterventions.filter(i => i.status === 'in-progress').length,
-    resolved: mockInterventions.filter(i => i.status === 'resolved').length,
-  }), [])
+    total: legacyInterventions.length,
+    pending: legacyInterventions.filter(i => i.status === 'pending').length,
+    inProgress: legacyInterventions.filter(i => i.status === 'in-progress').length,
+    resolved: legacyInterventions.filter(i => i.status === 'resolved').length,
+  }), [legacyInterventions])
 
   const diagnosticStats = React.useMemo(() => ({
-    total: mockDiagnosticInterventions.length,
-    pending: mockDiagnosticInterventions.filter(i => i.status === 'pending').length,
-    inProgress: mockDiagnosticInterventions.filter(i => i.status === 'in-progress').length,
-    resolved: mockDiagnosticInterventions.filter(i => i.status === 'resolved').length,
-  }), [])
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
+    total: diagnosticInterventions.length,
+    pending: diagnosticInterventions.filter(i => i.status === 'pending').length,
+    inProgress: diagnosticInterventions.filter(i => i.status === 'in-progress').length,
+    resolved: diagnosticInterventions.filter(i => i.status === 'resolved').length,
+  }), [diagnosticInterventions])
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -469,7 +557,7 @@ export default function InterventionCenterPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -602,80 +690,152 @@ export default function InterventionCenterPage() {
                     onStatusChange={setStatusFilter}
                   />
                 </div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">
-                  {filteredLegacyInterventions.length} kết quả
+                <div className="flex items-center gap-2">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                    {filteredLegacyInterventions.length} kết quả
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      setIsLoadingLegacy(true)
+                      try {
+                        const interventions = await bktService.getInterventions({ pageSize: 100 })
+                        setLegacyInterventions(interventions)
+                      } catch (error) {
+                        console.error('Failed to refresh:', error)
+                      } finally {
+                        setIsLoadingLegacy(false)
+                      }
+                    }}
+                    disabled={isLoadingLegacy}
+                  >
+                    <svg className={cn('h-4 w-4', isLoadingLegacy && 'animate-spin')} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </Button>
                 </div>
               </div>
             </Card>
 
-            {/* High Priority Interventions */}
-            {highPriority.length > 0 && (
-              <PageSection title="Cần can thiệp ngay" titleVi="Cần can thiệp ngay">
-                <PageGrid columns={2} gap="md">
-                  {highPriority.map((intervention) => (
-                    <InterventionCard
-                      key={intervention.id}
-                      intervention={intervention}
-                      onViewDetails={() => handleViewLegacyDetails(intervention)}
-                      onAssign={() => handleViewLegacyDetails(intervention)}
-                    />
-                  ))}
-                </PageGrid>
-              </PageSection>
+            {/* Loading State */}
+            {isLoadingLegacy && (
+              <Card variant="default" padding="lg">
+                <div className="flex flex-col items-center justify-center py-8">
+                  <svg className="h-8 w-8 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Đang tải danh sách can thiệp...</p>
+                </div>
+              </Card>
             )}
 
-            {/* Medium Priority Interventions */}
-            {mediumPriority.length > 0 && (
-              <PageSection title="Cần theo dõi" titleVi="Cần theo dõi">
-                <PageGrid columns={2} gap="md">
-                  {mediumPriority.map((intervention) => (
-                    <InterventionCard
-                      key={intervention.id}
-                      intervention={intervention}
-                      onViewDetails={() => handleViewLegacyDetails(intervention)}
-                      onAssign={() => handleViewLegacyDetails(intervention)}
-                    />
-                  ))}
-                </PageGrid>
-              </PageSection>
-            )}
-
-            {/* Low Priority Interventions */}
-            {lowPriority.length > 0 && (
-              <PageSection title="Cần lưu ý" titleVi="Cần lưu ý">
-                <PageGrid columns={2} gap="md">
-                  {lowPriority.map((intervention) => (
-                    <InterventionCard
-                      key={intervention.id}
-                      intervention={intervention}
-                      onViewDetails={() => handleViewLegacyDetails(intervention)}
-                      onAssign={() => handleViewLegacyDetails(intervention)}
-                    />
-                  ))}
-                </PageGrid>
-              </PageSection>
-            )}
-
-            {/* Empty State */}
-            {filteredLegacyInterventions.length === 0 && (
-              <EmptyState
-                title="No interventions found"
-                titleVi="Không tìm thấy can thiệp nào"
-                description="Try adjusting your filters or search query"
-                descriptionVi="Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm"
-                action={
+            {/* Error State */}
+            {!isLoadingLegacy && legacyError && (
+              <Card variant="default" padding="lg" className="border-error-200 dark:border-error-800">
+                <div className="flex flex-col items-center justify-center py-8">
+                  <svg className="h-8 w-8 text-error-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="mt-4 text-sm text-error-600 dark:text-error-400">{legacyError}</p>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setSearchQuery('')
-                      setSeverityFilter('all')
-                      setStatusFilter('all')
+                    size="sm"
+                    className="mt-4"
+                    onClick={async () => {
+                      setIsLoadingLegacy(true)
+                      setLegacyError(null)
+                      try {
+                        const interventions = await bktService.getInterventions({ pageSize: 100 })
+                        setLegacyInterventions(interventions)
+                      } catch (error) {
+                        console.error('Failed to retry:', error)
+                        setLegacyError('Không thể tải danh sách can thiệp. Vui lòng thử lại.')
+                      } finally {
+                        setIsLoadingLegacy(false)
+                      }
                     }}
                   >
-                    Xóa bộ lọc
+                    Thử lại
                   </Button>
-                }
-              />
+                </div>
+              </Card>
+            )}
+
+            {/* Interventions Content */}
+            {!isLoadingLegacy && !legacyError && (
+              <>
+                {/* High Priority Interventions */}
+                {highPriority.length > 0 && (
+                  <PageSection title="Cần can thiệp ngay" titleVi="Cần can thiệp ngay">
+                    <PageGrid columns={2} gap="md">
+                      {highPriority.map((intervention) => (
+                        <InterventionCard
+                          key={intervention.id}
+                          intervention={intervention}
+                          onViewDetails={() => handleViewLegacyDetails(intervention)}
+                          onAssign={() => handleViewLegacyDetails(intervention)}
+                        />
+                      ))}
+                    </PageGrid>
+                  </PageSection>
+                )}
+
+                {/* Medium Priority Interventions */}
+                {mediumPriority.length > 0 && (
+                  <PageSection title="Cần theo dõi" titleVi="Cần theo dõi">
+                    <PageGrid columns={2} gap="md">
+                      {mediumPriority.map((intervention) => (
+                        <InterventionCard
+                          key={intervention.id}
+                          intervention={intervention}
+                          onViewDetails={() => handleViewLegacyDetails(intervention)}
+                          onAssign={() => handleViewLegacyDetails(intervention)}
+                        />
+                      ))}
+                    </PageGrid>
+                  </PageSection>
+                )}
+
+                {/* Low Priority Interventions */}
+                {lowPriority.length > 0 && (
+                  <PageSection title="Cần lưu ý" titleVi="Cần lưu ý">
+                    <PageGrid columns={2} gap="md">
+                      {lowPriority.map((intervention) => (
+                        <InterventionCard
+                          key={intervention.id}
+                          intervention={intervention}
+                          onViewDetails={() => handleViewLegacyDetails(intervention)}
+                          onAssign={() => handleViewLegacyDetails(intervention)}
+                        />
+                      ))}
+                    </PageGrid>
+                  </PageSection>
+                )}
+
+                {/* Empty State */}
+                {filteredLegacyInterventions.length === 0 && (
+                  <EmptyState
+                    title="No interventions found"
+                    titleVi="Không tìm thấy can thiệp nào"
+                    description="Try adjusting your filters or search query"
+                    descriptionVi="Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm"
+                    action={
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSearchQuery('')
+                          setSeverityFilter('all')
+                          setStatusFilter('all')
+                        }}
+                      >
+                        Xóa bộ lọc
+                      </Button>
+                    }
+                  />
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
@@ -688,6 +848,16 @@ export default function InterventionCenterPage() {
         onClose={() => {
           setIsLegacyModalOpen(false)
           setSelectedIntervention(null)
+        }}
+        onResolve={async (interventionId: string) => {
+          const result = await bktService.resolveIntervention(interventionId)
+          if (result.success) {
+            // Refresh the list
+            const interventions = await bktService.getInterventions({ pageSize: 100 })
+            setLegacyInterventions(interventions)
+          } else {
+            throw new Error(result.error || 'Failed to resolve intervention')
+          }
         }}
       />
 
@@ -726,18 +896,23 @@ export default function InterventionCenterPage() {
 
 /**
  * Legacy Intervention Detail Modal (kept for backward compatibility)
+ * Now supports real BKT API mutations
  */
 interface LegacyInterventionDetailModalProps {
   intervention: InterventionGroup | null
   isOpen: boolean
   onClose: () => void
+  onResolve?: (interventionId: string) => Promise<void>
 }
 
 const LegacyInterventionDetailModal: React.FC<LegacyInterventionDetailModalProps> = ({
   intervention,
   isOpen,
   onClose,
+  onResolve,
 }) => {
+  const [isResolving, setIsResolving] = React.useState(false)
+
   if (!isOpen || !intervention) return null
 
   const severityColors = {
@@ -756,6 +931,19 @@ const LegacyInterventionDetailModal: React.FC<LegacyInterventionDetailModalProps
     pending: 'Chờ xử lý',
     'in-progress': 'Đang xử lý',
     resolved: 'Đã giải quyết',
+  }
+
+  const handleResolve = async () => {
+    if (!onResolve || !intervention) return
+    setIsResolving(true)
+    try {
+      await onResolve(intervention.id)
+      onClose()
+    } catch (error) {
+      console.error('Failed to resolve intervention:', error)
+    } finally {
+      setIsResolving(false)
+    }
   }
 
   return (
@@ -863,11 +1051,20 @@ const LegacyInterventionDetailModal: React.FC<LegacyInterventionDetailModalProps
             Đóng
           </Button>
           {intervention.status === 'pending' && (
-            <Button variant="primary">
+            <Button variant="primary" disabled>
               Bắt đầu xử lý
             </Button>
           )}
           {intervention.status === 'in-progress' && (
+            <Button 
+              variant="success" 
+              onClick={handleResolve}
+              disabled={isResolving}
+            >
+              {isResolving ? 'Đang giải quyết...' : 'Hoàn tất can thiệp'}
+            </Button>
+          )}
+          {intervention.status === 'pending' && !onResolve && (
             <Button variant="success">
               Hoàn tất can thiệp
             </Button>

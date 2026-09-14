@@ -99,6 +99,34 @@ services:
       - verveai-network
 
   # ============================================================
+  # Microservices
+  # ============================================================
+
+  svc-ai:
+    build:
+      context: ../service/service-ai
+      dockerfile: Dockerfile
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=development
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_TIMEOUT_MS=${OPENAI_TIMEOUT_MS:-30000}
+      - SVC_CONTENT_URL=http://svc-content:3004
+      - SVC_BKT_URL=http://svc-bkt:3002
+      - SVC_CLASS_URL=http://svc-class:3003
+      - SVC_AUTH_URL=http://svc-auth:3001
+      - SVC_EXAM_URL=http://svc-exam:3007
+      - DATABASE_URL=${POSTGRES_URL:-postgresql://verveai:verveai_dev_pass@postgres:5432/verveai}
+    depends_on:
+      - svc-content
+      - svc-bkt
+    networks:
+      - verveai-network
+
+  # ============================================================
   # NOTE: Gateway & Services run LOCALLY for development
   # ============================================================
   # Use scripts/dev-start-all.sh to run all services locally
@@ -132,7 +160,7 @@ volumes:
 # cd infra
 # docker compose up -d
 
-# Khởi động tất cả services locally:
+# Khởi động tất cả services locally (including exam + assignment):
 # ./scripts/dev-start-all.sh
 
 # URLs:
