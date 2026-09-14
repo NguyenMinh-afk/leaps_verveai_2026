@@ -67,6 +67,9 @@ export interface AIGenerationOptions {
   topicName?: string
   topicNameVi?: string
   additionalInstruction?: string
+  additionalInstructions?: string
+  language?: 'vi' | 'en'
+  skillId?: string
   files?: UploadedFile[]
   fileInstruction?: string
 }
