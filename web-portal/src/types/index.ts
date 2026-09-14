@@ -31,6 +31,9 @@ export type {
   Question,
   Assignment,
   ActivityLogEntry,
+  TeacherExam,
+  CreateExamInput,
+  UpdateExamInput,
 } from './teacher'
 export type {
   TeacherDashboardStats,
@@ -39,6 +42,7 @@ export type {
   QuestionOption,
   QuestionFilters,
   AssignmentFilters,
+  TeacherExamStatus,
 } from './teacher'
 export type {
   StudentProfile,
@@ -73,7 +77,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: 'student' | 'teacher' | 'reviewer' | 'admin' | 'TEACHER' | 'ADMIN' | 'SUPERVISOR' | 'STUDENT' | 'PARENT';
 }
 
 export interface ClassSummary {

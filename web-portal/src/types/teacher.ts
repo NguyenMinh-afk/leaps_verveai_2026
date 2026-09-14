@@ -165,3 +165,64 @@ export interface AssignmentFilters {
   classId?: string
   status?: 'draft' | 'published' | 'archived' | 'all'
 }
+
+/**
+ * Teacher exam status
+ */
+export type TeacherExamStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+/**
+ * Teacher exam data
+ */
+export interface TeacherExam {
+  id: string;
+  title: string;
+  titleVi: string;
+  description: string;
+  descriptionVi: string;
+  classId: string;
+  className: string;
+  status: TeacherExamStatus;
+  timeLimitMinutes: number | null;
+  passingScore: number;
+  maxScore: number;
+  maxAttempts: number;
+  shuffleQuestions: boolean;
+  showResultsImmediately: boolean;
+  questionCount: number;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+/**
+ * Create exam input
+ */
+export interface CreateExamInput {
+  classId: string;
+  title: string;
+  titleVi: string;
+  description?: string;
+  descriptionVi?: string;
+  timeLimitMinutes?: number;
+  passingScore?: number;
+  maxScore?: number;
+  maxAttempts?: number;
+  shuffleQuestions?: boolean;
+  showResultsImmediately?: boolean;
+}
+
+/**
+ * Update exam input
+ */
+export interface UpdateExamInput {
+  title?: string;
+  titleVi?: string;
+  description?: string;
+  descriptionVi?: string;
+  status?: TeacherExamStatus;
+  timeLimitMinutes?: number;
+  passingScore?: number;
+  maxAttempts?: number;
+  shuffleQuestions?: boolean;
+  showResultsImmediately?: boolean;
+}
