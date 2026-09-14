@@ -1,386 +1,360 @@
 // ============================================
-// VERVE AI - Exam Service Mock Implementation
+// VERVE AI - Exam Service
+// Integrated with real backend API
 // ============================================
 
-import type { StudentExam, ExamResult, Question, QuestionOption } from '@/types'
+import {
+  listExams as apiListExams,
+  getExam as apiGetExam,
+  getExamQuestions as apiGetExamQuestions,
+  startExamAttempt as apiStartExamAttempt,
+  getAttempt as apiGetAttempt,
+  submitExamAttempt,
+  getStudentAttempts as apiGetStudentAttempts,
+  getAttemptResults as apiGetAttemptResults,
+  type ExamRecord,
+  type ExamDetail,
+  type ExamAttemptRecord,
+  type ExamQuestionRecord,
+  type ExamResultDetail,
+  type ExamAnswerInput,
+  type QuestionType,
+} from '@/lib/api/exam';
+
+import {
+  getQuestions,
+  type Question,
+  type QuestionOption,
+} from '@/lib/api/content';
+
+import type { StudentExam, ExamResult } from '@/types';
 
 /**
- * Development exam service
- * This is a mock implementation for development only
+ * Question types supported
  */
+export type ExamQuestionType = QuestionType; // 'multiple-choice' | 'true-false' | 'short-answer'
 
-// Exam questions data (mock questions for exam taking)
+/**
+ * Unified exam question for frontend
+ * Combines exam question metadata with full content from content service
+ */
 export interface ExamQuestion {
-  id: string
-  examId: string
-  questionId: string
-  question: Question
+  id: string;              // ExamQuestion record ID
+  examId: string;
+  questionId: string;      // Content service question ID
+  points: number;
+  orderIndex: number;
+  required: boolean;
+  
+  // Full question content from content service
+  content: {
+    id: string;
+    title: string;
+    body: string;
+    bodyVi?: string;
+    type: ExamQuestionType;
+    difficulty: 'easy' | 'medium' | 'hard';
+    topic?: string;
+    topicVi?: string;
+    options?: QuestionOption[];      // For multiple-choice
+    correctOptionIndex?: number;      // For multiple-choice (hidden from student)
+    correctAnswer?: string;           // For true-false, short-answer (hidden from student)
+    explanation?: string;
+    explanationVi?: string;
+  };
+}
+
+/**
+ * Student answer for submission
+ * Handles all question types
+ */
+export interface StudentAnswer {
+  questionId: string;
+  selectedOptions?: string[];  // For multiple-choice and true-false
+  textAnswer?: string;         // For short-answer
 }
 
 /**
  * Exam session state
  */
 export interface ExamSession {
-  examId: string
-  exam: StudentExam
-  questions: ExamQuestion[]
-  answers: Record<string, number> // questionId -> selectedOptionIndex
-  startedAt: Date
-  timeLimit?: number // minutes
-  isSubmitted: boolean
-  submittedAt?: Date
+  examId: string;
+  attemptId: string;
+  exam: StudentExam;
+  questions: ExamQuestion[];
+  answers: Record<string, StudentAnswer>; // questionId -> answer
+  startedAt: Date;
+  timeLimit?: number; // minutes
+  isSubmitted: boolean;
+  submittedAt?: Date;
+}
+
+// ============================================
+// Mappers
+// ============================================
+
+/**
+ * Convert backend ExamRecord to StudentExam
+ */
+function toStudentExam(record: ExamRecord): StudentExam {
+  return {
+    id: record.id,
+    title: record.title,
+    titleVi: record.title,
+    description: record.description || '',
+    descriptionVi: record.description || '',
+    classId: record.classId,
+    className: 'Class', // Will be populated from class service if needed
+    teacherName: 'Teacher', // Will be populated from user service if needed
+    status: record.status === 'PUBLISHED' ? 'available' : 'upcoming',
+    durationMinutes: record.timeLimitMinutes || 30,
+    questionCount: 0, // Will be updated when loading exam detail
+    attempts: 0,
+    maxAttempts: record.maxAttempts,
+  };
 }
 
 /**
- * Mock questions for exams
+ * Convert backend ExamDetail to StudentExam
  */
-const mockExamQuestions: Record<string, ExamQuestion[]> = {
-  'exam-s-1': [
-    {
-      id: 'eq-1-1',
-      examId: 'exam-s-1',
-      questionId: 'q-multi-1',
-      question: {
-        id: 'q-multi-1',
-        content: 'What is 12 × 8?',
-        contentVi: '12 nhân 8 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '86', contentVi: '86' },
-          { id: 'opt-2', content: '96', contentVi: '96' },
-          { id: 'opt-3', content: '106', contentVi: '106' },
-          { id: 'opt-4', content: '98', contentVi: '98' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '12 × 8 = 96',
-        explanationVi: '12 nhân 8 bằng 96',
-        topicId: 't3',
-        topicName: 'Multiplication',
-        topicNameVi: 'Phép nhân',
-        difficulty: 'easy',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-1-2',
-      examId: 'exam-s-1',
-      questionId: 'q-multi-2',
-      question: {
-        id: 'q-multi-2',
-        content: 'What is 7 × 9?',
-        contentVi: '7 nhân 9 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '63', contentVi: '63' },
-          { id: 'opt-2', content: '72', contentVi: '72' },
-          { id: 'opt-3', content: '54', contentVi: '54' },
-          { id: 'opt-4', content: '81', contentVi: '81' },
-        ],
-        correctOptionIndex: 0,
-        explanation: '7 × 9 = 63',
-        explanationVi: '7 nhân 9 bằng 63',
-        topicId: 't3',
-        topicName: 'Multiplication',
-        topicNameVi: 'Phép nhân',
-        difficulty: 'easy',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-1-3',
-      examId: 'exam-s-1',
-      questionId: 'q-multi-3',
-      question: {
-        id: 'q-multi-3',
-        content: 'What is 15 × 6?',
-        contentVi: '15 nhân 6 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '80', contentVi: '80' },
-          { id: 'opt-2', content: '90', contentVi: '90' },
-          { id: 'opt-3', content: '85', contentVi: '85' },
-          { id: 'opt-4', content: '95', contentVi: '95' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '15 × 6 = 90',
-        explanationVi: '15 nhân 6 bằng 90',
-        topicId: 't3',
-        topicName: 'Multiplication',
-        topicNameVi: 'Phép nhân',
-        difficulty: 'medium',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-1-4',
-      examId: 'exam-s-1',
-      questionId: 'q-multi-4',
-      question: {
-        id: 'q-multi-4',
-        content: 'What is 24 × 5?',
-        contentVi: '24 nhân 5 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '110', contentVi: '110' },
-          { id: 'opt-2', content: '120', contentVi: '120' },
-          { id: 'opt-3', content: '130', contentVi: '130' },
-          { id: 'opt-4', content: '100', contentVi: '100' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '24 × 5 = 120',
-        explanationVi: '24 nhân 5 bằng 120',
-        topicId: 't3',
-        topicName: 'Multiplication',
-        topicNameVi: 'Phép nhân',
-        difficulty: 'medium',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-1-5',
-      examId: 'exam-s-1',
-      questionId: 'q-multi-5',
-      question: {
-        id: 'q-multi-5',
-        content: 'If 8 × x = 64, what is x?',
-        contentVi: 'Nếu 8 nhân x bằng 64, thì x là bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '7', contentVi: '7' },
-          { id: 'opt-2', content: '8', contentVi: '8' },
-          { id: 'opt-3', content: '9', contentVi: '9' },
-          { id: 'opt-4', content: '6', contentVi: '6' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '8 × 8 = 64, so x = 8',
-        explanationVi: '8 nhân 8 bằng 64, vậy x = 8',
-        topicId: 't3',
-        topicName: 'Multiplication',
-        topicNameVi: 'Phép nhân',
-        difficulty: 'medium',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-  ],
-  'exam-s-2': [
-    {
-      id: 'eq-2-1',
-      examId: 'exam-s-2',
-      questionId: 'q-div-1',
-      question: {
-        id: 'q-div-1',
-        content: 'What is 56 ÷ 7?',
-        contentVi: '56 chia 7 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '7', contentVi: '7' },
-          { id: 'opt-2', content: '8', contentVi: '8' },
-          { id: 'opt-3', content: '6', contentVi: '6' },
-          { id: 'opt-4', content: '9', contentVi: '9' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '56 ÷ 7 = 8',
-        explanationVi: '56 chia 7 bằng 8',
-        topicId: 't4',
-        topicName: 'Division',
-        topicNameVi: 'Phép chia',
-        difficulty: 'easy',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-2-2',
-      examId: 'exam-s-2',
-      questionId: 'q-div-2',
-      question: {
-        id: 'q-div-2',
-        content: 'What is 81 ÷ 9?',
-        contentVi: '81 chia 9 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '8', contentVi: '8' },
-          { id: 'opt-2', content: '9', contentVi: '9' },
-          { id: 'opt-3', content: '7', contentVi: '7' },
-          { id: 'opt-4', content: '10', contentVi: '10' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '81 ÷ 9 = 9',
-        explanationVi: '81 chia 9 bằng 9',
-        topicId: 't4',
-        topicName: 'Division',
-        topicNameVi: 'Phép chia',
-        difficulty: 'easy',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-    {
-      id: 'eq-2-3',
-      examId: 'exam-s-2',
-      questionId: 'q-div-3',
-      question: {
-        id: 'q-div-3',
-        content: 'What is 72 ÷ 8?',
-        contentVi: '72 chia 8 bằng bao nhiêu?',
-        options: [
-          { id: 'opt-1', content: '8', contentVi: '8' },
-          { id: 'opt-2', content: '9', contentVi: '9' },
-          { id: 'opt-3', content: '7', contentVi: '7' },
-          { id: 'opt-4', content: '10', contentVi: '10' },
-        ],
-        correctOptionIndex: 1,
-        explanation: '72 ÷ 8 = 9',
-        explanationVi: '72 chia 8 bằng 9',
-        topicId: 't4',
-        topicName: 'Division',
-        topicNameVi: 'Phép chia',
-        difficulty: 'easy',
-        type: 'multiple-choice',
-        status: 'published',
-        createdBy: 'teacher',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    },
-  ],
-}
-
-// Current active session (in-memory for development)
-let activeSession: ExamSession | null = null
-
-// Completed results storage (in-memory for development)
-const completedResults: ExamResult[] = []
-
-/**
- * Generate unique ID
- */
-function generateId(): string {
-  return `result-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+function toStudentExamFromDetail(detail: ExamDetail): StudentExam {
+  return {
+    id: detail.id,
+    title: detail.title,
+    titleVi: detail.title,
+    description: detail.description || '',
+    descriptionVi: detail.description || '',
+    classId: detail.classId,
+    className: 'Class',
+    teacherName: 'Teacher',
+    status: detail.status === 'PUBLISHED' ? 'available' : 'upcoming',
+    durationMinutes: detail.timeLimitMinutes || 30,
+    questionCount: detail.questions.length,
+    attempts: 0,
+    maxAttempts: detail.maxAttempts,
+  };
 }
 
 /**
- * Get exam questions
+ * Convert content service Question to ExamQuestion content
  */
-function getExamQuestions(examId: string): ExamQuestion[] {
-  return mockExamQuestions[examId] || []
+function toQuestionContent(question: Question): ExamQuestion['content'] {
+  return {
+    id: question.id,
+    title: question.title,
+    body: question.body,
+    bodyVi: question.bodyVi || question.metadata.contentVi,
+    type: question.metadata.type,
+    difficulty: question.difficultyLabel,
+    topic: question.topic || question.metadata.topicName,
+    topicVi: question.metadata.topicNameVi,
+    options: question.metadata.options?.map((opt, idx) => ({
+      id: opt.id || `opt-${idx}`,
+      content: opt.content,
+      contentVi: opt.contentVi,
+    })),
+    // CORRECT ANSWERS ARE NOT EXPOSED TO STUDENTS
+    // These will be populated server-side after grading
+    correctOptionIndex: question.metadata.correctOptionIndex,
+    correctAnswer: question.metadata.correctAnswer,
+    explanation: question.metadata.explanation,
+    explanationVi: question.metadata.explanationVi,
+  };
 }
 
 /**
- * Calculate exam result
+ * Convert ExamQuestionRecord + Question content to ExamQuestion
  */
-function calculateResult(session: ExamSession): { score: number; total: number; percentage: number; correct: number; incorrect: number; unanswered: number } {
-  let correct = 0
-  let incorrect = 0
-  let unanswered = 0
-
-  session.questions.forEach((eq) => {
-    const selectedIndex = session.answers[eq.questionId]
-    if (selectedIndex === undefined) {
-      unanswered++
-    } else if (selectedIndex === eq.question.correctOptionIndex) {
-      correct++
-    } else {
-      incorrect++
-    }
-  })
-
-  const total = session.questions.length
-  const percentage = total > 0 ? Math.round((correct / total) * 100) : 0
-
-  return { score: correct, total, percentage, correct, incorrect, unanswered }
+function toExamQuestion(
+  record: ExamQuestionRecord,
+  content: Question
+): ExamQuestion {
+  return {
+    id: record.id,
+    examId: record.examId,
+    questionId: record.questionId,
+    points: record.points,
+    orderIndex: record.orderIndex,
+    required: record.required,
+    content: toQuestionContent(content),
+  };
 }
 
 /**
- * Exam service
+ * Convert backend ExamAttemptRecord to ExamResult
  */
+function toExamResult(
+  attempt: ExamAttemptRecord,
+  examTitle: string,
+  classId: string,
+  className: string
+): ExamResult {
+  return {
+    id: attempt.id,
+    examId: attempt.examId,
+    examTitle: examTitle,
+    examTitleVi: examTitle,
+    classId: classId,
+    className: className,
+    status: 'completed',
+    score: attempt.score ?? 0,
+    maxScore: attempt.maxScore ?? 0,
+    percentage: attempt.percentage ?? 0,
+    timeSpentMinutes: 0,
+    completedAt: attempt.submittedAt ? new Date(attempt.submittedAt) : new Date(),
+    masteryImpact: 0,
+    strengths: [],
+    strengthsVi: [],
+    areasForImprovement: [],
+    areasForImprovementVi: [],
+  };
+}
+
+/**
+ * Convert backend ExamResultDetail to frontend ExamResult
+ */
+function toExamResultDetail(result: ExamResultDetail): ExamResult {
+  return {
+    id: result.attemptId,
+    examId: result.examId,
+    examTitle: result.examTitle,
+    examTitleVi: result.examTitle,
+    classId: '',
+    className: 'Class',
+    status: 'completed',
+    score: result.score,
+    maxScore: result.maxScore,
+    percentage: result.percentage,
+    timeSpentMinutes: 0,
+    completedAt: result.submittedAt ? new Date(result.submittedAt) : new Date(),
+    masteryImpact: 0,
+    strengths: [],
+    strengthsVi: [],
+    areasForImprovement: [],
+    areasForImprovementVi: [],
+  };
+}
+
+// ============================================
+// Service State
+// ============================================
+
+let activeSession: ExamSession | null = null;
+
+// ============================================
+// Service Functions
+// ============================================
+
 export const examService = {
   /**
-   * Start exam session
+   * Get list of exams
    */
-  async startExam(examId: string, exam: StudentExam): Promise<{ success: boolean; session?: ExamSession; error?: string }> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
+  async getExams(params?: {
+    skip?: number;
+    take?: number;
+    status?: 'available' | 'upcoming' | 'completed';
+  }): Promise<{ exams: StudentExam[]; total: number }> {
     try {
-      const questions = getExamQuestions(examId)
-      
-      if (questions.length === 0) {
-        // Generate mock questions if none exist
-        const mockQuestions: ExamQuestion[] = []
-        for (let i = 0; i < (exam.questionCount || 5); i++) {
-          mockQuestions.push({
-            id: `eq-${examId}-${i}`,
-            examId,
-            questionId: `q-${examId}-${i}`,
-            question: {
-              id: `q-${examId}-${i}`,
-              content: `Question ${i + 1} for ${exam.titleVi}`,
-              contentVi: `Câu hỏi ${i + 1} - ${exam.titleVi}`,
-              options: [
-                { id: `opt-${i}-0`, content: 'Option A', contentVi: 'Phương án A' },
-                { id: `opt-${i}-1`, content: 'Option B', contentVi: 'Phương án B' },
-                { id: `opt-${i}-2`, content: 'Option C', contentVi: 'Phương án C' },
-                { id: `opt-${i}-3`, content: 'Option D', contentVi: 'Phương án D' },
-              ],
-              correctOptionIndex: i % 4,
-              explanation: 'This is the correct answer.',
-              explanationVi: 'Đây là đáp án đúng.',
-              topicId: exam.topicId || 't1',
-              topicName: exam.topicName || 'Topic',
-              topicNameVi: exam.topicNameVi || 'Chủ đề',
-              difficulty: 'medium',
-              type: 'multiple-choice',
-              status: 'published',
-              createdBy: 'teacher',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          })
-        }
-        activeSession = {
-          examId,
-          exam,
-          questions: mockQuestions,
-          answers: {},
-          startedAt: new Date(),
-          timeLimit: exam.durationMinutes,
-          isSubmitted: false,
-        }
-      } else {
-        activeSession = {
-          examId,
-          exam,
-          questions,
-          answers: {},
-          startedAt: new Date(),
-          timeLimit: exam.durationMinutes,
-          isSubmitted: false,
-        }
-      }
+      let status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED' | undefined;
+      if (params?.status === 'available') status = 'PUBLISHED';
+      else if (params?.status === 'upcoming') status = 'DRAFT';
 
-      return { success: true, session: activeSession }
+      const result = await apiListExams({
+        skip: params?.skip,
+        take: params?.take,
+        status,
+      });
+
+      return {
+        exams: result.items.map(toStudentExam),
+        total: result.total,
+      };
+    } catch {
+      return { exams: [], total: 0 };
+    }
+  },
+
+  /**
+   * Get exam by ID
+   */
+  async getExamById(id: string): Promise<StudentExam | null> {
+    try {
+      const detail = await apiGetExam(id);
+      return toStudentExamFromDetail(detail);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Fetch full question content from content service
+   */
+  async getExamQuestionsWithContent(examId: string): Promise<ExamQuestion[]> {
+    // Get question references from exam service
+    const questionsResponse = await apiGetExamQuestions(examId);
+    const questionRecords = questionsResponse.questions;
+
+    if (questionRecords.length === 0) {
+      return [];
+    }
+
+    // Extract question IDs
+    const questionIds = questionRecords.map((q) => q.questionId);
+
+    // Fetch full question content from content service
+    const questions = await getQuestions(questionIds);
+
+    // Create a map for quick lookup
+    const questionMap = new Map<string, Question>();
+    for (const q of questions) {
+      questionMap.set(q.id, q);
+    }
+
+    // Combine records with content, maintaining order
+    const result: ExamQuestion[] = [];
+    for (const record of questionRecords) {
+      const content = questionMap.get(record.questionId);
+      if (content) {
+        result.push(toExamQuestion(record, content));
+      } else {
+        console.warn(`Question not found: ${record.questionId}`);
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Start exam session
+   * Flow: Start Attempt → Get Questions → Load Content → Create Session
+   */
+  async startExam(examId: string): Promise<{ success: boolean; session?: ExamSession; error?: string }> {
+    try {
+      // 1. Start attempt on backend
+      const attempt = await apiStartExamAttempt(examId);
+
+      // 2. Get exam details
+      const examDetail = await apiGetExam(examId);
+
+      // 3. Fetch full question content from content service
+      const questions = await this.getExamQuestionsWithContent(examId);
+
+      // 4. Create session
+      activeSession = {
+        examId,
+        attemptId: attempt.id,
+        exam: toStudentExamFromDetail(examDetail),
+        questions,
+        answers: {},
+        startedAt: new Date(attempt.startedAt),
+        timeLimit: examDetail.timeLimitMinutes || undefined,
+        isSubmitted: false,
+      };
+
+      return { success: true, session: activeSession };
     } catch (error) {
-      return { success: false, error: 'Không thể bắt đầu bài kiểm tra' }
+      const message = error instanceof Error ? error.message : 'Failed to start exam';
+      return { success: false, error: message };
     }
   },
 
@@ -388,15 +362,49 @@ export const examService = {
    * Get current exam session
    */
   getSession(): ExamSession | null {
-    return activeSession
+    return activeSession;
   },
 
   /**
-   * Select answer for a question
+   * Set session (for restoring from existing attempt)
+   */
+  setSession(session: ExamSession): void {
+    activeSession = session;
+  },
+
+  /**
+   * Select answer for multiple-choice question
    */
   selectAnswer(questionId: string, optionIndex: number): void {
     if (activeSession && !activeSession.isSubmitted) {
-      activeSession.answers[questionId] = optionIndex
+      activeSession.answers[questionId] = {
+        questionId,
+        selectedOptions: [String(optionIndex)],
+      };
+    }
+  },
+
+  /**
+   * Select answer for true-false question
+   */
+  selectTrueFalse(questionId: string, isTrue: boolean): void {
+    if (activeSession && !activeSession.isSubmitted) {
+      activeSession.answers[questionId] = {
+        questionId,
+        selectedOptions: [isTrue ? 'true' : 'false'],
+      };
+    }
+  },
+
+  /**
+   * Enter text answer for short-answer question
+   */
+  setTextAnswer(questionId: string, text: string): void {
+    if (activeSession && !activeSession.isSubmitted) {
+      activeSession.answers[questionId] = {
+        questionId,
+        textAnswer: text,
+      };
     }
   },
 
@@ -405,76 +413,129 @@ export const examService = {
    */
   clearAnswer(questionId: string): void {
     if (activeSession && !activeSession.isSubmitted) {
-      delete activeSession.answers[questionId]
+      delete activeSession.answers[questionId];
     }
   },
 
   /**
    * Submit exam
+   * Converts all answers to backend format and submits
    */
   async submitExam(): Promise<{ success: boolean; result?: ExamResult; error?: string }> {
     if (!activeSession) {
-      return { success: false, error: 'Không có phiên làm bài' }
+      return { success: false, error: 'No active exam session' };
     }
 
     if (activeSession.isSubmitted) {
-      return { success: false, error: 'Bài kiểm tra đã được nộp' }
+      return { success: false, error: 'Exam already submitted' };
     }
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     try {
-      const { score, total, percentage, correct, incorrect, unanswered } = calculateResult(activeSession)
-      
-      activeSession.isSubmitted = true
-      activeSession.submittedAt = new Date()
+      // Convert answers to backend format
+      const answers: ExamAnswerInput[] = Object.values(activeSession.answers).map((answer) => ({
+        questionId: answer.questionId,
+        selectedOptions: answer.selectedOptions,
+        textAnswer: answer.textAnswer,
+      }));
 
+      // Submit to backend
+      const attempt = await submitExamAttempt(activeSession.attemptId, answers);
+
+      activeSession.isSubmitted = true;
+      activeSession.submittedAt = new Date();
+
+      // Build result
       const result: ExamResult = {
-        id: generateId(),
+        id: attempt.id,
         examId: activeSession.examId,
         examTitle: activeSession.exam.title,
         examTitleVi: activeSession.exam.titleVi,
-        topicId: activeSession.exam.topicId,
-        topicName: activeSession.exam.topicName,
-        topicNameVi: activeSession.exam.topicNameVi,
         classId: activeSession.exam.classId,
-        className: activeSession.exam.className,
+        className: activeSession.exam.className || 'Class',
         status: 'completed',
-        score,
-        maxScore: total,
-        percentage,
-        timeSpentMinutes: Math.round((Date.now() - activeSession.startedAt.getTime()) / 60000),
+        score: attempt.score ?? 0,
+        maxScore: attempt.maxScore ?? activeSession.questions.length,
+        percentage: attempt.percentage ?? 0,
+        timeSpentMinutes: Math.round(
+          (Date.now() - activeSession.startedAt.getTime()) / 60000
+        ),
         completedAt: new Date(),
-        masteryImpact: percentage >= 80 ? 0.05 : percentage >= 60 ? 0.02 : 0,
-        strengths: correct > incorrect ? ['Multiple choice', 'Problem solving'] : [],
-        strengthsVi: correct > incorrect ? ['Trắc nghiệm', 'Giải toán'] : [],
-        areasForImprovement: incorrect > 0 ? ['Need more practice', 'Review concepts'] : [],
-        areasForImprovementVi: incorrect > 0 ? ['Cần luyện thêm', 'Ôn lại kiến thức'] : [],
-      }
+        masteryImpact: (attempt.percentage ?? 0) >= 80 ? 0.05 : (attempt.percentage ?? 0) >= 60 ? 0.02 : 0,
+        strengths: (attempt.percentage ?? 0) >= 60 ? ['Completed exam'] : [],
+        strengthsVi: (attempt.percentage ?? 0) >= 60 ? ['Hoàn thành bài kiểm tra'] : [],
+        areasForImprovement: (attempt.percentage ?? 0) < 60 ? ['Need more practice'] : [],
+        areasForImprovementVi: (attempt.percentage ?? 0) < 60 ? ['Cần luyện thêm'] : [],
+      };
 
-      completedResults.push(result)
-
-      return { success: true, result }
+      return { success: true, result };
     } catch (error) {
-      return { success: false, error: 'Không thể nộp bài kiểm tra' }
+      const message = error instanceof Error ? error.message : 'Failed to submit exam';
+      return { success: false, error: message };
     }
   },
 
   /**
-   * Get completed result
+   * Get completed result for an attempt
    */
-  getCompletedResult(): ExamResult | null {
-    const lastResult = completedResults[completedResults.length - 1]
-    return lastResult || null
+  async getResult(attemptId: string): Promise<ExamResult | null> {
+    try {
+      const result = await apiGetAttemptResults(attemptId);
+      return toExamResultDetail(result);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Get student's attempt history
+   */
+  async getStudentAttempts(params?: {
+    skip?: number;
+    take?: number;
+  }): Promise<ExamResult[]> {
+    try {
+      const result = await apiGetStudentAttempts(params);
+      return result.items.map((attempt) =>
+        toExamResult(attempt, 'Exam', '', 'Class')
+      );
+    } catch {
+      return [];
+    }
   },
 
   /**
    * Clear session
    */
   clearSession(): void {
-    activeSession = null
+    activeSession = null;
   },
-}
 
-export default examService
+  /**
+   * Get attempt details
+   */
+  async getAttempt(attemptId: string): Promise<ExamAttemptRecord | null> {
+    try {
+      return await apiGetAttempt(attemptId);
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Check if current session has an answer for a question
+   */
+  hasAnswer(questionId: string): boolean {
+    if (!activeSession) return false;
+    return questionId in activeSession.answers;
+  },
+
+  /**
+   * Get current answer for a question
+   */
+  getAnswer(questionId: string): StudentAnswer | undefined {
+    if (!activeSession) return undefined;
+    return activeSession.answers[questionId];
+  },
+};
+
+export default examService;
