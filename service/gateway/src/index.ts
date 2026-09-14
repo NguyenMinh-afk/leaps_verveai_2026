@@ -15,6 +15,10 @@ import bktRouter from './routes/bkt.routes';
 import classRouter from './routes/class.routes';
 import contentRouter from './routes/content.routes';
 import syncRouter from './routes/sync.routes';
+import assignmentRouter from './routes/assignment.routes';
+import examRouter from './routes/exam.routes';
+import aiRouter from './routes/ai.routes';
+import reportsRouter from './routes/reports.routes';
 import { verifyJwt } from './policies/jwt';
 import type { GatewayConfig } from './types/config';
 
@@ -57,6 +61,9 @@ async function main() {
         class: { paths: ['/api/class/*'] },
         content: { paths: ['/api/content/*'] },
         sync: { paths: ['/api/sync/*'] },
+        assignment: { paths: ['/api/assignment/*'] },
+        exam: { paths: ['/api/exam/*'] },
+        ai: { paths: ['/api/ai/*'] },
       },
       serviceEndpoints: {
         svcAuth: { url: process.env['SVC_AUTH_URL'] ?? 'http://svc-auth:3001' },
@@ -64,10 +71,12 @@ async function main() {
         svcClass: { url: process.env['SVC_CLASS_URL'] ?? 'http://svc-class:3003' },
         svcContent: { url: process.env['SVC_CONTENT_URL'] ?? 'http://svc-content:3004' },
         svcSync: { url: process.env['SVC_SYNC_URL'] ?? 'http://svc-sync:3005' },
+        svcExam: { url: process.env['SVC_EXAM_URL'] ?? 'http://svc-exam:3007' },
+        svcAi: { url: process.env['SVC_AI_URL'] ?? 'http://svc-ai:3008' },
       },
       pipelines: {
         default: {
-          apiEndpoints: ['auth', 'bkt', 'class', 'content', 'sync'],
+          apiEndpoints: ['auth', 'bkt', 'class', 'content', 'sync', 'assignment', 'exam', 'ai'],
           policies: ['cors', 'rate-limit', 'jwt', 'proxy'],
         },
       },
@@ -111,6 +120,12 @@ async function main() {
   app.use('/api/class', apiLimiter, verifyJwt, classRouter);
   app.use('/api/content', apiLimiter, verifyJwt, contentRouter);
   app.use('/api/sync', apiLimiter, verifyJwt, syncRouter);
+  app.use('/api/assignment', apiLimiter, verifyJwt, assignmentRouter);
+  app.use('/api/exam', apiLimiter, verifyJwt, examRouter);
+  app.use('/api/ai', apiLimiter, verifyJwt, aiRouter);
+
+  // Admin reports - requires JWT and admin role check is in the route itself
+  app.use('/api/reports', apiLimiter, verifyJwt, reportsRouter);
 
   // Error handler
   app.use(errorHandler);

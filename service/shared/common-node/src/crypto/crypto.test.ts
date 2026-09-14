@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hashPassword, verifyPassword, signJwt, verifyJwt, isJwtExpired } from '../src/crypto';
+import { hashPassword, verifyPassword, signJwt, verifyJwt, isJwtExpired } from '../index';
 
 describe('crypto', () => {
   describe('hashPassword / verifyPassword', () => {

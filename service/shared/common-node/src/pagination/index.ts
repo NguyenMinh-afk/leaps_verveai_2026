@@ -53,7 +53,7 @@ export function parseCursor(cursor: string): string {
  */
 export function buildPrismaCursor(
   cursor: string | undefined,
-  pageSize: number,
+  _pageSize: number,
 ): { cursor?: { id: string }; skip?: number } {
   if (!cursor) return { skip: 0 };
   return { cursor: { id: parseCursor(cursor) }, skip: 1 };
