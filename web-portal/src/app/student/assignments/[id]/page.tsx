@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import {
   DashboardLayoutWrapper,
   PageHeader,
-  PageSection,
   EmptyState,
 } from '@/components/layout'
 import {
@@ -15,30 +14,56 @@ import {
   Badge,
   Progress,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  getAssignmentById,
-} from '@/data/student-mock-data'
+import { assignmentService } from '@/services/assignment'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
+import type { StudentAssignment } from '@/types'
 
 /**
  * Assignment Detail Page
+ * Fetches assignment data from real backend API
  */
 export default function AssignmentDetailPage() {
   const router = useRouter()
   const params = useParams()
   const assignmentId = params.id as string
-  const [currentRole] = React.useState<UserRole>('student')
   const { t } = useLanguage()
+  const { user } = useAuth()
 
-  const student = mockStudentProfile
-  const assignment = getAssignmentById(assignmentId)
+  // State
+  const [assignment, setAssignment] = React.useState<StudentAssignment | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const user = {
-    name: student.name,
-    email: student.email,
+  // Load assignment data from backend
+  React.useEffect(() => {
+    loadAssignment()
+  }, [assignmentId])
+
+  const loadAssignment = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Fetch all assignments and find the one with matching ID
+      const result = await assignmentService.getStudentAssignments({ limit: 100 })
+      const found = result.assignments.find(a => a.id === assignmentId)
+      if (found) {
+        setAssignment(found)
+      } else {
+        setError('Assignment not found')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load assignment')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const userData = {
+    name: user?.name || 'Student',
+    email: user?.email || '',
     role: 'student' as UserRole,
   }
 
@@ -58,13 +83,34 @@ export default function AssignmentDetailPage() {
   }
 
   const handleSettings = () => {
-    // Navigate to settings
+    router.push('/student/settings')
   }
 
-  if (!assignment) {
+  // Loading state
+  if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userData}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex items-center justify-center py-12">
+          <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error state
+  if (error || !assignment) {
+    return (
+      <DashboardLayoutWrapper
+        user={userData}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -73,8 +119,8 @@ export default function AssignmentDetailPage() {
         <EmptyState
           title="Assignment not found"
           titleVi="Không tìm thấy bài tập"
-          description="The assignment you're looking for doesn't exist"
-          descriptionVi="Bài tập bạn đang tìm kiếm không tồn tại"
+          description={error || "The assignment you're looking for doesn't exist"}
+          descriptionVi={error || "Bài tập bạn đang tìm kiếm không tồn tại"}
           action={
             <Button variant="primary" onClick={() => router.push('/student/assignments')}>
               Quay lại Bài tập
@@ -92,13 +138,13 @@ export default function AssignmentDetailPage() {
     overdue: { label: t('common.overdue') || 'Quá hạn', variant: 'error' as const },
   }
 
-  const config = statusConfig[assignment.status]
+  const config = statusConfig[assignment.status] || statusConfig.assigned
 
   const isOverdue = assignment.status === 'overdue'
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userData}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -144,15 +190,15 @@ export default function AssignmentDetailPage() {
             </div>
             <div className="text-right">
               <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-                {assignment.progress}%
+                {assignment.progress || 0}%
               </p>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {assignment.answeredCount}/{assignment.questionCount} {t('exam.questions') || 'câu hỏi'}
+                {assignment.answeredCount || 0}/{assignment.questionCount} {t('exam.questions') || 'câu hỏi'}
               </p>
             </div>
           </div>
           <div className="mt-4">
-            <Progress value={assignment.progress} />
+            <Progress value={assignment.progress || 0} />
           </div>
           {assignment.score !== undefined && (
             <div className="mt-4 flex items-center justify-between rounded-lg bg-success-50 p-4 dark:bg-success-900/20">
@@ -259,16 +305,16 @@ export default function AssignmentDetailPage() {
           <div className="mt-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500 dark:text-slate-400">
-                {t('common.answered') || 'Đã trả lời'}: {assignment.answeredCount}/{assignment.questionCount}
+                {t('common.answered') || 'Đã trả lời'}: {assignment.answeredCount || 0}/{assignment.questionCount}
               </span>
               <span className="font-medium text-slate-900 dark:text-slate-100">
-                {Math.round((assignment.answeredCount / assignment.questionCount) * 100)}%
+                {Math.round(((assignment.answeredCount || 0) / assignment.questionCount) * 100)}%
               </span>
             </div>
             <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
                 className="h-full rounded-full bg-verve-600 transition-all"
-                style={{ width: `${(assignment.answeredCount / assignment.questionCount) * 100}%` }}
+                style={{ width: `${((assignment.answeredCount || 0) / assignment.questionCount) * 100}%` }}
               />
             </div>
           </div>
@@ -281,13 +327,13 @@ export default function AssignmentDetailPage() {
             </div>
             <div className="rounded-lg bg-verve-50 p-3 text-center dark:bg-verve-900/20">
               <p className="text-2xl font-bold text-verve-600 dark:text-verve-400">
-                {assignment.answeredCount}
+                {assignment.answeredCount || 0}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{t('common.answered') || 'Đã trả lời'}</p>
             </div>
             <div className="rounded-lg bg-amber-50 p-3 text-center dark:bg-amber-900/20">
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {assignment.questionCount - assignment.answeredCount}
+                {assignment.questionCount - (assignment.answeredCount || 0)}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{t('common.unanswered') || 'Chưa trả lời'}</p>
             </div>

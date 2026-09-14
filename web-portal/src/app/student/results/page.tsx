@@ -15,13 +15,10 @@ import {
   Button,
   Badge,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  mockExamResults,
-  mockStudentExams,
-} from '@/data/student-mock-data'
+import { examService } from '@/services/exam'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import type { UserRole, BreadcrumbItem } from '@/types'
 import type { ExamResult } from '@/types'
 
@@ -133,7 +130,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
           </Badge>
         </div>
 
-        {result.strengthsVi.length > 0 && (
+        {result.strengthsVi && result.strengthsVi.length > 0 && (
           <div className="mt-4">
             <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
               {t('common.strengths') || 'Điểm mạnh'}:
@@ -154,15 +151,33 @@ const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
 export default function ResultsPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('student')
+  const [results, setResults] = React.useState<ExamResult[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const student = mockStudentProfile
-  const results = mockExamResults
-  const completedExams = mockStudentExams.filter(e => e.status === 'completed')
+  // Load results from API
+  React.useEffect(() => {
+    loadResults()
+  }, [])
 
-  const user = {
-    name: student.name,
-    email: student.email,
+  const loadResults = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const examResults = await examService.getStudentAttempts()
+      setResults(examResults)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load results')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const userData = {
+    name: user?.name || 'Student',
+    email: user?.email || '',
     role: 'student' as UserRole,
   }
 
@@ -186,7 +201,6 @@ export default function ResultsPage() {
 
   // Stats
   const stats = React.useMemo(() => ({
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     total: results.length,
     excellent: results.filter(r => r.percentage >= 80).length,
     good: results.filter(r => r.percentage >= 60 && r.percentage < 80).length,
@@ -198,7 +212,7 @@ export default function ResultsPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userData}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -257,7 +271,21 @@ export default function ResultsPage() {
 
         {/* Results List */}
         <PageSection title="Lịch sử kết quả" titleVi="Lịch sử kết quả">
-          {results.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : error ? (
+            <Card variant="default" padding="lg" className="text-center">
+              <p className="text-error-600 dark:text-error-400">{error}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={loadResults}>
+                {t('common.retry') || 'Thử lại'}
+              </Button>
+            </Card>
+          ) : results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {results.map((result) => (
                 <ResultCard key={result.id} result={result} />

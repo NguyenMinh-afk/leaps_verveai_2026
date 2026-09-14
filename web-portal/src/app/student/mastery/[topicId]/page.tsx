@@ -21,15 +21,11 @@ import {
   MasteryBadge,
   MasteryRingIndicator,
 } from '@/components/ui'
-import {
-  mockStudentProfile,
-  getTopicById,
-  getEvidenceByTopic,
-} from '@/data/student-mock-data'
 import { formatRelativeTime, getMasteryLevel } from '@/lib/utils'
 import { useLanguage } from '@/components/providers/language-provider'
-import type { UserRole, BreadcrumbItem } from '@/types'
-import type { EvidenceItem } from '@/types'
+import type { UserRole, BreadcrumbItem, EvidenceItem, TopicMastery } from '@/types'
+import { bktService } from '@/services/bkt'
+import * as bktApi from '@/lib/api/bkt'
 
 /**
  * Evidence Card Component
@@ -113,13 +109,63 @@ export default function TopicMasteryDetailPage() {
   const [currentRole] = React.useState<UserRole>('student')
   const { t } = useLanguage()
 
-  const student = mockStudentProfile
-  const topic = getTopicById(topicId)
-  const evidence = getEvidenceByTopic(topicId)
+  // State for real API data
+  const [skill, setSkill] = React.useState<bktApi.BKTSkill | null>(null)
+  const [prerequisites, setPrerequisites] = React.useState<TopicMastery[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Fetch skill data and prerequisites from API
+  React.useEffect(() => {
+    async function fetchSkillData() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const [skillData, prereqData] = await Promise.all([
+          bktService.getSkill(topicId),
+          bktService.getSkillPrerequisites(topicId),
+        ])
+        if (skillData) {
+          setSkill({
+            id: skillData.topicId,
+            code: skillData.topicId.slice(0, 8),
+            name: skillData.topicName,
+            difficulty: 1,
+            description: null,
+            prerequisites: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as bktApi.BKTSkill)
+        }
+        setPrerequisites(prereqData)
+      } catch (err) {
+        console.error('Failed to fetch skill data:', err)
+        setError('Không thể tải dữ liệu chủ đề')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (topicId) {
+      fetchSkillData()
+    }
+  }, [topicId])
+
+  // For now, use placeholder data while API is loading
+  const topic = !isLoading ? {
+    topicId: skill?.id || topicId,
+    topicNameVi: skill?.name || 'Chủ đề',
+    subjectVi: 'Toán học',
+    pKnown: 0.5,
+    masteryLevel: 'learning' as 'mastered' | 'learning' | 'needs-support' | 'unknown',
+    evidenceCount: 0,
+    lastActivity: new Date(),
+    trend: undefined as 'up' | 'down' | 'stable' | undefined,
+  } : null
 
   const user = {
-    name: student.name,
-    email: student.email,
+    name: 'Student',
+    email: '',
     role: 'student' as UserRole,
   }
 
@@ -127,7 +173,7 @@ export default function TopicMasteryDetailPage() {
     { label: 'Trang chủ', labelVi: 'Trang chủ', href: '/' },
     { label: 'Học sinh', labelVi: 'Học sinh', href: '/student' },
     { label: 'Mức độ thành thạo', labelVi: 'Mức độ thành thạo', href: '/student/mastery' },
-    { label: topic?.topicNameVi || 'Chủ đề', labelVi: topic?.topicNameVi || 'Chủ đề' },
+    { label: skill?.name || 'Chủ đề', labelVi: skill?.name || 'Chủ đề' },
   ]
 
   const handleRoleChange = (newRole: UserRole) => {
@@ -279,50 +325,67 @@ export default function TopicMasteryDetailPage() {
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.evidence') || 'Bằng chứng'}</p>
             <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {topic.evidenceCount}
+              {topic?.evidenceCount ?? 0}
             </p>
           </Card>
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('mastery.topics') || 'Chủ đề'}</p>
             <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {topic.subjectVi}
+              {topic?.subjectVi ?? '-'}
             </p>
           </Card>
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.lastActivity') || 'Hoạt động cuối'}</p>
             <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
-              {formatRelativeTime(topic.lastActivity)}
+              {topic ? formatRelativeTime(topic.lastActivity) : '-'}
             </p>
           </Card>
           <Card variant="default" padding="md">
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('common.trend') || 'Xu hướng'}</p>
             <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {topic.trend === 'up' ? '↑' : topic.trend === 'down' ? '↓' : '→'}
+              {topic?.trend === 'up' ? '↑' : topic?.trend === 'down' ? '↓' : '→'}
             </p>
           </Card>
         </PageGrid>
 
+        {/* Prerequisites Section - from Backend API */}
+        {prerequisites.length > 0 && (
+          <PageSection title={t('mastery.prerequisites') || 'Điều kiện tiên quyết'} titleVi={t('mastery.prerequisites') || 'Điều kiện tiên quyết'}>
+            <Card variant="default" padding="md">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info-100 dark:bg-info-900/30">
+                  <svg className="h-4 w-4 text-info-600 dark:text-info-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {t('mastery.prerequisiteDescription') || 'Bạn cần thành thạo những kỹ năng sau trước khi học chủ đề này:'}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {prerequisites.map((prereq) => (
+                      <Link key={prereq.topicId} href={`/student/mastery/${prereq.topicId}`}>
+                        <Badge variant="primary" size="sm" className="hover:opacity-80">
+                          {prereq.topicNameVi}
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </PageSection>
+        )}
+
         {/* Evidence Section */}
         <PageSection title={t('common.evidenceChain') || 'Bằng chứng học tập'} titleVi={t('common.evidenceChain') || 'Bằng chứng học tập'}>
-          {evidence.length > 0 ? (
-            <div className="space-y-3">
-              {evidence.map((item) => (
-                <EvidenceCard key={item.id} evidence={item} />
-              ))}
+          <Card variant="default" padding="md">
+            <div className="text-center py-8">
+              <p className="text-slate-500 dark:text-slate-400">
+                Bằng chứng học tập sẽ được hiển thị khi có dữ liệu từ các bài kiểm tra
+              </p>
             </div>
-          ) : (
-            <EmptyState
-              title="No evidence yet"
-              titleVi="Chưa có bằng chứng"
-              description="Start practicing to build your evidence chain"
-              descriptionVi="Bắt đầu luyện tập để xây dựng chuỗi bằng chứng của bạn"
-              action={
-                <Button variant="primary" size="sm">
-                  Bắt đầu luyện tập
-                </Button>
-              }
-            />
-          )}
+          </Card>
         </PageSection>
 
         {/* Recommended Actions */}
