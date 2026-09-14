@@ -17,11 +17,12 @@ import {
 } from '@/components/ui'
 import { useToast, ConfirmationDialog } from '@/components/ui/toast'
 import { assignmentService } from '@/services/assignment'
-import { mockClasses } from '@/data/teacher-mock-data'
+import { classService } from '@/services/class'
 import { formatRelativeTime, formatDate } from '@/lib/utils'
 import type { UserRole, BreadcrumbItem, Assignment } from '@/types'
 import type { CreateAssignmentInput } from '@/services/assignment'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Assignment Status Badge
@@ -222,6 +223,27 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onSa
   const [classId, setClassId] = React.useState('')
   const [dueDate, setDueDate] = React.useState('')
   const [errors, setErrors] = React.useState<{ title?: string; classId?: string }>({})
+  const [classes, setClasses] = React.useState<Array<{ id: string; name: string }>>([])
+  const [isLoadingClasses, setIsLoadingClasses] = React.useState(false)
+
+  // Fetch classes when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      loadClasses()
+    }
+  }, [isOpen])
+
+  const loadClasses = async () => {
+    setIsLoadingClasses(true)
+    try {
+      const fetchedClasses = await classService.getClasses()
+      setClasses(fetchedClasses.map(c => ({ id: c.id, name: c.name })))
+    } catch (err) {
+      console.error('Failed to load classes:', err)
+    } finally {
+      setIsLoadingClasses(false)
+    }
+  }
 
   React.useEffect(() => {
     if (assignment) {
@@ -254,7 +276,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onSa
       return
     }
 
-    const selectedClass = mockClasses.find(c => c.id === classId)
+    const selectedClass = classes.find(c => c.id === classId)
     await onSave({
       title: title.trim(),
       titleVi: title.trim(),
@@ -321,11 +343,15 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({ isOpen, onClose, onSa
                   )}
                 >
                   <option value="">{t('assignment.selectClass') || 'Chọn lớp học'}</option>
-                  {mockClasses.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </option>
-                  ))}
+                  {isLoadingClasses ? (
+                    <option value="" disabled>Loading...</option>
+                  ) : (
+                    classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))
+                  )}
                 </select>
                 {errors.classId && (
                   <p className="mt-1 text-sm text-error-600">{errors.classId}</p>
@@ -367,10 +393,18 @@ export default function AssignmentsPage() {
   const router = useRouter()
   const { success, error: showError } = useToast()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [statusFilter, setStatusFilter] = React.useState<Assignment['status'] | 'all'>('all')
   const [classFilter, setClassFilter] = React.useState<string | 'all'>('all')
   const [currentRole] = React.useState<UserRole>('teacher')
+  
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -390,10 +424,31 @@ export default function AssignmentsPage() {
   const [assignments, setAssignments] = React.useState<Assignment[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
+  // Classes state for filter
+  const [filterClasses, setFilterClasses] = React.useState<Array<{ id: string; name: string }>>([])
+  const [isLoadingClasses, setIsLoadingClasses] = React.useState(false)
+
   // Load assignments
   React.useEffect(() => {
     loadAssignments()
   }, [])
+
+  // Load classes for filter
+  React.useEffect(() => {
+    loadFilterClasses()
+  }, [])
+
+  const loadFilterClasses = async () => {
+    setIsLoadingClasses(true)
+    try {
+      const fetchedClasses = await classService.getClasses()
+      setFilterClasses(fetchedClasses.map(c => ({ id: c.id, name: c.name })))
+    } catch (err) {
+      console.error('Failed to load classes:', err)
+    } finally {
+      setIsLoadingClasses(false)
+    }
+  }
 
   const loadAssignments = async () => {
     setIsLoading(true)
@@ -435,12 +490,6 @@ export default function AssignmentsPage() {
   const draftAssignments = filteredAssignments.filter(a => a.status === 'draft')
   const publishedAssignments = filteredAssignments.filter(a => a.status === 'published')
   const archivedAssignments = filteredAssignments.filter(a => a.status === 'archived')
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -610,7 +659,7 @@ export default function AssignmentsPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -707,11 +756,15 @@ export default function AssignmentsPage() {
                   className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm dark:border-slate-600 dark:bg-slate-800"
                 >
                   <option value="all">{t('common.allClasses') || 'Tất cả lớp'}</option>
-                  {mockClasses.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name}
-                    </option>
-                  ))}
+                  {isLoadingClasses ? (
+                    <option value="" disabled>Loading...</option>
+                  ) : (
+                    filterClasses.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 

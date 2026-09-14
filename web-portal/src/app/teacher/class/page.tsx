@@ -28,6 +28,7 @@ import { classService } from '@/services/class'
 import { formatRelativeTime } from '@/lib/utils'
 import type { UserRole, BreadcrumbItem, TeacherClass } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Class Card Component
@@ -249,7 +250,16 @@ export default function TeacherClassesPage() {
   const router = useRouter()
   const { success, error: showError } = useToast()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('teacher')
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
+
   const [classes, setClasses] = React.useState<TeacherClass[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -302,12 +312,6 @@ export default function TeacherClassesPage() {
     active: classes.filter((c) => c.status === 'active').length,
     totalStudents: classes.reduce((sum, c) => sum + c.studentCount, 0),
   }), [classes])
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -420,7 +424,7 @@ export default function TeacherClassesPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}

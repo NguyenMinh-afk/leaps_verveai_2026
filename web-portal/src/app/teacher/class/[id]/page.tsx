@@ -31,15 +31,16 @@ import {
   MasteryBar,
   MasteryBadge,
   InterventionCard,
+  ExamResultsView,
 } from '@/components/ui'
-import {
-  getClassById,
-  getStudentsByClass,
-  mockInterventions,
-} from '@/data/teacher-mock-data'
+import { classService } from '@/services/class'
+import { bktService } from '@/services/bkt'
+import { listExams, type ExamRecord } from '@/lib/api/exam'
 import { formatRelativeTime, getMasteryLevel } from '@/lib/utils'
-import type { UserRole, BreadcrumbItem, TeacherStudent, TopicMastery } from '@/types'
+import type { UserRole, BreadcrumbItem, TeacherStudent, TopicMastery, InterventionGroup } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { ClassReportLoader, ExportReportButton } from '@/components/ui/content-reports'
 
 /**
  * Student Row Component
@@ -210,17 +211,73 @@ export default function ClassDetailPage() {
   const params = useParams()
   const classId = params.id as string
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [currentRole] = React.useState<UserRole>('teacher')
+  const [activeTab, setActiveTab] = React.useState('students')
 
-  const classData = getClassById(classId)
-  const students = getStudentsByClass(classId)
-  const interventions = mockInterventions.filter(
-    (i) => i.studentIds.some((sid) => students.some((s) => s.id === sid)))
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
+
+  // Data state
+  const [classData, setClassData] = React.useState<Awaited<ReturnType<typeof classService.getClassById>>>(null)
+  const [students, setStudents] = React.useState<TeacherStudent[]>([])
+  const [interventions, setInterventions] = React.useState<InterventionGroup[]>([])
+  const [exams, setExams] = React.useState<ExamRecord[]>([])
+  const [selectedExamId, setSelectedExamId] = React.useState<string | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [examsLoading, setExamsLoading] = React.useState(false)
+
+  // Fetch data
+  React.useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true)
+      try {
+        const [classResult, interventionResult, studentsResult] = await Promise.all([
+          classService.getClassById(classId),
+          bktService.getClassInterventions(classId),
+          classService.getClassStudents(classId).catch((err) => {
+            console.error('Failed to fetch class students:', err)
+            return []
+          }),
+        ])
+        setClassData(classResult)
+        setInterventions(interventionResult)
+        setStudents(studentsResult)
+      } catch (error) {
+        console.error('Failed to fetch class data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [classId])
+
+  // Fetch exams for this class
+  const fetchClassExams = React.useCallback(async () => {
+    if (!classId) return;
+    setExamsLoading(true);
+    try {
+      const examsData = await listExams({ classId });
+      setExams(examsData.items);
+    } catch (error) {
+      console.error('Failed to fetch class exams:', error);
+      setExams([]);
+    } finally {
+      setExamsLoading(false);
+    }
+  }, [classId]);
+
+  // Filter interventions to non-resolved
   const classInterventions = interventions.filter(i => i.status !== 'resolved').slice(0, 3)
 
   // Mock topic data aggregated from students
   const aggregatedTopics = React.useMemo(() => {
+    if (students.length === 0) return []
     const topicMap = new Map<string, { sum: number; count: number; name: string }>()
     students.forEach((student) => {
       student.topicMasteries.forEach((topic) => {
@@ -248,12 +305,6 @@ export default function ClassDetailPage() {
     s.code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
-
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
     { label: t('teacher.title'), labelVi: t('teacher.title'), href: '/teacher' },
@@ -276,10 +327,28 @@ export default function ClassDetailPage() {
     router.push(`/teacher/students/${studentId}`)
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
+        breadcrumbs={[
+          { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
+          { label: t('teacher.title'), labelVi: t('teacher.title'), href: '/teacher' },
+        ]}
+        onRoleChange={() => router.push('/')}
+        onSignOut={() => router.push('/')}
+        onSettings={() => {}}
+      >
+        <LoadingState />
+      </DashboardLayoutWrapper>
+    )
+  }
+
   if (!classData) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -306,7 +375,7 @@ export default function ClassDetailPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -369,7 +438,13 @@ export default function ClassDetailPage() {
         </PageGrid>
 
         {/* Tabs */}
-        <Tabs defaultValue="students">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          setSelectedExamId(null); // Reset selected exam when switching tabs
+          if (value === 'exams' && exams.length === 0) {
+            fetchClassExams();
+          }
+        }}>
           <TabsList>
             <TabsTrigger value="students">
               <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,6 +468,18 @@ export default function ClassDetailPage() {
                   {classInterventions.length}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="reports">
+              <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              {t('reports.title') || 'Báo cáo'}
+            </TabsTrigger>
+            <TabsTrigger value="exams">
+              <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              {t('exam.title') || 'Bài kiểm tra'}
             </TabsTrigger>
           </TabsList>
 
@@ -524,6 +611,127 @@ export default function ClassDetailPage() {
                 descriptionVi={t('class.studentsDoingWell') || 'Tất cả học sinh trong lớp này đều đang tiến bộ tốt'}
               />
             )}
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {t('reports.classReports') || 'Báo cáo Lớp học'}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {t('reports.classReportsDesc') || 'Xem thống kê nội dung và tiến bộ của lớp'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ExportReportButton 
+                    type="aggregate" 
+                    format="csv" 
+                    label={t('reports.exportCsv') || 'Xuất CSV'}
+                  />
+                  <ExportReportButton 
+                    type="aggregate" 
+                    format="json" 
+                    label={t('reports.exportJson') || 'Xuất JSON'}
+                  />
+                </div>
+              </div>
+              
+              <ClassReportLoader classId={classId} />
+            </div>
+          </TabsContent>
+
+          {/* Exams Tab */}
+          <TabsContent value="exams">
+            <div className="space-y-4">
+              {examsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+                  ))}
+                </div>
+              ) : exams.length === 0 ? (
+                <Card variant="default" padding="lg">
+                  <div className="text-center py-8">
+                    <svg className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">
+                      Chưa có bài kiểm tra
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      Tạo bài kiểm tra mới để bắt đầu
+                    </p>
+                    <Button variant="primary" size="sm" className="mt-4">
+                      <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Tạo bài kiểm tra
+                    </Button>
+                  </div>
+                </Card>
+              ) : selectedExamId ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedExamId(null)}>
+                      <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Quay lại danh sách
+                    </Button>
+                  </div>
+                  <ExamResultsView examId={selectedExamId} className={undefined} />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {exams.map((exam) => (
+                    <Card 
+                      key={exam.id} 
+                      variant="interactive" 
+                      padding="md"
+                      onClick={() => setSelectedExamId(exam.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                            {exam.title}
+                          </h4>
+                          {exam.description && (
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                              {exam.description}
+                            </p>
+                          )}
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge 
+                              variant={
+                                exam.status === 'PUBLISHED' ? 'success' : 
+                                exam.status === 'DRAFT' ? 'warning' : 'default'
+                              }
+                              size="sm"
+                            >
+                              {exam.status === 'PUBLISHED' ? 'Đã xuất bản' : 
+                               exam.status === 'DRAFT' ? 'Bản nháp' : 'Lưu trữ'}
+                            </Badge>
+                            <span className="text-xs text-slate-400">
+                              {exam.maxScore} điểm • {exam.passingScore}% để đạt
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

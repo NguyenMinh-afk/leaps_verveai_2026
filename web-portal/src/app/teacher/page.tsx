@@ -27,17 +27,12 @@ import {
   MasteryBadge,
   InterventionCard,
 } from '@/components/ui'
-import {
-  mockDashboardStats,
-  mockClasses,
-  mockInterventions,
-  mockActivityLog,
-  mockMasteryDistribution,
-} from '@/data/teacher-mock-data'
+import { teacherDashboardService } from '@/services/dashboard'
 import { formatRelativeTime } from '@/lib/utils'
 import { authService } from '@/services/auth'
-import type { UserRole, BreadcrumbItem } from '@/types'
+import type { UserRole, BreadcrumbItem, TeacherDashboardStats, MasteryDistribution, TeacherClass, InterventionGroup, ActivityLogEntry } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Stat Card Component
@@ -192,14 +187,18 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
 /**
  * Mastery Distribution Component
  */
-const MasteryDistributionCard: React.FC = () => {
+interface MasteryDistributionCardProps {
+  masteryDistribution: MasteryDistribution
+}
+
+const MasteryDistributionCard: React.FC<MasteryDistributionCardProps> = ({ masteryDistribution }) => {
   const { t } = useLanguage()
-  const { mastered, learning, needsSupport, unknown, total } = mockMasteryDistribution
+  const { mastered, learning, needsSupport, total } = masteryDistribution
 
   const items = [
-    { label: t('mastery.mastered') || 'Đã thành thạo', value: mastered, color: 'bg-success-500', percent: Math.round((mastered / total) * 100) },
-    { label: t('mastery.learning') || 'Đang học', value: learning, color: 'bg-amber-500', percent: Math.round((learning / total) * 100) },
-    { label: t('mastery.needsSupport') || 'Cần hỗ trợ', value: needsSupport, color: 'bg-error-500', percent: Math.round((needsSupport / total) * 100) },
+    { label: t('mastery.mastered') || 'Đã thành thạo', value: mastered, color: 'bg-success-500', percent: total > 0 ? Math.round((mastered / total) * 100) : 0 },
+    { label: t('mastery.learning') || 'Đang học', value: learning, color: 'bg-amber-500', percent: total > 0 ? Math.round((learning / total) * 100) : 0 },
+    { label: t('mastery.needsSupport') || 'Cần hỗ trợ', value: needsSupport, color: 'bg-error-500', percent: total > 0 ? Math.round((needsSupport / total) * 100) : 0 },
   ]
 
   return (
@@ -234,14 +233,60 @@ const MasteryDistributionCard: React.FC = () => {
  */
 export default function TeacherDashboardPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
   const [currentRole] = React.useState<UserRole>('teacher')
+  const [currentUser, setCurrentUser] = React.useState<{ name: string; email: string; role: UserRole } | null>(null)
+  const [dashboardData, setDashboardData] = React.useState<{
+    stats: TeacherDashboardStats
+    classes: TeacherClass[]
+    interventions: InterventionGroup[]
+    activityLog: ActivityLogEntry[]
+    masteryDistribution: MasteryDistribution
+  } | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
   const { t } = useLanguage()
 
-  // Mock user data
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
+  // Fetch current user and dashboard data
+  React.useEffect(() => {
+    async function loadData() {
+      try {
+        // Get current session
+        const session = await authService.getSession()
+        if (!session?.user) {
+          // No session - redirect to login
+          router.push('/login')
+          return
+        }
+        
+        setCurrentUser({
+          name: session.user.name,
+          email: session.user.email,
+          role: session.user.role,
+        })
+
+        // Fetch dashboard data from real APIs
+        const result = await teacherDashboardService.getDashboardData()
+        if (result.success && result.data) {
+          setDashboardData(result.data)
+        } else {
+          setError(result.error || 'Failed to load dashboard')
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [router])
+
+  // User data is loaded from session - no fake fallbacks
+  const user = currentUser || { name: 'Teacher', email: '', role: 'teacher' as UserRole }
+
+  // User display object for DashboardLayoutWrapper
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
     role: 'teacher' as UserRole,
   }
 
@@ -270,7 +315,7 @@ export default function TeacherDashboardPage() {
   if (isLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -281,14 +326,38 @@ export default function TeacherDashboardPage() {
     )
   }
 
-  const stats = mockDashboardStats
-  const classes = mockClasses
-  const interventions = mockInterventions.filter((i) => i.severity === 'high').slice(0, 3)
-  const activities = mockActivityLog.slice(0, 5)
+  if (error || !dashboardData) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <EmptyState
+          title="Error loading dashboard"
+          titleVi="Lỗi khi tải dashboard"
+          description={error || 'Something went wrong'}
+          descriptionVi={error || 'Đã xảy ra lỗi'}
+          action={
+            <Button variant="primary" onClick={() => window.location.reload()}>
+              {t('common.retry') || 'Thử lại'}
+            </Button>
+          }
+        />
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  const stats = dashboardData.stats
+  const classes = dashboardData.classes
+  const interventions = dashboardData.interventions.filter((i) => i.severity === 'high').slice(0, 3)
+  const activities = dashboardData.activityLog.slice(0, 5)
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -325,7 +394,6 @@ export default function TeacherDashboardPage() {
             <StatCard
               label={t('teacher.totalStudents')}
               value={stats.totalStudents}
-              change={5}
               t={t}
               icon={
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -348,7 +416,6 @@ export default function TeacherDashboardPage() {
             <StatCard
               label={t('teacher.avgMastery')}
               value={`${Math.round(stats.averageMastery * 100)}%`}
-              change={3}
               t={t}
               icon={
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -360,7 +427,6 @@ export default function TeacherDashboardPage() {
             <StatCard
               label={t('teacher.needsIntervention')}
               value={stats.studentsNeedingIntervention}
-              change={-2}
               t={t}
               icon={
                 <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -402,7 +468,7 @@ export default function TeacherDashboardPage() {
           {/* Mastery Distribution */}
           <div>
             <PageSection title="Mastery Overview" titleVi={t('teacher.masteryOverview') || 'Tổng quan thành thạo'}>
-              <MasteryDistributionCard />
+              <MasteryDistributionCard masteryDistribution={dashboardData.masteryDistribution} />
             </PageSection>
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
   Badge,
 } from '@/components/ui'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
 import {
   User,
   Envelope,
@@ -48,8 +49,9 @@ const tabs = [
  */
 const ProfileSection: React.FC<{ onSave: () => void; isSaving: boolean }> = ({ onSave, isSaving }) => {
   const { t } = useLanguage()
-  const [name, setName] = React.useState('Nguyễn Văn Giáo')
-  const [email, setEmail] = React.useState('nguyenvangiao@example.edu.vn')
+  const { user } = useAuth()
+  const [name, setName] = React.useState(user?.name || '')
+  const [email, setEmail] = React.useState(user?.email || '')
   const [phone, setPhone] = React.useState('+84 123 456 789')
   const [bio, setBio] = React.useState('Giáo viên Toán - 10 năm kinh nghiệm giảng dạy')
   const [avatar, setAvatar] = React.useState<string | undefined>(undefined)
@@ -562,16 +564,18 @@ const SecuritySection: React.FC<{ onSave: () => void; isSaving: boolean }> = ({ 
 export default function TeacherSettingsPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [currentRole] = React.useState<UserRole>('teacher')
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
   const [activeTab, setActiveTab] = React.useState('profile')
   const [isSaving, setIsSaving] = React.useState(false)
   const [savedMessage, setSavedMessage] = React.useState(false)
-
-  const user = {
-    name: 'Nguyễn Văn Giáo',
-    email: 'nguyenvangiao@example.edu.vn',
-    role: 'teacher' as UserRole,
-  }
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: 'Trang chủ', href: '/' },
@@ -602,7 +606,7 @@ export default function TeacherSettingsPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}

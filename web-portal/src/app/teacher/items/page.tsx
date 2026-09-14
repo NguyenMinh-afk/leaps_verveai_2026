@@ -48,7 +48,7 @@ export default function ItemsPage() {
     listContent(params)
       .then((result) => {
         if (!cancelled) {
-          setItems(result);
+          setItems(result.data);
           setError(null);
         }
       })

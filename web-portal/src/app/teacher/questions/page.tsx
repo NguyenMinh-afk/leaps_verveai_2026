@@ -16,7 +16,8 @@ import {
   Badge,
   Input,
 } from '@/components/ui'
-import { mockQuestions, setMockQuestions, getMockQuestions, addMockQuestions } from '@/data/teacher-mock-data'
+import { questionService } from '@/services/question'
+import type { QuestionFiltersInput } from '@/services/question'
 import { formatRelativeTime } from '@/lib/utils'
 import type { UserRole, BreadcrumbItem, Question, QuestionFilters, QuestionOption } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
@@ -24,6 +25,7 @@ import { AICreateQuestionModal } from '@/components/teacher/ai-create-question-m
 import type { AIGenerationOptions } from '@/components/teacher/ai-create-question-modal'
 import { aiGenerationService } from '@/services/aiGeneration'
 import { useToast } from '@/components/ui/toast'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 /**
  * Question Status Badge
@@ -396,6 +398,7 @@ const QuestionDetailModal: React.FC<QuestionDetailModalProps> = ({
 export default function QuestionBankPage() {
   const router = useRouter()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = React.useState('')
   const [difficultyFilter, setDifficultyFilter] = React.useState<Question['difficulty'] | 'all'>('all')
   const [typeFilter, setTypeFilter] = React.useState<Question['type'] | 'all'>('all')
@@ -404,58 +407,58 @@ export default function QuestionBankPage() {
   const [selectedQuestion, setSelectedQuestion] = React.useState<Question | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [isAICreateOpen, setIsAICreateOpen] = React.useState(false)
-  const [questions, setQuestions] = React.useState<Question[]>(mockQuestions)
+  const [questions, setQuestions] = React.useState<Question[]>([])
   const [currentRole] = React.useState<UserRole>('teacher')
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
+  const [error, setError] = React.useState<string | null>(null)
   const { success, error: showError } = useToast()
 
-  // Refresh questions from mock data
-  React.useEffect(() => {
-    setQuestions([...getMockQuestions()])
-  }, [])
+  // Load questions from API
+  const loadQuestions = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const filters: QuestionFiltersInput = {
+        search: searchQuery || undefined,
+        difficulty: difficultyFilter !== 'all' ? difficultyFilter : undefined,
+        type: typeFilter !== 'all' ? typeFilter : undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        page: 1,
+        limit: 100, // Get more for filtering on frontend
+      }
+      const response = await questionService.getQuestions(filters)
+      setQuestions(response.questions)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Không thể tải danh sách câu hỏi'
+      setError(message)
+      showError('Lỗi', message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchQuery, difficultyFilter, typeFilter, statusFilter, showError])
 
-  // Filter questions
+  // Initial load and refresh
+  React.useEffect(() => {
+    loadQuestions()
+  }, [loadQuestions])
+
+  // Filter questions (client-side for remaining filters)
   const filteredQuestions = React.useMemo(() => {
     return questions.filter((question) => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        const matchesSearch =
-          question.content.toLowerCase().includes(query) ||
-          question.contentVi.toLowerCase().includes(query) ||
-          question.topicName.toLowerCase().includes(query) ||
-          question.topicNameVi.toLowerCase().includes(query)
-        if (!matchesSearch) return false
-      }
-
-      // Difficulty filter
-      if (difficultyFilter !== 'all' && question.difficulty !== difficultyFilter) {
-        return false
-      }
-
-      // Type filter
-      if (typeFilter !== 'all' && question.type !== typeFilter) {
-        return false
-      }
-
-      // Status filter
-      if (statusFilter !== 'all' && question.status !== statusFilter) {
-        return false
-      }
-
-      // Source filter
+      // Source filter (not supported by backend, do client-side)
       if (sourceFilter !== 'all' && question.createdBy !== sourceFilter) {
         return false
       }
-
       return true
     })
-  }, [questions, searchQuery, difficultyFilter, typeFilter, statusFilter, sourceFilter])
-
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
-  }
+  }, [questions, sourceFilter])
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -502,11 +505,8 @@ export default function QuestionBankPage() {
     try {
       const generatedQuestions = await aiGenerationService.generateQuestions(options)
       
-      // Add to mock data
-      addMockQuestions(generatedQuestions)
-      
-      // Update local state
-      setQuestions((prev) => [...generatedQuestions, ...prev])
+      // Refresh the questions list after generation
+      await loadQuestions()
       
       // Show success message
       success(
@@ -523,7 +523,7 @@ export default function QuestionBankPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -663,7 +663,27 @@ export default function QuestionBankPage() {
 
         {/* Question Table */}
         <Card variant="default" padding="none">
-          {filteredQuestions.length > 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <svg className="h-8 w-8 animate-spin text-verve-600" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="ml-3 text-slate-500 dark:text-slate-400">Đang tải câu hỏi...</span>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center p-8">
+              <div className="rounded-full bg-error-100 p-3 dark:bg-error-900/30">
+                <svg className="h-6 w-6 text-error-600 dark:text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="mt-3 text-error-600 dark:text-error-400">{error}</p>
+              <Button variant="outline" size="sm" onClick={loadQuestions} className="mt-3">
+                Thử lại
+              </Button>
+            </div>
+          ) : filteredQuestions.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

@@ -11,10 +11,10 @@ import { useEffect, useState } from 'react';
 
 import { AppShell } from '@/components/layout/AppShell';
 import { ApiError } from '@/lib/api/apiClient';
-import { listSkills, type Skill } from '@/lib/api/content';
+import { listSkills, type BKTSkill } from '@/lib/api/bkt';
 
 export default function SkillsPage() {
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skills, setSkills] = useState<BKTSkill[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,10 +22,10 @@ export default function SkillsPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listSkills()
+    listSkills(1, 100)
       .then((result) => {
         if (!cancelled) {
-          setSkills(result);
+          setSkills(result.data);
           setError(null);
         }
       })
@@ -46,7 +46,7 @@ export default function SkillsPage() {
     ? skills.filter(
         (s) =>
           s.name.toLowerCase().includes(filter.toLowerCase()) ||
-          s.code.toLowerCase().includes(filter.toLowerCase()),
+          (s.description?.toLowerCase().includes(filter.toLowerCase()) ?? false),
       )
     : skills;
 
@@ -89,22 +89,18 @@ export default function SkillsPage() {
             <header className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-foreground">{skill.name}</h2>
-                <p className="text-xs text-muted-foreground">code: {skill.code}</p>
               </div>
-              <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                Difficulty {skill.difficulty}
-              </span>
             </header>
             {skill.description && (
               <p className="mt-3 text-sm text-muted-foreground line-clamp-3">
                 {skill.description}
               </p>
             )}
-            {skill.prereqSkills.length > 0 && (
+            {skill.prerequisites && skill.prerequisites.length > 0 && (
               <footer className="mt-3">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Prereqs</p>
                 <p className="mt-1 text-xs text-foreground">
-                  {skill.prereqSkills.length} prerequisite skill(s)
+                  {skill.prerequisites.length} prerequisite skill(s)
                 </p>
               </footer>
             )}

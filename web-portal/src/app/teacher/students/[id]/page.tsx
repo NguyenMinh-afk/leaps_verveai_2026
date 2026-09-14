@@ -33,20 +33,17 @@ import {
   TeacherOverrideModal,
   TeacherExplanationCard,
 } from '@/components/ui'
-import {
-  getStudentById,
-  getClassById,
-  mockInterventions,
-} from '@/data/teacher-mock-data'
-import {
-  mockDiagnoses,
-  getStudentDiagnosisSummary,
-  getEvidenceByIds,
-} from '@/data/ai-diagnostic-mock-data'
-import { formatRelativeTime, getMasteryLevel } from '@/lib/utils'
-import type { UserRole, BreadcrumbItem, TopicMastery } from '@/types'
-import type { Diagnosis, TeacherOverride } from '@/types'
 import { useLanguage } from '@/components/providers/language-provider'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { api } from '@/lib/api/apiClient'
+import { getStudent, getClass } from '@/lib/api/classes'
+import { getStudentDiagnoses, getStudentEvidence } from '@/lib/api/bkt'
+import { bktService } from '@/services/bkt'
+import { getMockInterventions, getMockDiagnoses, getEvidenceByIds, getStudentDiagnosisSummary } from '@/lib/teacher-helpers'
+import { formatRelativeTime, getMasteryLevel } from '@/lib/utils'
+import { listExams, getExamResults, getAttemptResults, type ExamRecord, type ExamResultSummary, type ExamResultDetail, type AttemptStatus } from '@/lib/api/exam'
+import type { UserRole, BreadcrumbItem, TopicMastery, InterventionGroup } from '@/types'
+import type { Diagnosis, TeacherOverride } from '@/types'
 
 /**
  * Topic Mastery Card Component
@@ -207,19 +204,51 @@ const StudentInterventionCard: React.FC<StudentInterventionCardProps> = ({ inter
 /**
  * Student Mastery View Page
  */
+
+// Adapter type to map real API response to UI expectations
+interface AdaptedStudentData {
+  id: string
+  name: string
+  code: string
+  classId: string | null
+  overallMastery: number
+  topicMasteries: Array<{
+    topicId: string
+    topicNameVi: string
+    pKnown: number
+    masteryLevel: 'mastered' | 'learning' | 'needs-support' | 'unknown'
+    evidenceCount: number
+    lastActivity: Date | string
+  }>
+  lastActive: Date | string
+  assessmentCount: number
+  interventionCount: number
+}
+
 export default function StudentMasteryPage() {
   const router = useRouter()
   const params = useParams()
   const studentId = params.id as string
   const { t } = useLanguage()
+  const { user } = useAuth()
 
-  const student = getStudentById(studentId)
-  const classData = student ? getClassById(student.classId) : undefined
+  // User display object with fallback for null user
+  const userDisplay = {
+    name: user?.name || 'Teacher',
+    email: user?.email || '',
+    role: 'teacher' as UserRole,
+  }
+
+  // State for student and class data
+  const [studentData, setStudentData] = React.useState<{
+    student: AdaptedStudentData | null
+    classData: Awaited<ReturnType<typeof getClass>> | null
+  }>({ student: null, classData: null })
+  const [studentLoading, setStudentLoading] = React.useState(true)
+  const [studentError, setStudentError] = React.useState<string | null>(null)
 
   // Get interventions for this student
-  const studentInterventions = mockInterventions.filter((i) =>
-    i.studentIds.includes(studentId)
-  )
+  const [studentInterventions, setStudentInterventions] = React.useState<InterventionGroup[]>([])
 
   // AI Diagnostic state
   const [activeTab, setActiveTab] = React.useState('mastery')
@@ -227,15 +256,153 @@ export default function StudentMasteryPage() {
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = React.useState(false)
   const [isOverrideModalOpen, setIsOverrideModalOpen] = React.useState(false)
 
-  // Get AI diagnoses for this student
-  const studentDiagnoses = mockDiagnoses.filter(d => d.studentId === studentId)
-  const diagnosisSummary = getStudentDiagnosisSummary(studentId)
+  // Exam attempts state
+  const [studentAttempts, setStudentAttempts] = React.useState<Array<{
+    examId: string;
+    examTitle: string;
+    results: ExamResultSummary[];
+  }>>([]);
+  const [examsLoading, setExamsLoading] = React.useState(false);
+  const [selectedAttempt, setSelectedAttempt] = React.useState<ExamResultSummary | null>(null);
 
-  const user = {
-    name: 'Giáo viên Demo',
-    email: 'teacher@example.com',
-    role: 'teacher' as UserRole,
+  // Get AI diagnoses for this student
+  const [studentDiagnoses, setStudentDiagnoses] = React.useState<Diagnosis[]>([])
+  const [diagnosisSummary, setDiagnosisSummary] = React.useState({
+    totalDiagnoses: 0,
+    pendingReview: 0,
+    highConfidence: 0,
+    abstainCount: 0,
+  })
+
+  // Helper to get mastery level from pKnown
+  const getMasteryFromPKnown = (pKnown: number): 'mastered' | 'learning' | 'needs-support' | 'unknown' => {
+    if (pKnown >= 0.8) return 'mastered'
+    if (pKnown >= 0.5) return 'learning'
+    if (pKnown >= 0.2) return 'needs-support'
+    return 'unknown'
   }
+
+  // Fetch student data
+  React.useEffect(() => {
+    async function fetchStudentData() {
+      setStudentLoading(true)
+      setStudentError(null)
+      try {
+        const [student, diagnoses] = await Promise.all([
+          getStudent(studentId).catch(() => null),
+          getStudentDiagnoses(studentId).catch(() => getMockDiagnoses()),
+        ])
+        
+        // Adapt student data to UI expectations
+        const adaptedStudent: AdaptedStudentData | null = student ? {
+          id: student.id,
+          name: student.name,
+          code: student.externalId || student.id.substring(0, 8),
+          classId: student.classes?.[0]?.id || null,
+          overallMastery: student.progressSummary?.averagePKnown || 0,
+          topicMasteries: (student.progressSummary?.skills || []).map((skill) => ({
+            topicId: skill.skillId,
+            topicNameVi: skill.skillName || skill.skillId,
+            pKnown: skill.pKnown || 0,
+            masteryLevel: getMasteryFromPKnown(skill.pKnown || 0),
+            evidenceCount: skill.evidenceCount || 0,
+            lastActivity: new Date().toISOString(),
+          })),
+          lastActive: new Date().toISOString(),
+          assessmentCount: student.progressSummary?.totalAttempts || 0,
+          interventionCount: 0,
+        } : null
+        
+        setStudentData({ student: adaptedStudent, classData: null })
+        
+        // Map diagnoses to UI type (DiagnosisDto -> Diagnosis)
+        const adaptedDiagnoses: Diagnosis[] = (diagnoses || []).map((d) => ({
+          id: d.id,
+          studentId: d.studentId,
+          skillId: d.skillId,
+          skillName: d.skillName || d.skillId,
+          skillNameVi: d.skillName || d.skillId,
+          rootCause: 'AI Diagnosis',
+          rootCauseVi: 'Chẩn đoán AI',
+          confidence: d.confidence,
+          abstain: d.status === 'PENDING' && d.evidenceCount === 0,
+          status: d.status === 'PENDING' ? 'pending_review' : 'system_conclusion',
+          evidenceIds: [],
+          createdAt: d.createdAt,
+        }))
+        setStudentDiagnoses(adaptedDiagnoses)
+        
+        // Fetch class data if student exists
+        if (adaptedStudent?.classId) {
+          const classData = await getClass(adaptedStudent.classId).catch(() => null)
+          setStudentData(prev => ({ ...prev, classData }))
+          
+          // Fetch interventions for this class
+          const interventions = await bktService.getInterventions({ 
+            studentId,
+            pageSize: 100 
+          }).catch(() => getMockInterventions())
+          setStudentInterventions(interventions)
+        }
+        
+        // Calculate diagnosis summary
+        setDiagnosisSummary({
+          totalDiagnoses: adaptedDiagnoses.length,
+          pendingReview: adaptedDiagnoses.filter(d => d.status === 'pending_review').length,
+          highConfidence: adaptedDiagnoses.filter(d => !d.abstain && d.confidence >= 0.7).length,
+          abstainCount: adaptedDiagnoses.filter(d => d.abstain).length,
+        })
+      } catch (error) {
+        console.error('Failed to fetch student data:', error)
+        setStudentError('Không thể tải thông tin học sinh')
+      } finally {
+        setStudentLoading(false)
+      }
+    }
+    fetchStudentData()
+  }, [studentId])
+
+  const student = studentData.student
+  const classData = studentData.classData
+
+  // Fetch student's exam attempts
+  const fetchStudentExamAttempts = React.useCallback(async () => {
+    if (!student?.classId) return;
+    setExamsLoading(true);
+    try {
+      // Get exams for the student's class
+      const exams = await listExams({ classId: student.classId });
+      
+      // Get results for each exam and filter by studentId
+      const attemptsData = await Promise.all(
+        exams.items.map(async (exam) => {
+          try {
+            const results = await getExamResults(exam.id);
+            // Filter results for this student
+            const studentResults = results.filter(r => r.studentId === studentId);
+            return {
+              examId: exam.id,
+              examTitle: exam.title,
+              results: studentResults,
+            };
+          } catch {
+            return {
+              examId: exam.id,
+              examTitle: exam.title,
+              results: [],
+            };
+          }
+        })
+      );
+      
+      setStudentAttempts(attemptsData.filter(a => a.results.length > 0));
+    } catch (error) {
+      console.error('Failed to fetch student exam attempts:', error);
+      setStudentAttempts([]);
+    } finally {
+      setExamsLoading(false);
+    }
+  }, [student?.classId, studentId]);
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: t('common.dashboard') || 'Trang chủ', labelVi: t('common.dashboard') || 'Trang chủ', href: '/' },
@@ -274,10 +441,29 @@ export default function StudentMasteryPage() {
     setSelectedDiagnosis(null)
   }
 
-  if (!student) {
+  // Loading state
+  if (studentLoading) {
     return (
       <DashboardLayoutWrapper
-        user={user}
+        user={userDisplay}
+        breadcrumbs={breadcrumbs}
+        onRoleChange={handleRoleChange}
+        onSignOut={handleSignOut}
+        onSettings={handleSettings}
+      >
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-verve-200 border-t-verve-600"></div>
+          <p className="mt-4 text-sm text-slate-500">Đang tải thông tin học sinh...</p>
+        </div>
+      </DashboardLayoutWrapper>
+    )
+  }
+
+  // Error or not found state
+  if (!student || studentError) {
+    return (
+      <DashboardLayoutWrapper
+        user={userDisplay}
         breadcrumbs={breadcrumbs}
         onRoleChange={handleRoleChange}
         onSignOut={handleSignOut}
@@ -322,10 +508,10 @@ export default function StudentMasteryPage() {
 
   // Calculate mastery distribution for this student
   const masteryDistribution: Record<string, number> = {
-    mastered: student.topicMasteries.filter((t: TopicMastery) => t.masteryLevel === 'mastered').length,
-    learning: student.topicMasteries.filter((t: TopicMastery) => t.masteryLevel === 'learning').length,
-    needsSupport: student.topicMasteries.filter((t: TopicMastery) => t.masteryLevel === 'needs-support').length,
-    unknown: student.topicMasteries.filter((t: TopicMastery) => t.masteryLevel === 'unknown').length,
+    mastered: student.topicMasteries.filter((t) => t.masteryLevel === 'mastered').length,
+    learning: student.topicMasteries.filter((t) => t.masteryLevel === 'learning').length,
+    needsSupport: student.topicMasteries.filter((t) => t.masteryLevel === 'needs-support').length,
+    unknown: student.topicMasteries.filter((t) => t.masteryLevel === 'unknown').length,
   }
 
   // AI Diagnostic stats
@@ -335,7 +521,7 @@ export default function StudentMasteryPage() {
 
   return (
     <DashboardLayoutWrapper
-      user={user}
+      user={userDisplay}
       breadcrumbs={breadcrumbs}
       onRoleChange={handleRoleChange}
       onSignOut={handleSignOut}
@@ -369,7 +555,12 @@ export default function StudentMasteryPage() {
         />
 
         {/* Tab Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          if (value === 'exams' && studentAttempts.length === 0) {
+            fetchStudentExamAttempts();
+          }
+        }}>
           <TabsList>
             <TabsTrigger value="mastery">
               <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -387,6 +578,12 @@ export default function StudentMasteryPage() {
                   {pendingReviewCount}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="exams">
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Bài kiểm tra
             </TabsTrigger>
           </TabsList>
 
@@ -540,16 +737,27 @@ export default function StudentMasteryPage() {
               </PageSection>
             )}
 
-            {/* Recent Activity placeholder */}
+            {/* Recent Activity - Redirect to Exams Tab */}
             <PageSection title="Recent Assessments" titleVi="Bài đánh giá gần đây">
               <Card variant="default" padding="md">
                 <div className="text-center py-8">
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Lịch sử bài đánh giá sẽ được hiển thị ở đây
+                  <svg className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">
+                    Xem kết quả bài kiểm tra
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Chuyển sang tab "Bài kiểm tra" để xem chi tiết kết quả và tiến độ học tập
                   </p>
-                  <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-                    Tính năng đang được phát triển
-                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-4"
+                    onClick={() => setActiveTab('exams')}
+                  >
+                    Đi đến Bài kiểm tra
+                  </Button>
                 </div>
               </Card>
             </PageSection>
@@ -690,6 +898,114 @@ export default function StudentMasteryPage() {
               diagnosis={selectedDiagnosis}
               onOverride={handleOverrideSubmit}
             />
+
+            {/* Exam Attempt Detail Modal */}
+            <AttemptDetailModal
+              attempt={selectedAttempt}
+              isOpen={!!selectedAttempt}
+              onClose={() => setSelectedAttempt(null)}
+            />
+          </TabsContent>
+
+          {/* Exams Tab */}
+          <TabsContent value="exams" className="space-y-6">
+            {examsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+                ))}
+              </div>
+            ) : studentAttempts.length === 0 ? (
+              <Card variant="default" padding="lg">
+                <div className="text-center py-8">
+                  <svg className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-slate-900 dark:text-slate-100">
+                    Chưa có kết quả bài kiểm tra
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Học sinh chưa hoàn thành bài kiểm tra nào trong lớp này
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {studentAttempts.map(({ examId, examTitle, results }) => (
+                  <Card key={examId} variant="default" padding="none">
+                    <div className="border-b border-slate-200 p-4 dark:border-slate-700">
+                      <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                        {examTitle}
+                      </h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-slate-50 text-left dark:border-slate-700 dark:bg-slate-800/50">
+                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Điểm
+                            </th>
+                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden md:table-cell">
+                              Trạng thái
+                            </th>
+                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hidden lg:table-cell">
+                              Nộp lúc
+                            </th>
+                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              Thao tác
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {results.map((result) => {
+                            const statusConfig: Record<AttemptStatus, { label: string; variant: 'success' | 'warning' | 'error' | 'info' | 'default' }> = {
+                              IN_PROGRESS: { label: 'Đang làm', variant: 'info' },
+                              SUBMITTED: { label: 'Đã nộp', variant: 'warning' },
+                              GRADED: { label: 'Đã chấm', variant: 'success' },
+                              MANUAL_REVIEW: { label: 'Cần duyệt', variant: 'error' },
+                              COMPLETED: { label: 'Hoàn thành', variant: 'success' },
+                            };
+                            const status = statusConfig[result.status];
+                            return (
+                              <tr key={result.attemptId} className="border-b border-slate-200 dark:border-slate-700">
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className={cn(
+                                      'font-semibold',
+                                      result.passed ? 'text-success-600 dark:text-success-400' : 'text-error-600 dark:text-error-400'
+                                    )}>
+                                      {result.score}/{result.maxScore}
+                                    </span>
+                                    <Badge variant={result.passed ? 'success' : 'error'} size="sm">
+                                      {result.percentage.toFixed(0)}%
+                                    </Badge>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 hidden md:table-cell">
+                                  <Badge variant={status.variant} size="sm">
+                                    {status.label}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-3 hidden lg:table-cell">
+                                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                                    {result.submittedAt ? formatRelativeTime(result.submittedAt) : '-'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Button variant="ghost" size="sm" onClick={() => setSelectedAttempt(result)}>
+                                    Chi tiết
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -735,6 +1051,245 @@ function EvidenceDetailModal({ diagnosis, isOpen, onClose }: EvidenceDetailModal
         <EvidenceChainView evidenceItems={evidenceItems} diagnosisId={diagnosis.id} />
 
         <div className="mt-6 flex justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Đóng
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Exam Attempt Detail Modal for Student Page
+ */
+interface AttemptDetailModalProps {
+  attempt: ExamResultSummary | null
+  isOpen: boolean
+  onClose: () => void
+}
+
+function AttemptDetailModal({ attempt, isOpen, onClose }: AttemptDetailModalProps) {
+  const [result, setResult] = React.useState<ExamResultDetail | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen || !attempt) return;
+    
+    const attemptId = attempt.attemptId;
+    
+    async function fetchAttemptResult() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getAttemptResults(attemptId);
+        setResult(data);
+      } catch (err) {
+        console.error('Failed to fetch attempt results:', err);
+        setError('Không thể tải kết quả bài làm');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchAttemptResult();
+  }, [attempt]);
+
+  if (!isOpen || !attempt) return null;
+
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '-';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      
+      <div className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-xl bg-card shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 p-4 dark:border-slate-700">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Chi tiết kết quả bài kiểm tra
+            </h2>
+            {result && (
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {result.examTitle}
+              </p>
+            )}
+          </div>
+          <button 
+            onClick={onClose}
+            className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Content */}
+        <div className="overflow-y-auto p-4" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
+              ))}
+            </div>
+          )}
+          
+          {error && (
+            <div className="rounded-lg border border-error-200 bg-error-50 p-4 text-center text-error-700 dark:border-error-800 dark:bg-error-900/20 dark:text-error-300">
+              {error}
+            </div>
+          )}
+          
+          {result && !loading && (
+            <div className="space-y-6">
+              {/* Summary Stats */}
+              <div className="grid gap-4 sm:grid-cols-4">
+                <Card variant="default" padding="md">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Điểm</p>
+                  <p className={cn(
+                    'mt-1 text-2xl font-bold',
+                    result.passed ? 'text-success-600 dark:text-success-400' : 'text-error-600 dark:text-error-400'
+                  )}>
+                    {result.score}/{result.maxScore}
+                  </p>
+                </Card>
+                <Card variant="default" padding="md">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Phần trăm</p>
+                  <p className={cn(
+                    'mt-1 text-2xl font-bold',
+                    result.passed ? 'text-success-600 dark:text-success-400' : 'text-error-600 dark:text-error-400'
+                  )}>
+                    {result.percentage.toFixed(0)}%
+                  </p>
+                </Card>
+                <Card variant="default" padding="md">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Trạng thái</p>
+                  <div className="mt-1">
+                    <Badge variant={result.passed ? 'success' : 'error'} size="sm">
+                      {result.passed ? 'Đạt' : 'Không đạt'}
+                    </Badge>
+                  </div>
+                </Card>
+                <Card variant="default" padding="md">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Số câu</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    {result.answers.length}
+                  </p>
+                </Card>
+              </div>
+              
+              {/* Time Info */}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Bắt đầu</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {formatDate(result.startedAt)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Nộp lúc</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {formatDate(result.submittedAt)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Chấm điểm</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    {formatDate(result.gradedAt)}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Question Results */}
+              {result.answers && result.answers.length > 0 ? (
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Chi tiết câu hỏi
+                  </h3>
+                  <div className="space-y-3">
+                    {result.answers.map((answer, index) => (
+                      <div
+                        key={answer.questionId}
+                        className={cn(
+                          'rounded-lg border p-4',
+                          answer.isCorrect 
+                            ? 'border-success-200 bg-success-50/50 dark:border-success-800 dark:bg-success-900/10'
+                            : 'border-error-200 bg-error-50/50 dark:border-error-800 dark:bg-error-900/10'
+                        )}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                                Câu {index + 1}
+                              </span>
+                              <Badge variant={answer.isCorrect ? 'success' : 'error'} size="sm">
+                                {answer.isCorrect ? 'Đúng' : 'Sai'}
+                              </Badge>
+                            </div>
+                            
+                            {/* Selected options */}
+                            {answer.selectedOptions && answer.selectedOptions.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Đáp án đã chọn:</p>
+                                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                                  {answer.selectedOptions.join(', ')}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Text answer */}
+                            {answer.textAnswer && (
+                              <div className="mt-2">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Câu trả lời:</p>
+                                <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+                                  {answer.textAnswer}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="text-right">
+                            <span className={cn(
+                              'text-lg font-bold',
+                              answer.isCorrect ? 'text-success-600 dark:text-success-400' : 'text-error-600 dark:text-error-400'
+                            )}>
+                              {answer.pointsEarned ?? 0}/1
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                  Chưa có dữ liệu chi tiết câu hỏi
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Footer */}
+        <div className="flex justify-end border-t border-slate-200 p-4 dark:border-slate-700">
           <Button variant="outline" onClick={onClose}>
             Đóng
           </Button>
