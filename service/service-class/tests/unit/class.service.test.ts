@@ -53,7 +53,6 @@ const mockPrisma = {
     findMany: vi.fn<() => Promise<unknown>>(),
     updateMany: vi.fn<() => Promise<unknown>>(),
   },
-    $transaction: vi.fn(),
 };
 
 vi.mock('../../src/prisma/client.js', () => ({
@@ -68,7 +67,7 @@ vi.mock('../../src/services/inter-service.js', () => ({
 
 // ── Import service AFTER all mocks are in place ────────────────────────────────
 
-const { listClasses, createClass, updateClass, deleteClass, getClassStats } =
+const { listClasses, createClass, updateClass, deleteClass, getClassStats, getClassStudents } =
   await import('../../src/services/class.service.js');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -164,26 +163,30 @@ describe('listClasses', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('createClass', () => {
+  const teacherId = '91111111-1111-4111-8111-111111111111';
   const validInput = {
     name: 'Math 101',
     subject: 'Mathematics',
-    teacherId: '91111111-1111-4111-8111-111111111111',
   };
 
-  it('creates a class after verifying teacher via svc-auth', async () => {
+  it('creates a class for the authenticated teacher', async () => {
     const { callSvcAuth } = await import('../../src/services/inter-service.js');
-    vi.mocked(callSvcAuth).mockResolvedValue({ data: { id: validInput.teacherId, isActive: true } });
+    vi.mocked(callSvcAuth).mockResolvedValue({ data: { id: teacherId, isActive: true } });
     mockPrisma.class.findFirst.mockResolvedValue(null);
     mockPrisma.class.create.mockResolvedValue(FIXTURE_CLASS);
 
-    const result = await createClass(validInput);
+    const result = await createClass(validInput, teacherId);
 
     expect(callSvcAuth).toHaveBeenCalledWith(
-      `/api/users/${validInput.teacherId}`,
+      `/api/users/${teacherId}`,
       expect.any(Object)
     );
     expect(result.name).toBe('Math 101');
-    expect(result.teacherId).toBe(validInput.teacherId);
+    expect(result.teacherId).toBe(teacherId);
+  });
+
+  it('throws ValidationError when actingUserId is empty', async () => {
+    await expect(createClass(validInput, '')).rejects.toThrow('not authenticated');
   });
 
   it('throws ValidationError when svc-auth says teacher is unknown', async () => {
@@ -192,15 +195,15 @@ describe('createClass', () => {
     // "teacher doesn't exist" is `{ data: null }`.
     vi.mocked(callSvcAuth).mockResolvedValue({ data: null });
 
-    await expect(createClass(validInput)).rejects.toThrow('Unknown teacher');
+    await expect(createClass(validInput, teacherId)).rejects.toThrow('Unknown teacher');
   });
 
   it('throws ConflictError when class with same name/teacher already exists', async () => {
     const { callSvcAuth } = await import('../../src/services/inter-service.js');
-    vi.mocked(callSvcAuth).mockResolvedValue({ data: { id: validInput.teacherId, isActive: true } });
+    vi.mocked(callSvcAuth).mockResolvedValue({ data: { id: teacherId, isActive: true } });
     mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
 
-    await expect(createClass(validInput)).rejects.toThrow('already exists for this teacher');
+    await expect(createClass(validInput, teacherId)).rejects.toThrow('already exists for this teacher');
   });
 });
 
@@ -346,5 +349,104 @@ describe('getClassStats', () => {
     expect(stats.studentCount).toBe(0);
     expect(stats.averageMastery).toBe(0);
     expect(stats.masteryRate).toBe(0);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// getClassStudents
+// ══════════════════════════════════════════════════════════════════════════════
+
+const OWNER_ID = '91111111-1111-4111-8111-111111111111';
+const OTHER_TEACHER_ID = '92222222-2222-4222-8222-222222222222';
+
+describe('getClassStudents', () => {
+  it('returns enrolled students for the owning teacher', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
+    mockPrisma.enrollment.findMany.mockResolvedValue([
+      {
+        enrolled_at: FIXTURE_NOW,
+        student: { id: 's1', name: 'Alice', email: 'alice@example.com' },
+      },
+      {
+        enrolled_at: new Date('2025-01-10T12:00:00Z'),
+        student: { id: 's2', name: 'Bob', email: null },
+      },
+    ]);
+
+    const result = await getClassStudents(FIXTURE_CLASS.id, OWNER_ID, 'TEACHER');
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      id: 's1',
+      name: 'Alice',
+      email: 'alice@example.com',
+      enrolledAt: FIXTURE_NOW,
+    });
+    expect(result[1]).toEqual({
+      id: 's2',
+      name: 'Bob',
+      email: null,
+      enrolledAt: new Date('2025-01-10T12:00:00Z'),
+    });
+  });
+
+  it('returns empty array when class has no enrollments', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
+    mockPrisma.enrollment.findMany.mockResolvedValue([]);
+
+    const result = await getClassStudents(FIXTURE_CLASS.id, OWNER_ID, 'TEACHER');
+
+    expect(result).toHaveLength(0);
+  });
+
+  it('throws ForbiddenError when a non-owner teacher tries to list students', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
+
+    await expect(
+      getClassStudents(FIXTURE_CLASS.id, OTHER_TEACHER_ID, 'TEACHER')
+    ).rejects.toThrow('Only the owning teacher');
+  });
+
+  it('allows admin to list students regardless of ownership', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
+    mockPrisma.enrollment.findMany.mockResolvedValue([
+      {
+        enrolled_at: FIXTURE_NOW,
+        student: { id: 's1', name: 'Alice', email: 'alice@example.com' },
+      },
+    ]);
+
+    const result = await getClassStudents(FIXTURE_CLASS.id, OTHER_TEACHER_ID, 'ADMIN');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('Alice');
+  });
+
+  it('deduplicates students with multiple enrollments in the same class', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(FIXTURE_CLASS);
+    // Simulate a duplicate enrollment (same student appears twice)
+    mockPrisma.enrollment.findMany.mockResolvedValue([
+      {
+        enrolled_at: FIXTURE_NOW,
+        student: { id: 's1', name: 'Alice', email: 'alice@example.com' },
+      },
+      {
+        enrolled_at: new Date('2025-01-10T12:00:00Z'),
+        student: { id: 's1', name: 'Alice', email: 'alice@example.com' },
+      },
+    ]);
+
+    const result = await getClassStudents(FIXTURE_CLASS.id, OWNER_ID, 'TEACHER');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('s1');
+  });
+
+  it('throws NotFoundError when class does not exist', async () => {
+    mockPrisma.class.findFirst.mockResolvedValue(null);
+
+    await expect(
+      getClassStudents('b1111111-1111-4111-8111-111111111111', OWNER_ID, 'TEACHER')
+    ).rejects.toThrow('not found');
   });
 });

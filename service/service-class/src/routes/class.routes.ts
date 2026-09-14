@@ -10,7 +10,8 @@ import {
   updateClass,
   deleteClass,
   getClassStats,
-  getClassStudents
+  getClassStudents,
+  getClassStatsAdmin,
 } from '../services/class.service.js';
 import {
   createClassSchema,
@@ -78,14 +79,17 @@ router.get(
 
 /**
  * POST /api/class/classes
- * Create a new class — teacher must already exist in svc-auth.
+ * Create a new class for the authenticated teacher.
+ * The teacherId is extracted from the JWT (x-user-id header) — never from the body.
  */
 router.post(
   '/',
   validate(createClassSchema, 'body'),
   asyncHandler(async (req: Request, res: Response) => {
+    const headers = req.headers as Record<string, string | undefined>;
+    const actingUserId = headers['x-user-id'] ?? '';
     const ctx = extractInterServiceHeaders(req);
-    const created = await createClass(req.body, ctx);
+    const created = await createClass(req.body, actingUserId, ctx);
     res.status(201).json({ success: true, data: created });
   })
 );
@@ -163,19 +167,52 @@ router.get(
 
 /**
  * GET /api/class/classes/:id/students
- * Roster for the class — list of student IDs currently enrolled.
+ * Roster for the class — list of students currently enrolled.
  *
- * Cross-service: this endpoint is the one `svc-bkt` calls when assembling
- * a class-level BKT diagnosis view (`getClassDiagnoses`). Returns the
- * `{ success, data: { students: [{ id }, ...] } }` envelope that
- * svc-bkt's `diagnosis.service.ts` expects.
+ * Ownership: only the owning teacher or an admin may list students.
+ * Returns the `{ success, data: ClassStudentEntry[] }` envelope consumed
+ * by the teacher UI's class detail page.
  */
 router.get(
   '/:id/students',
   validate(classIdSchema, 'params'),
   asyncHandler(async (req: Request, res: Response) => {
-    const roster = await getClassStudents(req.params['id'] as string);
+    const headers = req.headers as Record<string, string | undefined>;
+    const actingUserId = headers['x-user-id'] ?? '';
+    const actingUserRole = headers['x-user-role'] ?? '';
+    const roster = await getClassStudents(
+      req.params['id'] as string,
+      actingUserId,
+      actingUserRole
+    );
     res.json({ success: true, data: roster });
+  })
+);
+
+/* -------------------------------------------------------------------------- */
+/*                             Admin Stats                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * GET /api/class/admin/stats
+ * Admin-only endpoint to get overall class statistics.
+ */
+router.get(
+  '/admin/stats',
+  asyncHandler(async (req: Request, res: Response) => {
+    const headers = req.headers as Record<string, string | undefined>;
+    const actingUserRole = headers['x-user-role'] ?? '';
+
+    if (actingUserRole !== 'ADMIN') {
+      res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Admin access required' },
+      });
+      return;
+    }
+
+    const stats = await getClassStatsAdmin();
+    res.json({ success: true, data: stats });
   })
 );
 

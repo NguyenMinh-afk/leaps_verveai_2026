@@ -11,8 +11,7 @@ import { z } from 'zod';
 /** Request body for POST /api/class/classes. */
 export const createClassSchema = z.object({
   name: z.string().min(2).max(100),
-  subject: z.string().min(2).max(50),
-  teacherId: z.string().uuid({ message: 'teacherId must be a valid UUID' })
+  subject: z.string().min(2).max(50)
 });
 
 /** Request body for PUT /api/class/classes/:id (all fields optional). */
