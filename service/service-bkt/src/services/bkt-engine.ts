@@ -86,9 +86,14 @@ function clamp01(value: number): number {
  * @returns       New P(L) in [0,1].
  *
  * Implementation is DETERMINISTIC — same `(pKnown, correct)` always
- * returns the same value.
+ * returns the same value. A NaN prior is treated as a degenerate
+ * uninformative observation and returns 0 (no learning can be
+ * inferred from a missing prior).
  */
 export function updateMastery(pKnown: number, correct: boolean): number {
+  // NaN prior → uninformative; treat as the lowest possible mastery.
+  if (!Number.isFinite(pKnown)) return 0;
+
   const { P_LEARN, P_GUESS, P_SLIP } = BKT_PARAMS;
 
   // Guard against out-of-range input.

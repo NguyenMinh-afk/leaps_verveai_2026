@@ -128,6 +128,9 @@ beforeEach(() => {
 });
 
 describe('buildBundle', () => {
+  const CID_1 = 'c1111111-1111-4111-8111-111111111111';
+  const CID_2 = 'c2222222-2222-4222-8222-222222222222';
+
   it('creates a bundle when all content is APPROVED', async () => {
     mockPrisma.content_item.count.mockResolvedValueOnce(2);
     mockPrisma.bundle.create.mockResolvedValueOnce({
@@ -135,7 +138,7 @@ describe('buildBundle', () => {
       name: 'My Bundle',
       version: '1.0.0',
       status: 'BUILT',
-      content_ids: ['c-1', 'c-2'],
+      content_ids: [CID_1, CID_2],
       created_at: new Date(),
       published_at: null,
       signatures: [],
@@ -143,12 +146,12 @@ describe('buildBundle', () => {
 
     const result = await bundleService.buildBundle({
       name: 'My Bundle',
-      contentIds: ['c-1', 'c-2'],
+      contentIds: [CID_1, CID_2],
     });
 
     expect(mockPrisma.content_item.count).toHaveBeenCalledWith({
       where: {
-        id: { in: ['c-1', 'c-2'] },
+        id: { in: [CID_1, CID_2] },
         status: 'APPROVED',
         deleted_at: null,
       },
@@ -162,7 +165,7 @@ describe('buildBundle', () => {
     await expect(
       bundleService.buildBundle({
         name: 'My Bundle',
-        contentIds: ['c-1', 'c-2'],
+        contentIds: [CID_1, CID_2],
       }),
     ).rejects.toThrow(/not APPROVED/);
   });

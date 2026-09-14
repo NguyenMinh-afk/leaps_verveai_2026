@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../../src/prisma/client', () => ({
+vi.mock('../../src/prisma/client.js', () => ({
   prisma: {
     device: {
       findFirst: vi.fn(),
@@ -27,19 +27,19 @@ vi.mock('../../../src/prisma/client', () => ({
   },
 }));
 
-vi.mock('../../../src/services/inter-service', () => ({
+vi.mock('../../src/services/inter-service.js', () => ({
   verifyStudent: vi.fn(),
   syncEvidenceToBkt: vi.fn(),
 }));
 
-import { prisma } from '../../../src/prisma/client.js';
-import * as interService from '../../../src/services/inter-service.js';
+import { prisma } from '../../src/prisma/client.js';
+import * as interService from '../../src/services/inter-service.js';
 import {
   getStatus,
   pull,
   pullSince,
   push,
-} from '../../../src/services/sync.service.js';
+} from '../../src/services/sync.service.js';
 
 describe('sync.service', () => {
   beforeEach(() => {

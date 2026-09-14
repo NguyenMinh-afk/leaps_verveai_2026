@@ -1,0 +1,44 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["assignment"]
+}
+
+/// Assignment status enum
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@schema("assignment")
+}
+
+/// A teacher-created learning task assigned to a class. Table is `assignments` in
+/// the `assignment` Postgres schema.
+model Assignment {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  teacher_id  String
+  class_id    String
+  status      AssignmentStatus @default(DRAFT)
+  due_at      DateTime?
+  starts_at   DateTime?
+  max_attempts Int             @default(1)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  deleted_at  DateTime?
+
+  @@index([teacher_id])
+  @@index([class_id])
+  @@index([status])
+  @@index([deleted_at])
+  @@schema("assignment")
+  @@map("assignments")
+}

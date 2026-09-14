@@ -87,6 +87,17 @@ export interface ClassStats {
   interventionAvailable: boolean;
 }
 
+/**
+ * Student entry returned by the class student listing endpoint.
+ * Exposes only safe fields — no passwords, tokens, or secrets.
+ */
+export interface ClassStudentEntry {
+  id: string;
+  name: string;
+  email: string | null;
+  enrolledAt: Date;
+}
+
 /** Subset of the user record we need to confirm a teacher is real. */
 interface AuthUserResponse {
   data?: { id: string; isActive?: boolean };
@@ -263,7 +274,9 @@ export async function listClasses(
 }
 
 /**
- * Create a new class after verifying the teacher exists in svc-auth.
+ * Create a new class for the authenticated teacher.
+ * The teacherId is always sourced from the JWT (x-user-id header) — never from
+ * the request body — to prevent ownership spoofing.
  *
  * Throws:
  *  - `ValidationError` when the input fails schema validation.
@@ -271,10 +284,17 @@ export async function listClasses(
  *    already exists — protects teachers from double-creating.
  */
 export async function createClass(
-  input: { name: string; subject: string; teacherId: string },
+  input: { name: string; subject: string },
+  actingUserId: string,
   ctx: InterServiceHeaders = {}
 ): Promise<ClassRecord> {
-  const teacherOk = await verifyTeacherExists(input.teacherId, ctx);
+  if (!actingUserId) {
+    throw new ValidationError(
+      [{ path: ['teacherId'], message: 'Authenticated user ID is required', code: 'unauthenticated' }],
+      'Cannot create class: not authenticated'
+    );
+  }
+  const teacherOk = await verifyTeacherExists(actingUserId, ctx);
   if (!teacherOk) {
     throw new ValidationError(
       [
@@ -290,7 +310,7 @@ export async function createClass(
 
   const existing = await prisma.class.findFirst({
     where: {
-      teacher_id: input.teacherId,
+      teacher_id: actingUserId,
       name: input.name,
       deleted_at: null
     }
@@ -305,7 +325,7 @@ export async function createClass(
     data: {
       name: input.name,
       subject: input.subject,
-      teacher_id: input.teacherId
+      teacher_id: actingUserId
     }
   });
 
@@ -500,5 +520,71 @@ export async function getClassStats(
     masteryRate,
     interventionCount,
     interventionAvailable
+  };
+}
+
+/**
+ * Roster of a class — the list of students currently enrolled, with
+ * basic profile fields needed by the teacher UI.
+ *
+ * Ownership: only the owning teacher or an admin may list students.
+ * Soft-deleted students and dropped enrollments are filtered out.
+ */
+export async function getClassStudents(
+  id: string,
+  actingUserId: string,
+  actingUserRole: string
+): Promise<ClassStudentEntry[]> {
+  const existing = await findActiveClassOrThrow(id);
+
+  const isAdmin = actingUserRole === 'ADMIN';
+  if (!isAdmin && existing.teacher_id !== actingUserId) {
+    throw new ForbiddenError(
+      'FORBIDDEN_NOT_OWNER',
+      'Only the owning teacher or an admin can list students in this class',
+      { classId: id, ownerId: existing.teacher_id, actingUserId }
+    );
+  }
+
+  const enrollments = await prisma.enrollment.findMany({
+    where: { class_id: id, deleted_at: null, dropped_at: null },
+    include: { student: { select: { id: true, name: true, email: true } } },
+    orderBy: { enrolled_at: 'asc' }
+  });
+
+  const seen = new Set<string>();
+  const students: ClassStudentEntry[] = [];
+  for (const e of enrollments) {
+    if (seen.has(e.student.id)) continue;
+    seen.add(e.student.id);
+    students.push({
+      id: e.student.id,
+      name: e.student.name,
+      email: e.student.email,
+      enrolledAt: e.enrolled_at
+    });
+  }
+
+  return students;
+}
+
+/**
+ * Admin: Get class statistics for dashboard
+ */
+export async function getClassStatsAdmin() {
+  const [total, active, archived, totalEnrollments, totalTeachers] = await Promise.all([
+    prisma.class.count(),
+    prisma.class.count({ where: { deleted_at: null } }),
+    prisma.class.count({ where: { deleted_at: { not: null } } }),
+    prisma.enrollment.count({ where: { deleted_at: null } }),
+    prisma.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT(DISTINCT teacher_id) as count FROM class.classes WHERE deleted_at IS NULL`,
+  ]);
+
+  return {
+    total,
+    active,
+    archived,
+    totalStudents: Number(totalEnrollments),
+    totalTeachers: Number(totalTeachers[0]?.count || 0n),
   };
 }

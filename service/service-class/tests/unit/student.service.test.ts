@@ -40,19 +40,21 @@ vi.mock('../../src/utils/logger.js', () => ({
 // ── Prisma mock — declared before vi.mock() so the same ref is used ─────────
 
 const mockPrisma = {
-  Student: {
+  $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
+  student: {
     findFirst: vi.fn<() => Promise<unknown>>(),
     findUnique: vi.fn<() => Promise<unknown>>(),
     create: vi.fn<() => Promise<unknown>>(),
     update: vi.fn<() => Promise<unknown>>(),
   },
-  Enrollment: {
+  enrollment: {
     findMany: vi.fn<() => Promise<unknown>>(),
     updateMany: vi.fn<() => Promise<unknown>>(),
   },
-  Progress: {
+  progress: {
     findMany: vi.fn<() => Promise<unknown>>(),
   },
+    $transaction: vi.fn(),
 };
 
 vi.mock('../../src/prisma/client.js', () => ({
@@ -80,7 +82,7 @@ const {
 const FIXTURE_NOW = new Date('2025-01-15T12:00:00Z');
 
 const FIXTURE_STUDENT = {
-  id: 's1111111-1111-4111-8111-111111111111',
+  id: '51111111-1111-4111-8111-111111111111',
   name: 'Alice Nguyen',
   email: 'alice@school.vn',
   created_at: FIXTURE_NOW,
@@ -94,7 +96,7 @@ const FIXTURE_ENROLLMENTS = [
     dropped_at: null,
     deleted_at: null,
     class: {
-      id: 'c1111111-1111-4111-8111-111111111111',
+      id: 'a1111111-1111-4111-8111-111111111111',
       name: 'Math 101',
       subject: 'Mathematics',
     },
@@ -104,7 +106,7 @@ const FIXTURE_ENROLLMENTS = [
     dropped_at: null,
     deleted_at: null,
     class: {
-      id: 'c2222222-2222-4222-8222-222222222222',
+      id: 'a2222222-2222-4222-8222-222222222222',
       name: 'Science 201',
       subject: 'Science',
     },
@@ -112,9 +114,9 @@ const FIXTURE_ENROLLMENTS = [
 ];
 
 const FIXTURE_PROGRESS = [
-  { id: 'p1', student_id: FIXTURE_STUDENT.id, skill_id: 'sk1', p_known: 0.9, last_p_known: 0.7, attempt_count: 5, updated_at: FIXTURE_NOW },
-  { id: 'p2', student_id: FIXTURE_STUDENT.id, skill_id: 'sk2', p_known: 0.3, last_p_known: 0.2, attempt_count: 2, updated_at: FIXTURE_NOW },
-  { id: 'p3', student_id: FIXTURE_STUDENT.id, skill_id: 'sk3', p_known: 0.6, last_p_known: 0.5, attempt_count: 1, updated_at: FIXTURE_NOW },
+  { id: 'p1', student_id: FIXTURE_STUDENT.id, skill_id: 'd1111111-1111-4111-8111-111111111111', p_known: 0.9, last_p_known: 0.7, attempt_count: 5, updated_at: FIXTURE_NOW },
+  { id: 'p2', student_id: FIXTURE_STUDENT.id, skill_id: 'd2222222-2222-4222-8222-222222222222', p_known: 0.3, last_p_known: 0.2, attempt_count: 2, updated_at: FIXTURE_NOW },
+  { id: 'p3', student_id: FIXTURE_STUDENT.id, skill_id: 'd3333333-1111-4111-8111-111111111111', p_known: 0.6, last_p_known: 0.5, attempt_count: 1, updated_at: FIXTURE_NOW },
 ];
 
 // ── Setup / Teardown ──────────────────────────────────────────────────────────
@@ -135,9 +137,9 @@ afterEach(() => {
 
 describe('getStudent', () => {
   it('returns student detail with classes and progress summary', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Enrollment.findMany.mockResolvedValue(FIXTURE_ENROLLMENTS);
-    mockPrisma.Progress.findMany.mockResolvedValue(FIXTURE_PROGRESS);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.enrollment.findMany.mockResolvedValue(FIXTURE_ENROLLMENTS);
+    mockPrisma.progress.findMany.mockResolvedValue(FIXTURE_PROGRESS);
 
     const result = await getStudent(FIXTURE_STUDENT.id);
 
@@ -155,9 +157,9 @@ describe('getStudent', () => {
   });
 
   it('returns zero summary when student has no progress records', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Enrollment.findMany.mockResolvedValue([]);
-    mockPrisma.Progress.findMany.mockResolvedValue([]);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.enrollment.findMany.mockResolvedValue([]);
+    mockPrisma.progress.findMany.mockResolvedValue([]);
 
     const result = await getStudent(FIXTURE_STUDENT.id);
 
@@ -178,20 +180,20 @@ describe('getStudent', () => {
 
 describe('createStudent', () => {
   it('creates a student with name and email', async () => {
-    mockPrisma.Student.findUnique.mockResolvedValue(null);
-    mockPrisma.Student.create.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findUnique.mockResolvedValue(null);
+    mockPrisma.student.create.mockResolvedValue(FIXTURE_STUDENT);
 
     const result = await createStudent({ name: 'Alice Nguyen', email: 'alice@school.vn' });
 
     expect(result.name).toBe('Alice Nguyen');
     expect(result.email).toBe('alice@school.vn');
-    expect(mockPrisma.Student.create).toHaveBeenCalledWith({
+    expect(mockPrisma.student.create).toHaveBeenCalledWith({
       data: { name: 'Alice Nguyen', email: 'alice@school.vn' },
     });
   });
 
   it('creates a student without email', async () => {
-    mockPrisma.Student.create.mockResolvedValue({ ...FIXTURE_STUDENT, email: null });
+    mockPrisma.student.create.mockResolvedValue({ ...FIXTURE_STUDENT, email: null });
 
     const result = await createStudent({ name: 'Bob' });
 
@@ -199,7 +201,7 @@ describe('createStudent', () => {
   });
 
   it('throws ConflictError when email already belongs to active student', async () => {
-    mockPrisma.Student.findUnique.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findUnique.mockResolvedValue(FIXTURE_STUDENT);
 
     await expect(
       createStudent({ name: 'Bob', email: 'alice@school.vn' })
@@ -207,7 +209,7 @@ describe('createStudent', () => {
   });
 
   it('throws ConflictError when email belongs to a soft-deleted student', async () => {
-    mockPrisma.Student.findUnique.mockResolvedValue({
+    mockPrisma.student.findUnique.mockResolvedValue({
       ...FIXTURE_STUDENT,
       deleted_at: new Date('2025-01-01'),
     });
@@ -224,8 +226,8 @@ describe('createStudent', () => {
 
 describe('updateStudent', () => {
   it('updates name and returns the updated record', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Student.update.mockResolvedValue({
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.update.mockResolvedValue({
       ...FIXTURE_STUDENT,
       name: 'Alice Smith',
     });
@@ -236,8 +238,8 @@ describe('updateStudent', () => {
   });
 
   it('throws ConflictError when new email belongs to another student', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Student.findUnique.mockResolvedValue({
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findUnique.mockResolvedValue({
       id: 'other-id',
       name: 'Other',
       email: 'taken@school.vn',
@@ -252,11 +254,11 @@ describe('updateStudent', () => {
   });
 
   it('returns unchanged record when payload is empty', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
 
     const result = await updateStudent(FIXTURE_STUDENT.id, {});
 
-    expect(mockPrisma.Student.update).not.toHaveBeenCalled();
+    expect(mockPrisma.student.update).not.toHaveBeenCalled();
     expect(result.name).toBe(FIXTURE_STUDENT.name);
   });
 });
@@ -267,15 +269,15 @@ describe('updateStudent', () => {
 
 describe('deleteStudent', () => {
   it('soft-deletes the student record', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Student.update.mockResolvedValue({
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.update.mockResolvedValue({
       ...FIXTURE_STUDENT,
       deleted_at: FIXTURE_NOW,
     });
 
     await deleteStudent(FIXTURE_STUDENT.id);
 
-    expect(mockPrisma.Student.update).toHaveBeenCalledWith(
+    expect(mockPrisma.student.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: FIXTURE_STUDENT.id },
         data: { deleted_at: FIXTURE_NOW },
@@ -284,16 +286,16 @@ describe('deleteStudent', () => {
   });
 
   it('also drops active enrollments when dropEnrollments=true', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
-    mockPrisma.Student.update.mockResolvedValue({
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.update.mockResolvedValue({
       ...FIXTURE_STUDENT,
       deleted_at: FIXTURE_NOW,
     });
-    mockPrisma.Enrollment.updateMany.mockResolvedValue({ count: 2 });
+    mockPrisma.enrollment.updateMany.mockResolvedValue({ count: 2 });
 
     await deleteStudent(FIXTURE_STUDENT.id, { dropEnrollments: true });
 
-    expect(mockPrisma.Enrollment.updateMany).toHaveBeenCalledWith(
+    expect(mockPrisma.enrollment.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { student_id: FIXTURE_STUDENT.id, deleted_at: null },
         data: { deleted_at: FIXTURE_NOW, dropped_at: FIXTURE_NOW },
@@ -313,7 +315,7 @@ describe('getStudentEvidence', () => {
   ];
 
   it('returns evidence when svc-bkt responds successfully', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
     const { callSvcBkt } = await import('../../src/services/inter-service.js');
     vi.mocked(callSvcBkt).mockResolvedValue({ data: evidenceData });
 
@@ -324,7 +326,7 @@ describe('getStudentEvidence', () => {
   });
 
   it('returns empty array when circuit breaker is open', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
     const { callSvcBkt } = await import('../../src/services/inter-service.js');
     vi.mocked(callSvcBkt).mockResolvedValue(null);
 
@@ -334,7 +336,7 @@ describe('getStudentEvidence', () => {
   });
 
   it('returns empty array when response data is not an array', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
     const { callSvcBkt } = await import('../../src/services/inter-service.js');
     vi.mocked(callSvcBkt).mockResolvedValue({ data: null });
 
@@ -354,11 +356,11 @@ describe('getStudentEvidence', () => {
 
 describe('getStudentDiagnosis', () => {
   const diagnosisData = [
-    { id: 'd1', studentId: FIXTURE_STUDENT.id, skillId: 'sk1', pKnown: 0.85, status: 'MASTERED', createdAt: FIXTURE_NOW.toISOString() },
+    { id: 'd1', studentId: FIXTURE_STUDENT.id, skillId: 'd1111111-1111-4111-8111-111111111111', pKnown: 0.85, status: 'MASTERED', createdAt: FIXTURE_NOW.toISOString() },
   ];
 
   it('returns diagnoses when svc-bkt responds', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
     const { callSvcBkt } = await import('../../src/services/inter-service.js');
     vi.mocked(callSvcBkt).mockResolvedValue({ data: diagnosisData });
 
@@ -369,7 +371,7 @@ describe('getStudentDiagnosis', () => {
   });
 
   it('returns empty array when svc-bkt is unavailable', async () => {
-    mockPrisma.Student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
+    mockPrisma.student.findFirst.mockResolvedValue(FIXTURE_STUDENT);
     const { callSvcBkt } = await import('../../src/services/inter-service.js');
     vi.mocked(callSvcBkt).mockResolvedValue(null);
 

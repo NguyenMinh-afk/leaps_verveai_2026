@@ -1249,6 +1249,8 @@ export namespace Prisma {
     difficulty: number | null
     status: $Enums.content_status | null
     author_id: string | null
+    topic: string | null
+    chapter: string | null
     created_at: Date | null
     updated_at: Date | null
     deleted_at: Date | null
@@ -1262,6 +1264,8 @@ export namespace Prisma {
     difficulty: number | null
     status: $Enums.content_status | null
     author_id: string | null
+    topic: string | null
+    chapter: string | null
     created_at: Date | null
     updated_at: Date | null
     deleted_at: Date | null
@@ -1275,6 +1279,9 @@ export namespace Prisma {
     difficulty: number
     status: number
     author_id: number
+    topic: number
+    chapter: number
+    metadata: number
     created_at: number
     updated_at: number
     deleted_at: number
@@ -1298,6 +1305,8 @@ export namespace Prisma {
     difficulty?: true
     status?: true
     author_id?: true
+    topic?: true
+    chapter?: true
     created_at?: true
     updated_at?: true
     deleted_at?: true
@@ -1311,6 +1320,8 @@ export namespace Prisma {
     difficulty?: true
     status?: true
     author_id?: true
+    topic?: true
+    chapter?: true
     created_at?: true
     updated_at?: true
     deleted_at?: true
@@ -1324,6 +1335,9 @@ export namespace Prisma {
     difficulty?: true
     status?: true
     author_id?: true
+    topic?: true
+    chapter?: true
+    metadata?: true
     created_at?: true
     updated_at?: true
     deleted_at?: true
@@ -1424,6 +1438,9 @@ export namespace Prisma {
     difficulty: number
     status: $Enums.content_status
     author_id: string
+    topic: string | null
+    chapter: string | null
+    metadata: JsonValue
     created_at: Date
     updated_at: Date
     deleted_at: Date | null
@@ -1456,6 +1473,9 @@ export namespace Prisma {
     difficulty?: boolean
     status?: boolean
     author_id?: boolean
+    topic?: boolean
+    chapter?: boolean
+    metadata?: boolean
     created_at?: boolean
     updated_at?: boolean
     deleted_at?: boolean
@@ -1471,6 +1491,9 @@ export namespace Prisma {
     difficulty?: boolean
     status?: boolean
     author_id?: boolean
+    topic?: boolean
+    chapter?: boolean
+    metadata?: boolean
     created_at?: boolean
     updated_at?: boolean
     deleted_at?: boolean
@@ -1484,6 +1507,9 @@ export namespace Prisma {
     difficulty?: boolean
     status?: boolean
     author_id?: boolean
+    topic?: boolean
+    chapter?: boolean
+    metadata?: boolean
     created_at?: boolean
     updated_at?: boolean
     deleted_at?: boolean
@@ -1508,6 +1534,9 @@ export namespace Prisma {
       difficulty: number
       status: $Enums.content_status
       author_id: string
+      topic: string | null
+      chapter: string | null
+      metadata: Prisma.JsonValue
       created_at: Date
       updated_at: Date
       deleted_at: Date | null
@@ -1912,6 +1941,9 @@ export namespace Prisma {
     readonly difficulty: FieldRef<"content_item", 'Int'>
     readonly status: FieldRef<"content_item", 'content_status'>
     readonly author_id: FieldRef<"content_item", 'String'>
+    readonly topic: FieldRef<"content_item", 'String'>
+    readonly chapter: FieldRef<"content_item", 'String'>
+    readonly metadata: FieldRef<"content_item", 'Json'>
     readonly created_at: FieldRef<"content_item", 'DateTime'>
     readonly updated_at: FieldRef<"content_item", 'DateTime'>
     readonly deleted_at: FieldRef<"content_item", 'DateTime'>
@@ -5143,6 +5175,9 @@ export namespace Prisma {
     difficulty: 'difficulty',
     status: 'status',
     author_id: 'author_id',
+    topic: 'topic',
+    chapter: 'chapter',
+    metadata: 'metadata',
     created_at: 'created_at',
     updated_at: 'updated_at',
     deleted_at: 'deleted_at'
@@ -5196,12 +5231,28 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
   export const QueryMode: {
     default: 'default',
     insensitive: 'insensitive'
   };
 
   export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+  export const JsonNullValueFilter: {
+    DbNull: typeof DbNull,
+    JsonNull: typeof JsonNull,
+    AnyNull: typeof AnyNull
+  };
+
+  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
   export const NullsOrder: {
@@ -5270,6 +5321,13 @@ export namespace Prisma {
    * Reference to a field of type 'content_status[]'
    */
   export type ListEnumcontent_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'content_status[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
@@ -5343,6 +5401,9 @@ export namespace Prisma {
     difficulty?: IntFilter<"content_item"> | number
     status?: Enumcontent_statusFilter<"content_item"> | $Enums.content_status
     author_id?: StringFilter<"content_item"> | string
+    topic?: StringNullableFilter<"content_item"> | string | null
+    chapter?: StringNullableFilter<"content_item"> | string | null
+    metadata?: JsonFilter<"content_item">
     created_at?: DateTimeFilter<"content_item"> | Date | string
     updated_at?: DateTimeFilter<"content_item"> | Date | string
     deleted_at?: DateTimeNullableFilter<"content_item"> | Date | string | null
@@ -5357,6 +5418,9 @@ export namespace Prisma {
     difficulty?: SortOrder
     status?: SortOrder
     author_id?: SortOrder
+    topic?: SortOrderInput | SortOrder
+    chapter?: SortOrderInput | SortOrder
+    metadata?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     deleted_at?: SortOrderInput | SortOrder
@@ -5374,6 +5438,9 @@ export namespace Prisma {
     difficulty?: IntFilter<"content_item"> | number
     status?: Enumcontent_statusFilter<"content_item"> | $Enums.content_status
     author_id?: StringFilter<"content_item"> | string
+    topic?: StringNullableFilter<"content_item"> | string | null
+    chapter?: StringNullableFilter<"content_item"> | string | null
+    metadata?: JsonFilter<"content_item">
     created_at?: DateTimeFilter<"content_item"> | Date | string
     updated_at?: DateTimeFilter<"content_item"> | Date | string
     deleted_at?: DateTimeNullableFilter<"content_item"> | Date | string | null
@@ -5388,6 +5455,9 @@ export namespace Prisma {
     difficulty?: SortOrder
     status?: SortOrder
     author_id?: SortOrder
+    topic?: SortOrderInput | SortOrder
+    chapter?: SortOrderInput | SortOrder
+    metadata?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     deleted_at?: SortOrderInput | SortOrder
@@ -5409,6 +5479,9 @@ export namespace Prisma {
     difficulty?: IntWithAggregatesFilter<"content_item"> | number
     status?: Enumcontent_statusWithAggregatesFilter<"content_item"> | $Enums.content_status
     author_id?: StringWithAggregatesFilter<"content_item"> | string
+    topic?: StringNullableWithAggregatesFilter<"content_item"> | string | null
+    chapter?: StringNullableWithAggregatesFilter<"content_item"> | string | null
+    metadata?: JsonWithAggregatesFilter<"content_item">
     created_at?: DateTimeWithAggregatesFilter<"content_item"> | Date | string
     updated_at?: DateTimeWithAggregatesFilter<"content_item"> | Date | string
     deleted_at?: DateTimeNullableWithAggregatesFilter<"content_item"> | Date | string | null
@@ -5607,6 +5680,9 @@ export namespace Prisma {
     difficulty?: number
     status?: $Enums.content_status
     author_id: string
+    topic?: string | null
+    chapter?: string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: Date | string
     updated_at?: Date | string
     deleted_at?: Date | string | null
@@ -5621,6 +5697,9 @@ export namespace Prisma {
     difficulty?: number
     status?: $Enums.content_status
     author_id: string
+    topic?: string | null
+    chapter?: string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: Date | string
     updated_at?: Date | string
     deleted_at?: Date | string | null
@@ -5635,6 +5714,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -5649,6 +5731,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -5663,6 +5748,9 @@ export namespace Prisma {
     difficulty?: number
     status?: $Enums.content_status
     author_id: string
+    topic?: string | null
+    chapter?: string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: Date | string
     updated_at?: Date | string
     deleted_at?: Date | string | null
@@ -5676,6 +5764,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -5689,6 +5780,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -5932,6 +6026,43 @@ export namespace Prisma {
     not?: NestedEnumcontent_statusFilter<$PrismaModel> | $Enums.content_status
   }
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+  export type JsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -5977,6 +6108,9 @@ export namespace Prisma {
     difficulty?: SortOrder
     status?: SortOrder
     author_id?: SortOrder
+    topic?: SortOrder
+    chapter?: SortOrder
+    metadata?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     deleted_at?: SortOrder
@@ -5994,6 +6128,8 @@ export namespace Prisma {
     difficulty?: SortOrder
     status?: SortOrder
     author_id?: SortOrder
+    topic?: SortOrder
+    chapter?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     deleted_at?: SortOrder
@@ -6007,6 +6143,8 @@ export namespace Prisma {
     difficulty?: SortOrder
     status?: SortOrder
     author_id?: SortOrder
+    topic?: SortOrder
+    chapter?: SortOrder
     created_at?: SortOrder
     updated_at?: SortOrder
     deleted_at?: SortOrder
@@ -6068,6 +6206,49 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumcontent_statusFilter<$PrismaModel>
     _max?: NestedEnumcontent_statusFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+  export type JsonWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedJsonFilter<$PrismaModel>
+    _max?: NestedJsonFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -6197,21 +6378,6 @@ export namespace Prisma {
     not?: NestedEnumreview_statusFilter<$PrismaModel> | $Enums.review_status
   }
 
-  export type StringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type Content_itemRelationFilter = {
     is?: content_itemWhereInput
     isNot?: content_itemWhereInput
@@ -6257,24 +6423,6 @@ export namespace Prisma {
     _max?: NestedEnumreview_statusFilter<$PrismaModel>
   }
 
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
   export type reviewCreateNestedManyWithoutContentInput = {
     create?: XOR<reviewCreateWithoutContentInput, reviewUncheckedCreateWithoutContentInput> | reviewCreateWithoutContentInput[] | reviewUncheckedCreateWithoutContentInput[]
     connectOrCreate?: reviewCreateOrConnectWithoutContentInput | reviewCreateOrConnectWithoutContentInput[]
@@ -6307,6 +6455,10 @@ export namespace Prisma {
 
   export type Enumcontent_statusFieldUpdateOperationsInput = {
     set?: $Enums.content_status
+  }
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -6424,10 +6576,6 @@ export namespace Prisma {
     set?: $Enums.review_status
   }
 
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
-  }
-
   export type content_itemUpdateOneRequiredWithoutReviewsNestedInput = {
     create?: XOR<content_itemCreateWithoutReviewsInput, content_itemUncheckedCreateWithoutReviewsInput>
     connectOrCreate?: content_itemCreateOrConnectWithoutReviewsInput
@@ -6473,6 +6621,20 @@ export namespace Prisma {
     in?: $Enums.content_status[] | ListEnumcontent_statusFieldRefInput<$PrismaModel>
     notIn?: $Enums.content_status[] | ListEnumcontent_statusFieldRefInput<$PrismaModel>
     not?: NestedEnumcontent_statusFilter<$PrismaModel> | $Enums.content_status
+  }
+
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -6561,6 +6723,56 @@ export namespace Prisma {
     _max?: NestedEnumcontent_statusFilter<$PrismaModel>
   }
 
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+  export type NestedJsonFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -6589,17 +6801,6 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type NestedEnumbundle_statusFilter<$PrismaModel = never> = {
     equals?: $Enums.bundle_status | Enumbundle_statusFieldRefInput<$PrismaModel>
     in?: $Enums.bundle_status[] | ListEnumbundle_statusFieldRefInput<$PrismaModel>
@@ -6624,20 +6825,6 @@ export namespace Prisma {
     not?: NestedEnumreview_statusFilter<$PrismaModel> | $Enums.review_status
   }
 
-  export type NestedStringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null
-  }
-
   export type NestedEnumreview_statusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.review_status | Enumreview_statusFieldRefInput<$PrismaModel>
     in?: $Enums.review_status[] | ListEnumreview_statusFieldRefInput<$PrismaModel>
@@ -6646,23 +6833,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumreview_statusFilter<$PrismaModel>
     _max?: NestedEnumreview_statusFilter<$PrismaModel>
-  }
-
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type reviewCreateWithoutContentInput = {
@@ -6837,6 +7007,9 @@ export namespace Prisma {
     difficulty?: number
     status?: $Enums.content_status
     author_id: string
+    topic?: string | null
+    chapter?: string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: Date | string
     updated_at?: Date | string
     deleted_at?: Date | string | null
@@ -6850,6 +7023,9 @@ export namespace Prisma {
     difficulty?: number
     status?: $Enums.content_status
     author_id: string
+    topic?: string | null
+    chapter?: string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: Date | string
     updated_at?: Date | string
     deleted_at?: Date | string | null
@@ -6879,6 +7055,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -6892,6 +7071,9 @@ export namespace Prisma {
     difficulty?: IntFieldUpdateOperationsInput | number
     status?: Enumcontent_statusFieldUpdateOperationsInput | $Enums.content_status
     author_id?: StringFieldUpdateOperationsInput | string
+    topic?: NullableStringFieldUpdateOperationsInput | string | null
+    chapter?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: JsonNullValueInput | InputJsonValue
     created_at?: DateTimeFieldUpdateOperationsInput | Date | string
     updated_at?: DateTimeFieldUpdateOperationsInput | Date | string
     deleted_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

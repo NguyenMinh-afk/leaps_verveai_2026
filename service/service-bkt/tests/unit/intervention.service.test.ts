@@ -26,7 +26,7 @@ process.env.CONSUL_HOST = 'localhost';
 process.env.CONSUL_PORT = '8500';
 
 // ── Mock logger BEFORE importing the service ──────────────────────────────────
-vi.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../src/utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -84,7 +84,7 @@ const mockInterventionRows = [
   },
 ];
 
-vi.mock('../../../src/prisma/client.js', () => ({
+vi.mock('../../src/prisma/client.js', () => ({
   prisma: {
     intervention: {
       findMany: vi.fn(),
@@ -93,14 +93,18 @@ vi.mock('../../../src/prisma/client.js', () => ({
       create: vi.fn(),
       count: vi.fn(),
     },
-    intervention_note: {
+    interventionNote: {
       create: vi.fn(),
     },
+    // Mirror the real `$transaction(callback)` API. Tests use the
+    // pattern of replacing this in `beforeEach` to control the
+    // callback shape per scenario.
+    $transaction: vi.fn(),
   },
 }));
 
 // ── Import after mocks are set up ─────────────────────────────────────────────
-import { prisma } from '../../../src/prisma/client';
+import { prisma } from '../../src/prisma/client.js';
 import {
   listInterventions,
   getIntervention,
@@ -108,7 +112,7 @@ import {
   overrideIntervention,
   addNote,
   resolveIntervention,
-} from '../../../src/services/intervention.service';
+} from '../../src/services/intervention.service';
 
 const prismaMock = prisma as unknown as {
   intervention: {
@@ -118,9 +122,8 @@ const prismaMock = prisma as unknown as {
     create: ReturnType<typeof vi.fn>;
     count: ReturnType<typeof vi.fn>;
   };
-  intervention_note: {
-    create: ReturnType<typeof vi.fn>;
-  };
+  interventionNote: { create: ReturnType<typeof vi.fn> };
+  $transaction: ReturnType<typeof vi.fn>;
 };
 
 beforeEach(() => {
@@ -293,9 +296,22 @@ describe('InterventionService — overrideIntervention (FR-17)', () => {
       ],
     };
 
-    vi.mocked(prismaMock.intervention.findUnique).mockResolvedValue(existing);
+    vi.mocked(prismaMock.intervention.findUnique).mockResolvedValueOnce(existing);
     vi.mocked(prismaMock.intervention.update).mockResolvedValue(updated);
-    vi.mocked(prismaMock.intervention_note.create).mockResolvedValue(updated.notes_list[0]!);
+    vi.mocked(prismaMock.interventionNote.create).mockResolvedValue(updated.notes_list[0]!);
+    // The service re-fetches the row at the END of the transaction so
+    // that the returned DTO carries the freshly written status / note.
+    vi.mocked(prismaMock.intervention.findUnique).mockResolvedValueOnce(updated);
+    // Wire the $transaction mock so the callback receives a `tx` object
+    // mirroring the relevant prisma delegates. The service computes
+    // everything inside the transaction, so the top-level mocks alone
+    // would never fire.
+    vi.mocked(prismaMock.$transaction).mockImplementation(
+      async (fn: (tx: typeof prismaMock) => Promise<unknown>) => {
+        const tx: typeof prismaMock = prismaMock;
+        return fn(tx) as Promise<unknown>;
+      }
+    );
 
     const result = await overrideIntervention(
       existing.id,
@@ -306,7 +322,7 @@ describe('InterventionService — overrideIntervention (FR-17)', () => {
 
     expect(result.status).toBe('CANCELLED');
     expect(result.teacherId).toBe(teacherId);
-    expect(prismaMock.intervention_note.create).toHaveBeenCalledWith({
+    expect(prismaMock.interventionNote.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         intervention_id: existing.id,
         teacher_id: teacherId,
@@ -355,7 +371,7 @@ describe('InterventionService — addNote', () => {
     };
 
     vi.mocked(prismaMock.intervention.findUnique).mockResolvedValue(mockInterventionRows[0]!);
-    vi.mocked(prismaMock.intervention_note.create).mockResolvedValue(noteRow);
+    vi.mocked(prismaMock.interventionNote.create).mockResolvedValue(noteRow);
 
     const result = await addNote(
       '11111111-1111-1111-1111-111111111111',

@@ -1,0 +1,42 @@
+{
+  "name": "@verveai/service-assignment",
+  "version": "1.0.0",
+  "description": "VERVEAI Assignment Service - Teacher-created learning tasks",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc && prisma generate",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "lint": "eslint src --ext .ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@verveai/common-node": "file:../shared/common-node",
+    "@verveai/error-types": "file:../shared/error-types",
+    "@verveai/tracing": "file:../shared/tracing",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "helmet": "^8.0.0",
+    "winston": "^3.16.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.9.0",
+    "@types/winston": "^2.4.4",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

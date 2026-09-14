@@ -1,55 +1,35 @@
-# Build stage
+# --- Build stage ---
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+# Copy workspace manifests first so pnpm can resolve deps without
+# pulling in source yet (cache-friendly).
+COPY pnpm-workspace.yaml package.json ./
+COPY service/shared ./service/shared
+COPY service/service-bkt/package.json ./service/service-bkt/
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY service/shared shared/
+# Install everything the builder needs.
+RUN corepack enable && corepack prepare pnpm@9 --activate && \
+    pnpm install --frozen-lockfile --filter @verveai/service-bkt...
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Bring in source + Prisma schema and build.
+COPY service/service-bkt ./service/service-bkt
+RUN pnpm --filter @verveai/service-bkt db:generate && \
+    pnpm --filter @verveai/service-bkt build
 
-# Copy service source
-COPY service/service-bkt/ .
-
-# Generate Prisma client
-RUN pnpm --filter @verveai/service-bkt db:generate
-
-# Build TypeScript
-RUN pnpm --filter @verveai/service-bkt build
-
-# Runtime stage
-FROM node:20-alpine AS runner
-
+# --- Runtime stage ---
+FROM node:20-alpine
 WORKDIR /app
 
-# Install production dependencies only
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-
-# Copy package files for pruned install
-COPY service/service-bkt/package.json ./package.json
-COPY service/shared shared/
-
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy built artifacts
-COPY --from=builder /app/dist ./dist
-
-# Set environment
 ENV NODE_ENV=production
-ENV PORT=3002
 
-# Expose port
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/service/shared ./service/shared
+COPY --from=builder /app/service/service-bkt/dist ./service/service-bkt/dist
+COPY --from=builder /app/service/service-bkt/node_modules ./service/service-bkt/node_modules
+COPY --from=builder /app/service/service-bkt/package.json ./service/service-bkt/package.json
+COPY --from=builder /app/service/service-bkt/prisma ./service/service-bkt/prisma
+
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1
-
-# Start service
-CMD ["node", "dist/index.js"]
+CMD ["node", "service/service-bkt/dist/index.js"]

@@ -13,10 +13,28 @@ packages:
   - 'service/service-class'
   - 'service/service-content'
   - 'service/service-sync'
+  - 'service/service-assignment'
+  - 'service/service-exam'
+  - 'service/service-ai'
   # Phase 1: Content Pipeline
   - 'content-pipeline'
   - 'review-console'
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  bcrypt: true
+  esbuild: true
+  node: true
+  prisma: true
+  protobufjs: true
 # `app/` là Flutter (pubspec.yaml), không phải pnpm package.
 # `research/` là Python (pyproject.toml), không phải pnpm package.
-allowBuilds:
-  esbuild: true
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - bcrypt
+  - esbuild
+  - node
+  - prisma
+  - protobufjs

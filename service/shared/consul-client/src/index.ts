@@ -127,21 +127,38 @@ export class ConsulClient {
       throw new Error(`Failed to resolve service ${serviceName}: ${response.status}`);
     }
 
+    // Consul's catalog response shape differs by version:
+    //  • Consul ≥ 1.0 → fields are `ServiceAddress` + `ServicePort`
+    //  • Older versions + raw registrations → `Address` + `Port`
+    // We accept both so this works across Consul releases.
     const services = await response.json() as Array<{
-      ServiceAddress: string;
-      Address: string;
-      Port: number;
+      ServiceAddress?: string;
+      Address?: string;
+      ServicePort?: number;
+      Port?: number;
     }>;
 
     if (!services || services.length === 0) {
       throw new Error(`Service ${serviceName} not found in Consul`);
     }
 
-    // Prefer ServiceAddress over Address
     const service = services[0];
-    const address = service.ServiceAddress || service.Address;
+    if (service === undefined) {
+      throw new Error(`Service ${serviceName} returned an empty catalog entry`);
+    }
 
-    return `http://${address}:${service.Port}`;
+    // Prefer service-level fields; fall back to node-level.
+    const address = service.ServiceAddress || service.Address;
+    const port = service.ServicePort ?? service.Port;
+
+    if (address === undefined || address === '') {
+      throw new Error(`Service ${serviceName} has no address in Consul catalog`);
+    }
+    if (port === undefined) {
+      throw new Error(`Service ${serviceName} has no port in Consul catalog`);
+    }
+
+    return `http://${address}:${port}`;
   }
 
   /**
@@ -167,18 +184,25 @@ export class ConsulClient {
       if (detailResponse.ok) {
         const instances = await detailResponse.json() as Array<{
           ServiceID: string;
-          ServiceAddress: string;
-          Address: string;
-          Port: number;
+          ServiceAddress?: string;
+          Address?: string;
+          ServicePort?: number;
+          Port?: number;
         }>;
 
         if (instances && instances.length > 0) {
           const instance = instances[0];
-          services[serviceName] = {
-            ID: instance.ServiceID,
-            Address: instance.ServiceAddress || instance.Address,
-            Port: instance.Port,
-          };
+          if (instance !== undefined) {
+            const address = instance.ServiceAddress || instance.Address;
+            const port = instance.ServicePort ?? instance.Port;
+            if (address !== undefined && address !== '' && port !== undefined) {
+              services[serviceName] = {
+                ID: instance.ServiceID,
+                Address: address,
+                Port: port,
+              };
+            }
+          }
         }
       }
     }

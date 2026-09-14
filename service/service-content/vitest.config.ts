@@ -6,6 +6,14 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],
     exclude: ['node_modules', 'dist', 'coverage'],
+    env: {
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/test_content?schema=content',
+      ED25519_PRIVATE_KEY_PATH: './tests/fixtures/test_private.pem',
+      ED25519_PUBLIC_KEY_PATH: './tests/fixtures/test_public.pem',
+      CONSUL_HOST: 'localhost',
+      CONSUL_PORT: '8500',
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

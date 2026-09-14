@@ -141,7 +141,7 @@ export async function recordEvidence(input: RecordEvidenceInput): Promise<{
   //    the diagnosis row's `p_known` is always consistent with the
   //    evidence chain.
   const result = await prisma.$transaction(async (tx) => {
-    const evidence = await tx.evidence.create({
+    const evidence = await tx.evidenceItem.create({
       data: {
         diagnosis_id: data.diagnosisId,
         item_id: data.itemId,
@@ -153,7 +153,7 @@ export async function recordEvidence(input: RecordEvidenceInput): Promise<{
     });
 
     // Replay the chain deterministically.
-    const allEvidence = await tx.evidence.findMany({
+    const allEvidence = await tx.evidenceItem.findMany({
       where: { diagnosis_id: data.diagnosisId },
       orderBy: { created_at: 'asc' },
     });
@@ -207,7 +207,7 @@ export async function getEvidenceById(id: string): Promise<EvidenceDto | null> {
       { path: ['id'], message: 'id must be a UUID', code: 'invalid_uuid' },
     ]);
   }
-  const row = await prisma.evidence.findUnique({ where: { id } });
+  const row = await prisma.evidenceItem.findUnique({ where: { id } });
   return row ? toEvidenceDto(row) : null;
 }
 
@@ -277,7 +277,7 @@ export async function getStudentEvidence(studentId: string): Promise<EvidenceDto
     ]);
   }
 
-  const rows = await prisma.evidence.findMany({
+  const rows = await prisma.evidenceItem.findMany({
     where: {
       diagnosis: {
         student_id: studentId,

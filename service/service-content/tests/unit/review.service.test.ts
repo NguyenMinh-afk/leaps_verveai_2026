@@ -304,7 +304,7 @@ describe('getReviewStats', () => {
         { status: 'PENDING', reviewer_id: 'u-2', _count: { _all: 1 } },
         { status: 'APPROVED', reviewer_id: 'u-1', _count: { _all: 3 } },
         { status: 'APPROVED', reviewer_id: 'u-2', _count: { _all: 2 } },
-        { status: 'REJECTED', reviewer_id: 'u-1', _count: { _all: 2 } },
+        { status: 'REJECTED', reviewer_id: 'u-2', _count: { _all: 2 } },
       ]);
 
     const stats = await reviewService.getReviewStats();

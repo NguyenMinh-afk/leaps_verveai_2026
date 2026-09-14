@@ -110,9 +110,28 @@ export class EmailNotifier implements Notifier {
     }
 
     try {
-      // Lazy import nodemailer to avoid hard dep
-      const nodemailer = await import('nodemailer');
-      const transport = nodemailer.createTransport(this.smtpUrl);
+      // Lazy import nodemailer to avoid hard dep — returns error if module not available
+      // Using createRequire to handle cases where the module may not be installed
+      let nodemailer: unknown = null;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        nodemailer = require('nodemailer');
+      } catch {
+        return {
+          success: false,
+          error: 'EmailNotifier requires nodemailer package (npm install nodemailer)',
+        };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const nm = nodemailer as any;
+      if (!nm || typeof nm.createTransport !== 'function') {
+        return {
+          success: false,
+          error: 'EmailNotifier: nodemailer module is not properly installed',
+        };
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transport = nm.createTransport(this.smtpUrl!) as any;
 
       const to = (payload.payload['email'] as string | undefined) ?? this.defaultTo;
       if (!to) {

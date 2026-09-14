@@ -1,7 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions", "multiSchema"]
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../src/generated/prisma"
 }
 
 datasource db {
@@ -10,107 +10,132 @@ datasource db {
   schemas  = ["bkt"]
 }
 
-model skill {
-  id            String         @id @default(uuid())
-  code          String         @unique
-  name          String
-  difficulty    Int            @default(1)
-  description   String?
-  prereq_skills String[]      @default([])
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
-  diagnoses     diagnosis[]
-  interventions intervention[]
+/// A learnable skill. `prereq_skills` is a flat list of skill codes
+/// (TEXT[]) so we can resolve a dependency graph without a join table.
+model Skill {
+  id           String   @id @default(uuid())
+  code         String   @unique
+  name         String
+  difficulty   Int      @default(1)
+  description  String?
+  prereq_skills String[] @default([])
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  diagnoses     Diagnosis[]
+  interventions Intervention[]
 
   @@schema("bkt")
   @@map("skills")
 }
 
-model diagnosis {
-  id         String           @id @default(uuid())
+/// Per-(student, skill) mastery snapshot. The engine upserts this on
+/// every evidence observation; `confidence` reflects how many
+/// observations the snapshot is based on.
+model Diagnosis {
+  id         String         @id @default(uuid())
   student_id String
   skill_id   String
-  p_known    Float           @default(0.0)
-  confidence Float            @default(0.0)
-  status     diagnosis_status @default(PENDING)
-  created_at DateTime        @default(now())
-  updated_at DateTime        @updatedAt
-  skill      skill           @relation(fields: [skill_id], references: [id])
-  evidence   evidence[]
+  p_known    Float          @default(0.0)
+  confidence Float          @default(0.0)
+  status     DiagnosisStatus @default(PENDING)
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
 
+  skill      Skill          @relation(fields: [skill_id], references: [id])
+  evidence   EvidenceItem[]
+
+  @@unique([student_id, skill_id])
+  @@index([student_id])
+  @@index([skill_id])
+  @@index([status])
   @@schema("bkt")
   @@map("diagnoses")
 }
 
-enum diagnosis_status {
+/// A single piece of evidence (one item answered) attached to a
+/// diagnosis. Carries the LLM-extracted answer (Lớp 1), the binary
+/// correctness signal, and an engine-assigned quality tag.
+model EvidenceItem {
+  id               String            @id @default(uuid())
+  diagnosis_id     String
+  item_id          String
+  extracted_answer String?
+  correct          Boolean
+  confidence       Float             @default(0.0)
+  quality          EvidenceQuality   @default(UNKNOWN)
+  created_at       DateTime          @default(now())
+
+  diagnosis        Diagnosis         @relation(fields: [diagnosis_id], references: [id], onDelete: Cascade)
+
+  @@index([diagnosis_id])
+  @@index([item_id])
+  @@schema("bkt")
+  @@map("evidence_items")
+}
+
+/// A recommended teaching action surfaced to the dashboard when a
+/// student is stuck or has a mastery gap. Created automatically by the
+/// engine, can be edited or resolved by a teacher (FR-17 override).
+model Intervention {
+  id          String              @id @default(uuid())
+  student_id  String
+  skill_id    String
+  priority    Int                 @default(50)
+  status      InterventionStatus  @default(ACTIVE)
+  teacher_id  String?
+  notes       String?
+  created_at  DateTime            @default(now())
+  resolved_at DateTime?
+
+  skill       Skill               @relation(fields: [skill_id], references: [id])
+  notes_list  InterventionNote[]
+
+  @@index([student_id])
+  @@index([skill_id])
+  @@index([status])
+  @@index([priority])
+  @@schema("bkt")
+  @@map("interventions")
+}
+
+/// Free-form teacher note attached to an intervention. Append-only.
+model InterventionNote {
+  id              String       @id @default(uuid())
+  intervention_id String
+  teacher_id      String
+  content         String
+  created_at      DateTime     @default(now())
+
+  intervention    Intervention @relation(fields: [intervention_id], references: [id], onDelete: Cascade)
+
+  @@index([intervention_id])
+  @@schema("bkt")
+  @@map("intervention_notes")
+}
+
+enum DiagnosisStatus {
   PENDING
   DIAGNOSED
   MASTERED
   STRUGGLING
 
   @@schema("bkt")
-  @@map("diagnosis_status")
 }
 
-model evidence {
-  id               String          @id @default(uuid())
-  diagnosis_id     String
-  item_id          String
-  extracted_answer String?
-  correct          Boolean?
-  confidence       Float           @default(0.0)
-  quality         evidence_quality @default(UNKNOWN)
-  created_at      DateTime        @default(now())
-  diagnosis       diagnosis       @relation(fields: [diagnosis_id], references: [id])
-
-  @@schema("bkt")
-  @@map("evidence_items")
-}
-
-enum evidence_quality {
+enum EvidenceQuality {
   HIGH
   MEDIUM
   LOW
   UNKNOWN
 
   @@schema("bkt")
-  @@map("evidence_quality")
 }
 
-model intervention {
-  id          String               @id @default(uuid())
-  student_id  String
-  skill_id    String
-  priority    Int                  @default(50)
-  status      intervention_status  @default(ACTIVE)
-  teacher_id  String?
-  notes       String?
-  created_at  DateTime             @default(now())
-  resolved_at DateTime?
-  skill       skill                @relation(fields: [skill_id], references: [id])
-  notes_list  intervention_note[]
-
-  @@schema("bkt")
-  @@map("interventions")
-}
-
-enum intervention_status {
+enum InterventionStatus {
   ACTIVE
   RESOLVED
   CANCELLED
 
   @@schema("bkt")
-  @@map("intervention_status")
-}
-
-model intervention_note {
-  id              String       @id @default(uuid())
-  intervention_id String
-  teacher_id      String
-  content         String
-  created_at      DateTime    @default(now())
-  intervention    intervention @relation(fields: [intervention_id], references: [id])
-
-  @@schema("bkt")
-  @@map("intervention_notes")
 }
