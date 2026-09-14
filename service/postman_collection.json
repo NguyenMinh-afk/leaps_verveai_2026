@@ -692,6 +692,325 @@
               "path": ["api", "content", "reports", "aggregate"]
             }
           }
+        },
+        {
+          "name": "4.1 Question Management",
+          "item": [
+            {
+              "name": "List Questions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions?page=1&pageSize=20",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "List Questions (with filters)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions?difficulty=easy&status=DRAFT&type=multiple-choice",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions"],
+                  "query": [
+                    {
+                      "key": "difficulty",
+                      "value": "easy"
+                    },
+                    {
+                      "key": "status",
+                      "value": "DRAFT"
+                    },
+                    {
+                      "key": "type",
+                      "value": "multiple-choice"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Question (Multiple Choice)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const jsonData = pm.response.json();",
+                      "    if (jsonData.success && jsonData.data) {",
+                      "        pm.collectionVariables.set('question_id', jsonData.data.id);",
+                      "        console.log('✅ Question created:', jsonData.data.id);",
+                      "    }",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"What is 2 + 2?\",\n  \"body\": \"Calculate the sum of 2 and 2\",\n  \"difficulty\": \"easy\",\n  \"topic\": \"Basic Arithmetic\",\n  \"chapter\": \"Chapter 1\",\n  \"metadata\": {\n    \"type\": \"multiple-choice\",\n    \"options\": [\n      { \"content\": \"3\" },\n      { \"content\": \"4\" },\n      { \"content\": \"5\" },\n      { \"content\": \"6\" }\n    ],\n    \"correctOptionIndex\": 1,\n    \"explanation\": \"2 + 2 = 4\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions"]
+                }
+              }
+            },
+            {
+              "name": "Create Question (True/False)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Is 5 > 3?\",\n  \"body\": \"Is 5 greater than 3?\",\n  \"difficulty\": \"easy\",\n  \"topic\": \"Inequalities\",\n  \"metadata\": {\n    \"type\": \"true-false\",\n    \"correctAnswer\": \"true\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions"]
+                }
+              }
+            },
+            {
+              "name": "Create Question (Short Answer)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Solve for x\",\n  \"body\": \"If x + 3 = 7, what is x?\",\n  \"difficulty\": \"medium\",\n  \"topic\": \"Algebra\",\n  \"metadata\": {\n    \"type\": \"short-answer\",\n    \"correctAnswer\": \"4\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions"]
+                }
+              }
+            },
+            {
+              "name": "Get Question by ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}"]
+                }
+              }
+            },
+            {
+              "name": "Update Question",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated Question Title\",\n  \"body\": \"Updated question body\",\n  \"difficulty\": \"medium\",\n  \"metadata\": {\n    \"type\": \"multiple-choice\",\n    \"options\": [\n      { \"content\": \"Option A\" },\n      { \"content\": \"Option B\" },\n      { \"content\": \"Option C\" },\n      { \"content\": \"Option D\" }\n    ],\n    \"correctOptionIndex\": 2,\n    \"explanation\": \"This is the correct answer because...\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}"]
+                }
+              }
+            },
+            {
+              "name": "Submit Question for Review",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}/submit",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}", "submit"]
+                }
+              }
+            },
+            {
+              "name": "Approve Question",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"comment\": \"Question looks good, approved!\"\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}/approve",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}", "approve"]
+                }
+              }
+            },
+            {
+              "name": "Reject Question",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"comment\": \"The question needs revision. Please fix the explanation.\"\n}"
+                },
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}/reject",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}", "reject"]
+                }
+              }
+            },
+            {
+              "name": "Delete Question (DRAFT only)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/questions/{{question_id}}",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "questions", "{{question_id}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Review Queue",
+          "item": [
+            {
+              "name": "List Pending Reviews",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/review",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "review"]
+                }
+              }
+            },
+            {
+              "name": "Get Review Stats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{gateway_url}}/api/content/review/stats",
+                  "host": ["{{gateway_url}}"],
+                  "path": ["api", "content", "review", "stats"]
+                }
+              }
+            }
+          ]
         }
       ]
     },
